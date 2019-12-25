@@ -17,7 +17,7 @@ function _compadd_wrapper () {
         a=flag_a k=flag_k l=flag_l o=flag_o 1=flag_1 2=flag_2 q=flag_q \
         f=isfile e=flag_e Q=flag_Q n=flag_n U=flag_U C=flag_C
 
-    # just just delegate and leave if any of -O, -A or -D are given
+    # just delegate and leave if any of -O, -A or -D are given
     if (( $#arg_O || $#arg_A || $#arg_D )) {
         builtin compadd "$@"
         return $?
@@ -33,7 +33,7 @@ function _compadd_wrapper () {
         return
     }
 
-    # store these value in compcap_list
+    # store these values in compcap_list
     local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX IPREFIX ISUFFIX QIPREFIX QISUFFIX)
     local __tmp_value="<"$'\0'">" expanded  # 
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
@@ -62,8 +62,8 @@ function _compadd_wrapper () {
     }
 }
 
-FUZZY_COMPLETE_COMMAND='fzf'
-FUZZY_COMPLETE_OPTIONS='-1 --ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'
+[[ ${FUZZY_COMPLETE_COMMAND:='fzf'} ]]
+[[ ${FUZZY_COMPLETE_OPTIONS:='-1 --ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
 
 function _fuzzy_select() {
     local -A v=(${(@0)${${(v)compcap_list}[1]}})

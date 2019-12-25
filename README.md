@@ -45,7 +45,7 @@ Just press TAB as usual~
 Some variables
 
 - `FUZZY_COMPLETE_COMMAND`: Fuzzy search program 
-- `FUZZY_COMPLETE_OPTIONS`: Its arguments
+- `FUZZY_COMPLETE_OPTIONS`: Its parameters
 
 You can use `disable-fuzzy-complete` to disable `fzf-tab` if you come across any problem
 and enable it with `enable-fuzzy-complete`.

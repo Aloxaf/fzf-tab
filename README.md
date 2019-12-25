@@ -2,7 +2,7 @@
 
 Replace zsh's default completion selection menu with fzf!
 
-![](http://storage.aloxaf.cn/fzf-tab.gif)
+![](http://storage.aloxaf.cn/fzf-tab.gif?v=2)
 
 ## Install
 

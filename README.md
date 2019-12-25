@@ -2,6 +2,8 @@
 
 Replace zsh's default completion selection menu with fzf!
 
+![](http://storage.aloxaf.cn/fzf-tab.gif)
+
 ## Install
 
 ### Manual
@@ -38,7 +40,7 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 ## Usage
 
-Just press <TAB> as usual~
+Just press TAB as usual~
 
 Some variables
 

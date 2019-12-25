@@ -74,11 +74,14 @@ function _fuzzy_select() {
 
 function _compcap_pretty_print() {
     local -i command_length=0
-    for i (${(k)compcap_list}) {
+    local -a keys=(${(k)compcap_list}) values=(${(v)compcap_list})
+    for i ($keys) {
         (( $#i > command_length )) && command_length=$#i
     }
     command_length+=3
-    for k v (${(kv)compcap_list}) {
+    # NOTE: If I use ${(kv)compcap_list} here, wd's completion will get error,
+    # the order of k and v will be exchanged, and I don't know why
+    for k v (${keys:^values}) {
         local -A v=("${(@0)v}")
         if [[ -z $v[dscr] ]] {
             echo -E $k

@@ -42,10 +42,12 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 Just press TAB as usual~
 
-Some variables
+Some variables:
 
 - `FUZZY_COMPLETE_COMMAND`: Fuzzy search program 
 - `FUZZY_COMPLETE_OPTIONS`: Its parameters
 
-You can use `disable-fuzzy-complete` to disable `fzf-tab` if you come across any problem
-and enable it with `enable-fuzzy-complete`.
+Some commands:
+
+- `disable-fuzzy-complete`: Use it when you come across some bugs
+- `enable-fuzzy-complete`: Use it when fzf-tab doesn't initialize properly.

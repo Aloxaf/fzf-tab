@@ -5,7 +5,7 @@ zstyle ':completion:*' list-separator ''
 zmodload zsh/zutil
 
 # thanks Valodim/zsh-capture-completion
-function _compadd_wrapper () {
+function compadd() {
     # parse all options
     typeset -A apre hpre ipre hsuf asuf isuf arg_d arg_J arg_V \
          arg_X arg_x arg_r arg_R arg_W arg_F arg_M arg_O arg_A arg_D arg_E
@@ -17,8 +17,8 @@ function _compadd_wrapper () {
         a=flag_a k=flag_k l=flag_l o=flag_o 1=flag_1 2=flag_2 q=flag_q \
         f=isfile e=flag_e Q=flag_Q n=flag_n U=flag_U C=flag_C
 
-    # just delegate and leave if any of -O, -A or -D are given
-    if (( $#arg_O || $#arg_A || $#arg_D )) {
+    # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
+    if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
         builtin compadd "$@"
         return $?
     }
@@ -93,10 +93,13 @@ function _compcap_pretty_print() {
 
 # TODO: can I use `compadd` to apply my choice?
 function fuzzy-complete() {
+
     local -A compcap_list
     local selected
 
+    IN_FZF_TAB=1
     zle expand-or-complete
+    IN_FZF_TAB=0
 
     if (( $#compcap_list == 0 )) {
         return
@@ -118,14 +121,10 @@ zle -N fuzzy-complete
 
 function disable-fuzzy-complete() {
     bindkey '^I' expand-or-complete
-    unfunction compadd
 }
 
 function enable-fuzzy-complete() {
     bindkey '^I' fuzzy-complete
-    function compadd() {
-        _compadd_wrapper "$@"
-    }
 }
 
 enable-fuzzy-complete

@@ -101,7 +101,7 @@ function fuzzy-complete() {
     if (( $#compcap_list == 0 )) {
         return
     } elif (( $#compcap_list == 1 )) {
-        selected=$(_compcap_pretty_print)
+        selected=${${$(_compcap_pretty_print)[1]}%% $'\0' *}
     } else {
         selected=$(_compcap_pretty_print | sort | _fuzzy_select)
     }

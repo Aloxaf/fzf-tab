@@ -34,7 +34,7 @@ function compadd() {
     }
 
     # store these values in compcap_list
-    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX IPREFIX ISUFFIX QIPREFIX QISUFFIX)
+    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX IPREFIX ISUFFIX QIPREFIX QISUFFIX CURRENT)
     local __tmp_value="<"$'\0'">" expanded  # 
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
@@ -55,6 +55,7 @@ function compadd() {
         }
         # add '/' if it is directory
         # FIXME: a directory with '*|['... in its name can not be detected
+        # FIXME: `/` should only appear in completion menu?
         if [[ -n $isfile && -d ${~hpre}$__hits[$i] ]] {
             __hits[$i]+=/
         }
@@ -93,7 +94,6 @@ function _compcap_pretty_print() {
 
 # TODO: can I use `compadd` to apply my choice?
 function fuzzy-complete() {
-
     local -A compcap_list
     local selected
 
@@ -104,7 +104,10 @@ function fuzzy-complete() {
     if (( $#compcap_list == 0 )) {
         return
     } elif (( $#compcap_list == 1 )) {
-        selected=${${$(_compcap_pretty_print)[1]}%% $'\0' *}
+        # NOTE: ${$(_compcap_pretty_print)%% $'\0' *} - `zplugin z\t`
+        # ${${$(_compcap_pretty_print)[1]}%% $'\0' *} - `file A_FILE_NAME_WITH_WHITE_SPACE\t`
+        selected=$(_compcap_pretty_print)
+        selected=${selected%% $'\0' *}
     } else {
         selected=$(_compcap_pretty_print | sort | _fuzzy_select)
     }

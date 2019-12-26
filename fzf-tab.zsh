@@ -1,6 +1,5 @@
-# no group and list separator
-zstyle ':completion:*' list-grouped false
-zstyle ':completion:*' list-separator ''
+# for easier stripping
+zstyle ':completion:*' list-separator $'\0'
 
 zmodload zsh/zutil
 
@@ -35,7 +34,7 @@ function compadd() {
 
     # store these values in compcap_list
     local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile)
-    local __tmp_value="<"$'\0'">" expanded  # 
+    local expanded __tmp_value="<"$'\0'">" # ensure that compcap_list's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
         expanded=${(P)keys[$i]}
@@ -48,12 +47,14 @@ function compadd() {
     setopt localoptions extendedglob
     local dscr
     for i ({1..$#__hits}) {
-        # description
         dscr=
         if (( $#__dscr >= $i )) {
-            dscr="${${${__dscr[$i]}##$__hits[$i] #}//$'\n'}"
+            # TODO: show dscr to user directly?
+            dscr="${${${__dscr[$i]}##*$'\0' #}//$'\n'}"
         }
-        compcap_list[$__hits[$i]]=$__tmp_value${dscr:+$'\0'"dscr"$'\0'$dscr}
+        if [[ -n $__hits[$i] ]] {
+            compcap_list[$__hits[$i]]=$__tmp_value${dscr:+$'\0'"dscr"$'\0'$dscr}
+        }
     }
 }
 
@@ -83,7 +84,7 @@ function _find_common_prefix() {
 
 function _compcap_pretty_print() {
     local -i max_length=0
-    local -a keys=(${(k)compcap_list}) values=(${(v)compcap_list})
+    local -a keys=(${(k)compcap_list})
 
     # find max length and common prefix of command
     local common_prefix=$keys[1]
@@ -95,10 +96,8 @@ function _compcap_pretty_print() {
     echo -E $common_prefix
     max_length+=3
 
-    # NOTE: If I use ${(kv)compcap_list} here, wd's completion will get error,
-    # the order of k and v will be exchanged, and I don't know why
     local dsuf
-    for k v (${keys:^values}) {
+    for k v (${(kv)compcap_list}) {
         local -A v=("${(@0)v}")
         # add a character to describe the type of the files
         # TODO: can be color?

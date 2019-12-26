@@ -68,7 +68,7 @@ function _fuzzy_select() {
     } else {
         ret=$($FUZZY_COMPLETE_COMMAND ${(z)FUZZY_COMPLETE_OPTIONS} ${query:+-q $query})
     }
-    echo ${ret%%$'\0'*}
+    echo -E ${ret%%$'\0'*}
 }
 
 function _find_common_prefix() {
@@ -78,7 +78,7 @@ function _find_common_prefix() {
             break
         }
     }
-    echo $str1[1,i-1]
+    echo -E $str1[1,i-1]
 }
 
 function _compcap_pretty_print() {
@@ -92,7 +92,7 @@ function _compcap_pretty_print() {
         # _find_common_prefix is slow, don't call it if they already have common prefix
         (( ${i[(i)$common_prefix]} != 1 )) && common_prefix=$(_find_common_prefix $common_prefix $i)
     }
-    echo $common_prefix
+    echo -E $common_prefix
     max_length+=3
 
     # NOTE: If I use ${(kv)compcap_list} here, wd's completion will get error,

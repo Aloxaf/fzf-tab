@@ -57,7 +57,10 @@ function compadd() {
 }
 
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_OPTS:='-1 --ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
+[[ ${FZF_TAB_OPTS:='-1 --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
+(( $+FZF_TAB_QUERY )) || {
+    FZF_TAB_QUERY=(prefix input first)
+}
 
 # select result, first line is query string
 function _fzf_tab_select() {
@@ -66,14 +69,14 @@ function _fzf_tab_select() {
     if [[ $1 == first ]] {
         read -r ret
     } else {
-        ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q $query})
+        ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
     }
     echo -E ${ret%%$'\0'*}
 }
 
 # find longest common prefix of $1 and $2
 function _fzf_tab_common_prefix() {
-    local str1=$1 str2=$2
+    local str1=$1 str2=$2 i
     for (( i=1; i<$#1; i++ )) {
         if [[ $str1[i] != $str2[i] ]] {
             break
@@ -82,21 +85,43 @@ function _fzf_tab_common_prefix() {
     echo -E $str1[1,i-1]
 }
 
+# find valid query string
+function _fzf_tab_find_query_str() {
+    local -a keys=(${(k)compcap})
+    local key qtype query tmp
+    for qtype ($FZF_TAB_QUERY) {
+        if [[ $qtype == prefix ]] {
+            tmp=$keys[1]
+            for key ($keys) {
+                # _fzf_tab_common_prefix is slow, don't call it if they already have common prefix
+                (( ${key[(i)$tmp]} != 1 )) && tmp=$(_fzf_tab_common_prefix $tmp $key)
+            }
+        } elif [[ $qtype == input ]] {
+            local fv=${${(v)compcap}[1]}
+            local -A v=(${(@0)fv})
+            tmp=$v[PREFIX]
+            if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
+                tmp=${tmp/%$v[SUFFIX]}
+            }
+            tmp=${${tmp#$v[hpre]}#$v[apre]}
+        }
+        if (( $FZF_TAB_QUERY[(I)longest] )) {
+            (( $#tmp > $#query )) && query=$tmp
+        } elif [[ -n $tmp ]] {
+            query=$tmp && break
+        }
+    }
+    echo -E $query
+}
+
 # print query string(first line) and matches
 function _fzf_tab_print_matches() {
-    local -a keys=(${(k)compcap})
+    # print query string on the first line
+    _fzf_tab_find_query_str
 
-    # find longest common prefix of command
-    local common_prefix=$keys[1]
-    for i ($keys) {
-        # _fzf_tab_common_prefix is slow, don't call it if they already have common prefix
-        (( ${i[(i)$common_prefix]} != 1 )) && common_prefix=$(_fzf_tab_common_prefix $common_prefix $i)
-    }
-    echo -E $common_prefix
-
-    local dsuf
-    for k v (${(kv)compcap}) {
-        local -A v=("${(@0)v}")
+    local dsuf k _v
+    for k _v (${(kv)compcap}) {
+        local -A v=("${(@0)_v}")
         # add a character to describe the type of the files
         # TODO: can be color?
         dsuf=
@@ -115,7 +140,7 @@ function _fzf_tab_print_matches() {
 # TODO: can I use `compadd` to apply my choice?
 function fzf-tab-complete() {
     local -A compcap
-    local choice
+    local choice query
 
     IN_FZF_TAB=1
     zle ${fzf_tab_default_completion:-expand-or-complete}
@@ -126,7 +151,7 @@ function fzf-tab-complete() {
     } elif (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
-        choice=$(_fzf_tab_print_matches | sort | _fzf_tab_select)
+        choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort } | _fzf_tab_select)
     }
 
     if [[ -n $choice ]] {

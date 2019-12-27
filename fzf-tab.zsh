@@ -29,14 +29,14 @@ function compadd() {
         return
     }
 
-    # store these values in compcap_list
+    # store these values in compcap
     local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile)
-    local expanded __tmp_value="<"$'\0'">" # ensure that compcap_list's key will always exists
+    local expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
-        expanded=${(P)keys[$i]}
+        expanded=${(P)keys[i]}
         if [[ -n $expanded ]] {
-            __tmp_value+=$'\0'$keys[$i]$'\0'$expanded
+            __tmp_value+=$'\0'$keys[i]$'\0'$expanded
         }
     }
 
@@ -52,25 +52,27 @@ function compadd() {
         } else {
             continue
         }
-        compcap_list[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
+        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     }
 }
 
-[[ ${FUZZY_COMPLETE_COMMAND:='fzf'} ]]
-[[ ${FUZZY_COMPLETE_OPTIONS:='-1 --ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
+[[ ${FZF_TAB_COMMAND:='fzf'} ]]
+[[ ${FZF_TAB_OPTS:='-1 --ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
 
-function _fuzzy_select() {
+# select result, first line is query string
+function _fzf_tab_select() {
     local query ret
     read -r query
     if [[ $1 == first ]] {
         read -r ret
     } else {
-        ret=$($FUZZY_COMPLETE_COMMAND ${(z)FUZZY_COMPLETE_OPTIONS} ${query:+-q $query})
+        ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q $query})
     }
     echo -E ${ret%%$'\0'*}
 }
 
-function _find_common_prefix() {
+# find longest common prefix of $1 and $2
+function _fzf_tab_common_prefix() {
     local str1=$1 str2=$2
     for (( i=1; i<$#1; i++ )) {
         if [[ $str1[i] != $str2[i] ]] {
@@ -80,19 +82,20 @@ function _find_common_prefix() {
     echo -E $str1[1,i-1]
 }
 
-function _compcap_pretty_print() {
-    local -a keys=(${(k)compcap_list})
+# print query string(first line) and matches
+function _fzf_tab_print_matches() {
+    local -a keys=(${(k)compcap})
 
     # find longest common prefix of command
     local common_prefix=$keys[1]
     for i ($keys) {
-        # _find_common_prefix is slow, don't call it if they already have common prefix
-        (( ${i[(i)$common_prefix]} != 1 )) && common_prefix=$(_find_common_prefix $common_prefix $i)
+        # _fzf_tab_common_prefix is slow, don't call it if they already have common prefix
+        (( ${i[(i)$common_prefix]} != 1 )) && common_prefix=$(_fzf_tab_common_prefix $common_prefix $i)
     }
     echo -E $common_prefix
 
     local dsuf
-    for k v (${(kv)compcap_list}) {
+    for k v (${(kv)compcap}) {
         local -A v=("${(@0)v}")
         # add a character to describe the type of the files
         # TODO: can be color?
@@ -110,24 +113,24 @@ function _compcap_pretty_print() {
 }
 
 # TODO: can I use `compadd` to apply my choice?
-function fuzzy-complete() {
-    local -A compcap_list
+function fzf-tab-complete() {
+    local -A compcap
     local choice
 
     IN_FZF_TAB=1
     zle expand-or-complete
     IN_FZF_TAB=0
 
-    if (( $#compcap_list == 0 )) {
+    if (( $#compcap == 0 )) {
         return
-    } elif (( $#compcap_list == 1 )) {
-        choice=$(_compcap_pretty_print | _fuzzy_select first)
+    } elif (( $#compcap == 1 )) {
+        choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
-        choice=$(_compcap_pretty_print | sort | _fuzzy_select)
+        choice=$(_fzf_tab_print_matches | sort | _fzf_tab_select)
     }
 
     if [[ -n $choice ]] {
-        local -A v=("${(@0)${compcap_list[$choice]}}")
+        local -A v=("${(@0)${compcap[$choice]}}")
         # if RBUFFER doesn't starts with SUFFIX, the completion position is at LBUFFER
         if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
             LBUFFER=${LBUFFER/%$v[SUFFIX]}
@@ -143,14 +146,14 @@ function fuzzy-complete() {
     zle redisplay
 }
 
-zle -N fuzzy-complete
+zle -N fzf-tab-complete
 
-function disable-fuzzy-complete() {
+function disable-fzf-tab() {
     bindkey '^I' expand-or-complete
 }
 
-function enable-fuzzy-complete() {
-    bindkey '^I' fuzzy-complete
+function enable-fzf-tab() {
+    bindkey '^I' fzf-tab-complete
 }
 
-enable-fuzzy-complete
+enable-fzf-tab

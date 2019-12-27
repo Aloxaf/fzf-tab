@@ -44,10 +44,10 @@ Just press TAB as usual~
 
 Some variables:
 
-- `FUZZY_COMPLETE_COMMAND`: Fuzzy search program 
-- `FUZZY_COMPLETE_OPTIONS`: Its parameters
+- `FZF_TAB_COMMAND`: Fuzzy search program 
+- `FZF_TAB_OPTS`: Its parameters
 
 Some commands:
 
-- `disable-fuzzy-complete`: Use it when you come across some bugs
-- `enable-fuzzy-complete`: Use it when fzf-tab doesn't initialize properly.
+- `disable-fzf-tab`: Use it when you come across some bugs
+- `enable-fzf-tab`: Use it when fzf-tab doesn't initialize properly.

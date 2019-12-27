@@ -118,7 +118,7 @@ function fzf-tab-complete() {
     local choice
 
     IN_FZF_TAB=1
-    zle expand-or-complete
+    zle ${fzf_tab_default_completion:-expand-or-complete}
     IN_FZF_TAB=0
 
     if (( $#compcap == 0 )) {
@@ -153,6 +153,10 @@ function disable-fzf-tab() {
 }
 
 function enable-fzf-tab() {
+    local binding=$(bindkey '^I')
+    if [[ ! $binding =~ "undefined-key" && $binding != fzf-tab-complete ]] {
+        fzf_tab_default_completion=$binding[(w)2]
+    }
     bindkey '^I' fzf-tab-complete
 }
 

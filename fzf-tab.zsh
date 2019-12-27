@@ -119,17 +119,17 @@ function _fzf_tab_print_matches() {
     # print query string on the first line
     _fzf_tab_find_query_str
 
-    local dsuf k _v
+    local dsuf k _v filepath
     for k _v (${(kv)compcap}) {
         local -A v=("${(@0)_v}")
         # add a character to describe the type of the files
         # TODO: can be color?
         dsuf=
         if [[ -n $v[isfile] ]] {
-            # FIXME: a directory with '*|['... in its name can not be detected
-            if [[ -L ${~${v[hpre]}}$k ]] {
+            filepath=${(Q)~${v[hpre]}}${(Q)k}
+            if [[ -L $filepath ]] {
                 dsuf=@
-            } elif [[ -d ${~${v[hpre]}}$k ]] {
+            } elif [[ -d $filepath ]] {
                 dsuf=/
             }
         }
@@ -163,7 +163,7 @@ function fzf-tab-complete() {
             RBUFFER=${RBUFFER/#$v[SUFFIX]}
         }
         # don't add slash if have hsuf, so that /u/l/b can be expanded to /usr/lib/b not /usr/lib//b
-        if [[ -z $v[hsuf] && -d ${~${v[hpre]}}$choice ]] {
+        if [[ -z $v[hsuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
             v[word]+=/
         }
         LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]

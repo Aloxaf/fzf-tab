@@ -16,7 +16,7 @@ function compadd() {
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
     if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
         builtin compadd "$@"
-        return $?
+        return
     }
 
     # store matches in $__hits and descriptions in $__dscr
@@ -54,6 +54,8 @@ function compadd() {
         }
         compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     }
+    # tell zsh that the match is successful, but try not to change the buffer
+    builtin compadd -Q -U -S "$SUFFIX" -- "$PREFIX"
 }
 
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
@@ -140,15 +142,22 @@ function _fzf_tab_print_matches() {
 # TODO: can I use `compadd` to apply my choice?
 function fzf-tab-complete() {
     local -A compcap
-    local choice query
+    local choice query b_BUFFER b_CURSOR
 
+    b_BUFFER=$BUFFER && b_CURSOR=$CURSOR
     IN_FZF_TAB=1
     zle ${fzf_tab_default_completion:-expand-or-complete}
     IN_FZF_TAB=0
 
     if (( $#compcap == 0 )) {
         return
-    } elif (( $#compcap == 1 )) {
+    }
+
+    # expand-or-complete may change BUFFER
+    # recover it before start our complete
+    BUFFER=$b_BUFFER && CURSOR=$b_CURSOR
+    zle redisplay
+    if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
         choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort } | _fzf_tab_select)

@@ -63,6 +63,13 @@ Some commands:
 
 - `enable-fzf-tab`: Use it when fzf-tab doesn't initialize properly.
 
+## Difference from other plugins
+
+fzf-tab doesn't do "complete", it just shows your results of the default completion system.
+
+So it works EVERYWHERE (variables, function names, directory stack, in-word completion, etc.).
+And most of your configure for default completion system is still valid.
+
 ## Compatibility with other plugins
 
 Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completion.zsh](https://github.com/junegunn/fzf/blob/master/shell/completion.zsh) or [ohmyzsh/lib/completion.zsh](https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/completion.zsh#L61-L73).

@@ -172,7 +172,7 @@ function fzf-tab-complete() {
             RBUFFER=${RBUFFER/#$v[SUFFIX]}
         }
         # don't add slash if have hsuf, so that /u/l/b can be expanded to /usr/lib/b not /usr/lib//b
-        if [[ -z $v[hsuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
+        if [[ -z $v[hsuf] && -z $v[asuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
             v[word]+=/
         }
         LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]

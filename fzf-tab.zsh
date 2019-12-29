@@ -3,15 +3,11 @@ zmodload zsh/zutil
 # thanks Valodim/zsh-capture-completion
 function compadd() {
     # parse all options
-    typeset -A apre hpre ipre hsuf asuf isuf dscrs arg_J arg_V \
-         arg_X arg_x arg_r arg_R arg_W arg_F arg_M arg_O arg_A arg_D arg_E
-    local flag_a flag_k flag_l flag_o flag_1 flag_2 flag_q isfile \
-         flag_e flag_Q flag_n flag_U flag_C
-    zparseopts -E P:=apre p:=hpre i:=ipre S:=asuf s:=hsuf I:=isuf d:=dscrs \
-        J:=arg_J V:=arg_V X:=arg_X x:=arg_x r:=arg_r R:=arg_R W:=arg_W F:=arg_F \
-        M:=arg_M O:=arg_O A:=arg_A D:=arg_D E:=arg_E \
-        a=flag_a k=flag_k l=flag_l o=flag_o 1=flag_1 2=flag_2 q=flag_q \
-        f=isfile e=flag_e Q=flag_Q n=flag_n U=flag_U C=flag_C
+    local -A apre hpre ipre hsuf asuf isuf dscrs arg_O arg_A arg_D
+    local isfile _opts
+    zparseopts -E -a _opts P:=apre p:=hpre i:=ipre S:=asuf s:=hsuf I:=isuf d:=dscrs \
+        O:=arg_O A:=arg_A D:=arg_D f=isfile J: V: X: x: r: R: W: F: M: E: \
+        a k l o 1 2 q e Q n U C
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
     if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
@@ -20,7 +16,7 @@ function compadd() {
     }
 
     # store matches in $__hits and descriptions in $__dscr
-    typeset -a __hits __dscr
+    local -a __hits __dscr
     if (( $#dscrs == 1 )) {
         __dscr=( "${(@P)${(v)dscrs}}" )
     }
@@ -160,9 +156,10 @@ function fzf-tab-complete() {
     if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
-        choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort } | _fzf_tab_select)
+        choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
     }
 
+    # for reference: Src/Zle/compresult.c:do_single:1129
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
         # if RBUFFER doesn't starts with SUFFIX, the completion position is at LBUFFER
@@ -175,7 +172,14 @@ function fzf-tab-complete() {
         if [[ -z $v[hsuf] && -z $v[asuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
             v[word]+=/
         }
-        LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
+        # a temporarily fix for issue #6
+        # there should be a better solution
+        if [[ -n ${(M)LBUFFER%$v[PREFIX]} ]] {
+            LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
+        } else {
+            local to_insert=$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
+            LBUFFER=$LBUFFER${to_insert/#$v[PREFIX]}
+        }
     }
     zle redisplay
 }

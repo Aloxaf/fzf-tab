@@ -96,7 +96,7 @@ function _fzf_tab_find_query_str() {
             }
         } elif [[ $qtype == input ]] {
             local fv=${${(v)compcap}[1]}
-            local -A v=(${(@0)fv})
+            local -A v=("${(@0)fv}")
             tmp=$v[PREFIX]
             if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
                 tmp=${tmp/%$v[SUFFIX]}

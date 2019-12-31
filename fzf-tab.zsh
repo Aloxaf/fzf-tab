@@ -8,6 +8,7 @@ function compadd() {
     zparseopts -E -a _opts P:=apre p:=hpre i:=ipre S:=asuf s:=hsuf I:=isuf d:=dscrs \
         O:=arg_O A:=arg_A D:=arg_D f=isfile J: V: X: x: r: R: W: F: M: E: \
         a k l o 1 2 q e Q n U C
+    zparseopts -E -a _opts P: p: i: S: s: U: r: R: M+: W: Q f q e
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
     if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
@@ -26,7 +27,7 @@ function compadd() {
     }
 
     # store these values in compcap
-    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile)
+    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile IPREFIX ISUFFIX QIPREFIX QISUFFIX)
     local expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
@@ -48,7 +49,7 @@ function compadd() {
         } else {
             continue
         }
-        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
+        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     }
     # tell zsh that the match is successful, but try not to change the buffer
     builtin compadd -Q -U -S "$SUFFIX" -- "$PREFIX"
@@ -136,51 +137,41 @@ function _fzf_tab_print_matches() {
 }
 
 # TODO: can I use `compadd` to apply my choice?
-function fzf-tab-complete() {
+function _fzf_tab_complete() {
     local -A compcap
-    local choice query b_BUFFER b_CURSOR
+    local choice query
 
-    b_BUFFER=$BUFFER && b_CURSOR=$CURSOR
     IN_FZF_TAB=1
-    zle ${fzf_tab_default_completion:-expand-or-complete}
+    _main_complete
     IN_FZF_TAB=0
 
     if (( $#compcap == 0 )) {
         return
     }
 
-    # expand-or-complete may change BUFFER
-    # recover it before start our complete
-    BUFFER=$b_BUFFER && CURSOR=$b_CURSOR
-    zle redisplay
     if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
+        #echoti sc
         choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
+        #echoti rc
+        #echoti cuu1
     }
 
-    # for reference: Src/Zle/compresult.c:do_single:1129
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
-        # if RBUFFER doesn't starts with SUFFIX, the completion position is at LBUFFER
-        if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
-            LBUFFER=${LBUFFER/%$v[SUFFIX]}
-        } else {
-            RBUFFER=${RBUFFER/#$v[SUFFIX]}
-        }
-        # don't add slash if have hsuf, so that /u/l/b can be expanded to /usr/lib/b not /usr/lib//b
-        if [[ -z $v[hsuf] && -z $v[asuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
-            v[word]+=/
-        }
-        # a temporarily fix for issue #6
-        # there should be a better solution
-        if [[ -n ${(M)LBUFFER%$v[PREFIX]} ]] {
-            LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
-        } else {
-            local to_insert=$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
-            LBUFFER=$LBUFFER${to_insert/#$v[PREFIX]}
-        }
+        local -a args=("${(@ps:\1:)v[args]}")
+        local -a word=($v[word])
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] builtin compadd "$args[@]" -a word
+        compstate[insert]=2
+        compstate[list]=
     }
+}
+
+zle -C _fzf_tab_complete complete-word _fzf_tab_complete
+
+function fzf-tab-complete() {
+    zle _fzf_tab_complete
     zle redisplay
 }
 

@@ -77,3 +77,7 @@ Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completi
 By default, fzf-tab will call the widget previously bound to "^I" to get the completion list. So there is no problem in most cases, unless fzf-tab is initialized before a plugin which doesn't handle the previous binding properly.
 
 So if you find your fzf-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
+
+## Related projects
+
+- https://github.com/lincheney/fzf-tab-completion (fzf tab completion for zsh, bash and GNU readline apps )

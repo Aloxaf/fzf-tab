@@ -164,9 +164,12 @@ function _fzf_tab_complete() {
         } else {
             IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd -Q -- $v[word]
         }
+        # the first result is '' (see the last line of compadd)
         compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
-        compstate[list]=
+    } else {
+        compstate[insert]=
     }
+    compstate[list]=
 }
 
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete

@@ -48,6 +48,8 @@ Some variables:
 
 - `FZF_TAB_OPTS`: Its parameters
 
+- `FZF_TAB_INSERT_SPACE`: If set, fzf-tab will automatically appending a space after completion.
+
 - `FZF_TAB_QUERY`: Strategy for generating query strings:
 
     - `input`: just like zsh's default behavior

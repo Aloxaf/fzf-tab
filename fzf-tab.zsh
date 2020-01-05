@@ -51,10 +51,11 @@ function compadd() {
         }
         compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     }
-    # tell zsh that the match is successful, but try not to change the buffer
-    builtin compadd -Q -U -S "$SUFFIX" -- "$PREFIX"
+    # tell zsh that the match is successful
+    builtin compadd -Q -U ''
 }
 
+[[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
 [[ ${FZF_TAB_OPTS:='-1 --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
 (( $+FZF_TAB_QUERY )) || {
@@ -97,7 +98,7 @@ function _fzf_tab_find_query_str() {
             }
         } elif [[ $qtype == input ]] {
             local fv=${${(v)compcap}[1]}
-            local -A v=(${(@0)fv})
+            local -A v=("${(@0)fv}")
             tmp=$v[PREFIX]
             if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
                 tmp=${tmp/%$v[SUFFIX]}
@@ -152,18 +153,18 @@ function _fzf_tab_complete() {
     if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
-        #echoti sc
         choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
-        #echoti rc
-        #echoti cuu1
     }
 
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
-        local -a word=($v[word])
-        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] builtin compadd "$args[@]" -a word
-        compstate[insert]=2
+        if [[ -n $args[1] ]] {
+            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "$args[@]" -Q -- $v[word]
+        } else {
+            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd -Q -- $v[word]
+        }
+        compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
         compstate[list]=
     }
 }

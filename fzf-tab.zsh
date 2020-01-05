@@ -3,15 +3,14 @@ zmodload zsh/zutil
 # thanks Valodim/zsh-capture-completion
 function compadd() {
     # parse all options
-    local -A apre hpre ipre hsuf asuf isuf dscrs arg_O arg_A arg_D
-    local isfile _opts
-    zparseopts -E -a _opts P:=apre p:=hpre i:=ipre S:=asuf s:=hsuf I:=isuf d:=dscrs \
-        O:=arg_O A:=arg_A D:=arg_D f=isfile J: V: X: x: r: R: W: F: M: E: \
-        a k l o 1 2 q e Q n U C
-    zparseopts -E -a _opts P: p: i: S: s: U: r: R: M+: W: Q f q e
+    local -A apre hpre dscrs _oad
+    local -a isfile _opts __
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs O:=_oad A:=_oad D:=_oad f=isfile \
+        i: S: s: I: X: x: r: R: W: F: M+: E: q e Q n U C \
+        J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-    if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
+    if (( $#_oad != 0 || ! IN_FZF_TAB )) {
         builtin compadd "$@"
         return
     }
@@ -27,7 +26,7 @@ function compadd() {
     }
 
     # store these values in compcap
-    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile IPREFIX ISUFFIX QIPREFIX QISUFFIX)
+    local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
     local expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
@@ -36,6 +35,7 @@ function compadd() {
             __tmp_value+=$'\0'$keys[i]$'\0'$expanded
         }
     }
+    _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -156,6 +156,8 @@ function _fzf_tab_complete() {
         choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
     }
 
+    compstate[insert]=
+    compstate[list]=
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
@@ -166,10 +168,7 @@ function _fzf_tab_complete() {
         }
         # the first result is '' (see the last line of compadd)
         compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
-    } else {
-        compstate[insert]=
     }
-    compstate[list]=
 }
 
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete

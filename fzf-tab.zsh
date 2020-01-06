@@ -57,7 +57,7 @@ function compadd() {
 
 [[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
+[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'} ]]
 (( $+FZF_TAB_QUERY )) || {
     FZF_TAB_QUERY=(prefix input first)
 }

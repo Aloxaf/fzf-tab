@@ -52,7 +52,7 @@ function compadd() {
         compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     }
     # tell zsh that the match is successful
-    builtin compadd -Q -U ''
+    builtin compadd -Q -U '_FZF_TAB_IGNORE_'
 }
 
 [[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
@@ -71,7 +71,7 @@ function _fzf_tab_select() {
     } else {
         ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
     }
-    echo -E ${ret%%$'\0'*}
+    printf "%s\n" ${${(f)ret}%%$'\0'*}
 }
 
 # find longest common prefix of $1 and $2
@@ -140,7 +140,8 @@ function _fzf_tab_print_matches() {
 # TODO: can I use `compadd` to apply my choice?
 function _fzf_tab_complete() {
     local -A compcap
-    local choice query
+    local -a choices
+    local query choice
 
     IN_FZF_TAB=1
     _main_complete
@@ -151,14 +152,15 @@ function _fzf_tab_complete() {
     }
 
     if (( $#compcap == 1 )) {
-        choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
+        choices=("${(f)$(_fzf_tab_print_matches | _fzf_tab_select first)}")
     } else {
-        choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
+        choices=("${(f)$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)}")
     }
 
     compstate[insert]=
     compstate[list]=
-    if [[ -n $choice ]] {
+
+    for choice (${choices}) {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         if [[ -n $args[1] ]] {
@@ -166,9 +168,10 @@ function _fzf_tab_complete() {
         } else {
             IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd -Q -- $v[word]
         }
-        # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
     }
+    # the first result is '' (see the last line of compadd)
+    (( $#choices == 1 )) && compstate[insert]='1'${FZF_TAB_INSERT_SPACE:+' '}
+    (( $#choices > 1 )) && compstate[insert]=all
 }
 
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete

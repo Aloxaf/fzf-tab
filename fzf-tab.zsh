@@ -60,39 +60,25 @@ function compadd() {
 : ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
-# select result, first line is query string
-function _fzf_tab_select() {
-    local query ret
-    read -r query
-    if [[ $1 == first ]] {
-        read -r ret
-    } else {
-        ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
-    }
-    echo -E - ${ret%%$'\0'*}
-}
-
-# find longest common prefix of $1 and $2
-function _fzf_tab_common_prefix() {
-    local str1=$1 str2=$2 i
-    for (( i=1; i<$#1; i++ )) {
-        if [[ $str1[i] != $str2[i] ]] {
-            break
-        }
-    }
-    echo -E - $str1[1,i-1]
-}
-
-# find valid query string
+# sets `query` to the valid query string
 function _fzf_tab_find_query_str() {
-    local -a keys=(${(k)compcap})
-    local key qtype query tmp
+    local key qtype tmp
+    typeset -g query=
     for qtype ($FZF_TAB_QUERY) {
         if [[ $qtype == prefix ]] {
+            # find the longest common prefix among ${(k)compcap}
+            local -a keys=(${(k)compcap})
             tmp=$keys[1]
-            for key ($keys) {
-                # _fzf_tab_common_prefix is slow, don't call it if they already have common prefix
-                (( ${key[(i)$tmp]} != 1 )) && tmp=$(_fzf_tab_common_prefix $tmp $key)
+            local MATCH match mbegin mend prefix=(${(s::)tmp})
+            for key (${keys:1}) {
+                (( $#tmp )) || break
+                [[ $key == $tmp* ]] && continue
+                # interpose characters from the current common prefix and $key and see how
+                # many pairs of equal characters we get at the start of the resulting string
+                [[ ${(j::)${${(s::)key[1,$#tmp]}:^prefix}} =~ '^(((.)\3)*)' ]]
+                # truncate common prefix and maintain loop invariant: ${(s::)tmp} == $prefix
+                tmp[$#MATCH/2+1,-1]=""
+                prefix[$#MATCH/2+1,-1]=()
             }
         } elif [[ $qtype == input ]] {
             local fv=${${(v)compcap}[1]}
@@ -109,15 +95,12 @@ function _fzf_tab_find_query_str() {
             query=$tmp && break
         }
     }
-    echo -E - $query
 }
 
-# print query string(first line) and matches
-function _fzf_tab_print_matches() {
-    # print query string on the first line
-    _fzf_tab_find_query_str
-
+# pupulates array `candidates` with completion candidates
+function _fzf_tab_get_candidates() {
     local dsuf k _v filepath
+    typeset -ga candidates=()
     for k _v (${(kv)compcap}) {
         local -A v=("${(@0)_v}")
         # add a character to describe the type of the files
@@ -131,27 +114,31 @@ function _fzf_tab_print_matches() {
                 dsuf=/
             }
         }
-        echo -E - $k$'\0'$dsuf
+        candidates+=$k$'\0'$dsuf
     }
+    local LC_ALL=C
+    candidates=("${(@on)candidates}")
 }
 
 # TODO: can I use `compadd` to apply my choice?
 function _fzf_tab_complete() {
     local -A compcap
-    local choice query space
+    local choice
 
     IN_FZF_TAB=1
     _main_complete
     IN_FZF_TAB=0
 
-    if (( $#compcap == 0 )) {
-        return
-    }
-
-    if (( $#compcap == 1 )) {
-        choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
-    } else {
-        choice=$(_fzf_tab_print_matches | { read -r query; echo -E - $query; LC_ALL=C sort -n } | _fzf_tab_select)
+    case $#compcap in
+      0) return;;
+      1) choice=${(k)compcap};;
+      *)
+        local query candidates=()
+        _fzf_tab_find_query_str  # sets `query`
+        _fzf_tab_get_candidates  # sets `candidates`
+        choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+        choice=${choice%%$'\0'}
+      ;;
     }
 
     compstate[insert]=
@@ -160,11 +147,9 @@ function _fzf_tab_complete() {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
-        if (( FZF_TAB_INSERT_SPACE )) && [[ $RBUFFER != ' '* ]] {
-            space=' '
-        }
         # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'$space
+        compstate[insert]='2'
+        (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
     }
 }
 

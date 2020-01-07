@@ -55,12 +55,10 @@ function compadd() {
     builtin compadd -Q -U ''
 }
 
-[[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
-[[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'} ]]
-(( $+FZF_TAB_QUERY )) || {
-    FZF_TAB_QUERY=(prefix input first)
-}
+: ${FZF_TAB_INSERT_SPACE:='1'}
+: ${FZF_TAB_COMMAND:='fzf'}
+: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'}
+: ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # select result, first line is query string
 function _fzf_tab_select() {

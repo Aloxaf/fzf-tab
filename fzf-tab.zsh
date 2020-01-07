@@ -161,11 +161,7 @@ function _fzf_tab_complete() {
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
-        if [[ -n $args[1] ]] {
-            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "$args[@]" -Q -- $v[word]
-        } else {
-            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd -Q -- $v[word]
-        }
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
         # the first result is '' (see the last line of compadd)
         compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
     }

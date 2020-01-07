@@ -51,13 +51,19 @@ function compadd() {
         }
         compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     }
-    # tell zsh that the match is successful
-    builtin compadd -Q -U '_FZF_TAB_IGNORE_'
+    # hack: pretend to have done a successful compadd ( see _alternative:76 )
+    nm=-1
+}
+
+function _hook() {
+    functions[${1}_bak]=$functions[$1]
+    eval "$1() { ${1}_bak \"\$@\"; ret=\$?; echo $1:\$ret; return \$ret }"
 }
 
 [[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'} ]]
+[[ ${FZF_TAB_BIND:='tab:down,ctrl-j:accept,ctrl-space:toggle,change:top'} ]]
+[[ ${FZF_TAB_OPTS:="--cycle --layout=reverse --tiebreak=begin --bind $FZF_TAB_BIND --height=15"} ]]
 (( $+FZF_TAB_QUERY )) || {
     FZF_TAB_QUERY=(prefix input first)
 }
@@ -164,7 +170,7 @@ function _fzf_tab_complete() {
         local -a args=("${(@ps:\1:)v[args]}")
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
     }
-    # the first result is '' (see the last line of compadd)
+
     (( $#choices == 1 )) && compstate[insert]='1'${FZF_TAB_INSERT_SPACE:+' '}
     (( $#choices > 1 )) && compstate[insert]=all
 }

@@ -42,11 +42,13 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 Just press TAB as usual~
 
-Some variables:
+Some configurable variables:
 
 - `FZF_TAB_COMMAND`: The fuzzy search program
 
-- `FZF_TAB_OPTS`: Its parameters
+- `FZF_TAB_OPTS`: Default parameters
+
+- `FZF_TAB_BINDS`: Default keybindings
 
 - `FZF_TAB_INSERT_SPACE`: If set, fzf-tab will automatically appending a space after completion.
 

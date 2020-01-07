@@ -55,13 +55,11 @@ function compadd() {
     nm=-1
 }
 
-[[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
-[[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_BIND:='tab:down,ctrl-j:accept,ctrl-space:toggle,change:top'} ]]
-[[ ${FZF_TAB_OPTS:="--cycle --layout=reverse --tiebreak=begin --bind $FZF_TAB_BIND --height=15"} ]]
-(( $+FZF_TAB_QUERY )) || {
-    FZF_TAB_QUERY=(prefix input first)
-}
+: ${FZF_TAB_INSERT_SPACE:='1'}
+: ${FZF_TAB_COMMAND:='fzf'}
+: ${FZF_TAB_BIND='tab:down,ctrl-j:accept,ctrl-space:toggle,change:top'}
+: ${FZF_TAB_OPTS="--cycle --layout=reverse --tiebreak=begin --bind $FZF_TAB_BIND --height=15"}
+: ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # select result, first line is query string
 function _fzf_tab_select() {
@@ -142,7 +140,7 @@ function _fzf_tab_print_matches() {
 function _fzf_tab_complete() {
     local -A compcap
     local -a choices
-    local query choice
+    local choice query space
 
     IN_FZF_TAB=1
     _main_complete
@@ -166,7 +164,11 @@ function _fzf_tab_complete() {
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
     }
 
-    (( $#choices == 1 )) && compstate[insert]='1'${FZF_TAB_INSERT_SPACE:+' '}
+    if (( FZF_TAB_INSERT_SPACE )) && [[ $RBUFFER != ' '* ]] {
+        space=' '
+    }
+
+    (( $#choices == 1 )) && compstate[insert]="1$space"
     (( $#choices > 1 )) && compstate[insert]=all
 }
 

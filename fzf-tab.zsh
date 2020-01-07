@@ -71,7 +71,7 @@ function _fzf_tab_select() {
     } else {
         ret=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
     }
-    echo -E ${ret%%$'\0'*}
+    echo -E - ${ret%%$'\0'*}
 }
 
 # find longest common prefix of $1 and $2
@@ -82,7 +82,7 @@ function _fzf_tab_common_prefix() {
             break
         }
     }
-    echo -E $str1[1,i-1]
+    echo -E - $str1[1,i-1]
 }
 
 # find valid query string
@@ -111,7 +111,7 @@ function _fzf_tab_find_query_str() {
             query=$tmp && break
         }
     }
-    echo -E $query
+    echo -E - $query
 }
 
 # print query string(first line) and matches
@@ -133,7 +133,7 @@ function _fzf_tab_print_matches() {
                 dsuf=/
             }
         }
-        echo -E $k$'\0'$dsuf
+        echo -E - $k$'\0'$dsuf
     }
 }
 
@@ -153,7 +153,7 @@ function _fzf_tab_complete() {
     if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
-        choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
+        choice=$(_fzf_tab_print_matches | { read -r query; echo -E - $query; LC_ALL=C sort -n } | _fzf_tab_select)
     }
 
     compstate[insert]=

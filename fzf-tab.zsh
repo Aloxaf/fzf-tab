@@ -82,7 +82,7 @@ function _fzf_tab_common_prefix() {
             break
         }
     }
-    echo -E $str1[1,i-1]
+    echo -E - $str1[1,i-1]
 }
 
 # find valid query string
@@ -111,7 +111,7 @@ function _fzf_tab_find_query_str() {
             query=$tmp && break
         }
     }
-    echo -E $query
+    echo -E - $query
 }
 
 # print query string(first line) and matches
@@ -133,7 +133,7 @@ function _fzf_tab_print_matches() {
                 dsuf=/
             }
         }
-        echo -E $k$'\0'$dsuf
+        echo -E - $k$'\0'$dsuf
     }
 }
 
@@ -154,20 +154,15 @@ function _fzf_tab_complete() {
     if (( $#compcap == 1 )) {
         choices=("${(f)$(_fzf_tab_print_matches | _fzf_tab_select first)}")
     } else {
-        choices=("${(f)$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)}")
+        choices=("${(f)$(_fzf_tab_print_matches | { read -r query; echo -E $query; LC_ALL=C sort -n } | _fzf_tab_select)}")
     }
 
     compstate[insert]=
     compstate[list]=
-
     for choice (${choices}) {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
-        if [[ -n $args[1] ]] {
-            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "$args[@]" -Q -- $v[word]
-        } else {
-            IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd -Q -- $v[word]
-        }
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
     }
     # the first result is '' (see the last line of compadd)
     (( $#choices == 1 )) && compstate[insert]='1'${FZF_TAB_INSERT_SPACE:+' '}

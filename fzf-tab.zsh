@@ -3,14 +3,14 @@ zmodload zsh/zutil
 # thanks Valodim/zsh-capture-completion
 function compadd() {
     # parse all options
-    local -A apre hpre ipre hsuf asuf isuf dscrs arg_O arg_A arg_D
-    local isfile _opts
-    zparseopts -E -a _opts P:=apre p:=hpre i:=ipre S:=asuf s:=hsuf I:=isuf d:=dscrs \
-        O:=arg_O A:=arg_A D:=arg_D f=isfile J: V: X: x: r: R: W: F: M: E: \
-        a k l o 1 2 q e Q n U C
+    local -A apre hpre dscrs _oad
+    local -a isfile _opts __
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs O:=_oad A:=_oad D:=_oad f=isfile \
+        i: S: s: I: X: x: r: R: W: F: M+: E: q e Q n U C \
+        J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-    if (( $#arg_O || $#arg_A || $#arg_D || ! IN_FZF_TAB )) {
+    if (( $#_oad != 0 || ! IN_FZF_TAB )) {
         builtin compadd "$@"
         return
     }
@@ -26,7 +26,7 @@ function compadd() {
     }
 
     # store these values in compcap
-    local -a keys=(ipre apre hpre hsuf asuf isuf PREFIX SUFFIX isfile)
+    local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
     local expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
@@ -35,6 +35,7 @@ function compadd() {
             __tmp_value+=$'\0'$keys[i]$'\0'$expanded
         }
     }
+    _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -48,14 +49,15 @@ function compadd() {
         } else {
             continue
         }
-        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
+        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     }
-    # tell zsh that the match is successful, but try not to change the buffer
-    builtin compadd -Q -U -S "$SUFFIX" -- "$PREFIX"
+    # tell zsh that the match is successful
+    builtin compadd -Q -U ''
 }
 
+[[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
-[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=50%'} ]]
+[[ ${FZF_TAB_OPTS:='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept --height=15'} ]]
 (( $+FZF_TAB_QUERY )) || {
     FZF_TAB_QUERY=(prefix input first)
 }
@@ -136,51 +138,39 @@ function _fzf_tab_print_matches() {
 }
 
 # TODO: can I use `compadd` to apply my choice?
-function fzf-tab-complete() {
+function _fzf_tab_complete() {
     local -A compcap
-    local choice query b_BUFFER b_CURSOR
+    local choice query
 
-    b_BUFFER=$BUFFER && b_CURSOR=$CURSOR
     IN_FZF_TAB=1
-    zle ${fzf_tab_default_completion:-expand-or-complete}
+    _main_complete
     IN_FZF_TAB=0
 
     if (( $#compcap == 0 )) {
         return
     }
 
-    # expand-or-complete may change BUFFER
-    # recover it before start our complete
-    BUFFER=$b_BUFFER && CURSOR=$b_CURSOR
-    zle redisplay
     if (( $#compcap == 1 )) {
         choice=$(_fzf_tab_print_matches | _fzf_tab_select first)
     } else {
         choice=$(_fzf_tab_print_matches | { read -r query; echo -E $query; sort -n } | _fzf_tab_select)
     }
 
-    # for reference: Src/Zle/compresult.c:do_single:1129
+    compstate[insert]=
+    compstate[list]=
     if [[ -n $choice ]] {
         local -A v=("${(@0)${compcap[$choice]}}")
-        # if RBUFFER doesn't starts with SUFFIX, the completion position is at LBUFFER
-        if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )) {
-            LBUFFER=${LBUFFER/%$v[SUFFIX]}
-        } else {
-            RBUFFER=${RBUFFER/#$v[SUFFIX]}
-        }
-        # don't add slash if have hsuf, so that /u/l/b can be expanded to /usr/lib/b not /usr/lib//b
-        if [[ -z $v[hsuf] && -z $v[asuf] && -d ${(Q)~${v[hpre]}}${(Q)choice} ]] {
-            v[word]+=/
-        }
-        # a temporarily fix for issue #6
-        # there should be a better solution
-        if [[ -n ${(M)LBUFFER%$v[PREFIX]} ]] {
-            LBUFFER=${LBUFFER/%$v[PREFIX]}$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
-        } else {
-            local to_insert=$v[ipre]$v[apre]$v[hpre]$v[word]$v[hsuf]$v[asuf]$v[isuf]
-            LBUFFER=$LBUFFER${to_insert/#$v[PREFIX]}
-        }
+        local -a args=("${(@ps:\1:)v[args]}")
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
+        # the first result is '' (see the last line of compadd)
+        compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
     }
+}
+
+zle -C _fzf_tab_complete complete-word _fzf_tab_complete
+
+function fzf-tab-complete() {
+    zle _fzf_tab_complete
     zle redisplay
 }
 

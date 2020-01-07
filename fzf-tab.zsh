@@ -55,11 +55,6 @@ function compadd() {
     nm=-1
 }
 
-function _hook() {
-    functions[${1}_bak]=$functions[$1]
-    eval "$1() { ${1}_bak \"\$@\"; ret=\$?; echo $1:\$ret; return \$ret }"
-}
-
 [[ ${FZF_TAB_INSERT_SPACE:='1'} ]]
 [[ ${FZF_TAB_COMMAND:='fzf'} ]]
 [[ ${FZF_TAB_BIND:='tab:down,ctrl-j:accept,ctrl-space:toggle,change:top'} ]]

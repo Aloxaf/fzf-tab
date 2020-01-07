@@ -140,7 +140,7 @@ function _fzf_tab_print_matches() {
 # TODO: can I use `compadd` to apply my choice?
 function _fzf_tab_complete() {
     local -A compcap
-    local choice query
+    local choice query space
 
     IN_FZF_TAB=1
     _main_complete
@@ -162,8 +162,11 @@ function _fzf_tab_complete() {
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] builtin compadd "${args[@]:-Q}" -Q -- $v[word]
+        if (( FZF_TAB_INSERT_SPACE )) && [[ $RBUFFER != ' '* ]] {
+            space=' '
+        }
         # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'${FZF_TAB_INSERT_SPACE:+' '}
+        compstate[insert]='2'$space
     }
 }
 

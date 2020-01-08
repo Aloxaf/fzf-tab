@@ -58,8 +58,8 @@ compadd() {
         fi
         compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     done
-    # tell zsh that the match is successful
-    builtin compadd -Q -U ''
+    # hack: pretend to have done a successful compadd ( see _alternative:76 )
+    nm=-1
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
@@ -129,7 +129,7 @@ _fzf_tab_get_candidates() {
 
 _fzf_tab_complete() {
     local -A compcap
-    local choice
+    local choice choices
 
     IN_FZF_TAB=1
     _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
@@ -144,21 +144,25 @@ _fzf_tab_complete() {
             local query candidates=()
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_candidates  # sets `candidates`
-            choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
-            choice=${choice%%$'\0'*}
+            choices=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+            choices=(${${(f)choices}%%$'\0'*})
             ;;
     esac
 
     compstate[insert]=
     compstate[list]=
-    if [[ -n $choice ]]; then
+    for choice in $choices; do
         local -A v=("${(@0)${compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:-Q}" -Q -- $v[word]
-        # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'
+    done
+
+    if (( $#choices == 1 )); then
+        compstate[insert]='1'
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+    else
+        compstate[insert]='all'
     fi
 }
 

@@ -33,9 +33,9 @@ compadd() {
         return
     fi
 
-    # store these values in compcap
+    # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
-    local key expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
+    local key expanded __tmp_value="<"$'\0'">" # ensure that _fzf_tab_compcap's key will always exists
     for key in $keys; do
         expanded=${(P)key}
         if [[ $expanded ]]; then
@@ -56,7 +56,7 @@ compadd() {
         else
             continue
         fi
-        compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     done
     # tell zsh that the match is successful
     builtin compadd -Q -U ''
@@ -73,8 +73,8 @@ _fzf_tab_find_query_str() {
     typeset -g query=
     for qtype in $FZF_TAB_QUERY; do
         if [[ $qtype == prefix ]]; then
-            # find the longest common prefix among ${(k)compcap}
-            local -a keys=(${(k)compcap})
+            # find the longest common prefix among ${(k)_fzf_tab_compcap}
+            local -a keys=(${(k)_fzf_tab_compcap})
             tmp=$keys[1]
             local MATCH match mbegin mend prefix=(${(s::)tmp})
             for key in ${keys:1}; do
@@ -88,7 +88,7 @@ _fzf_tab_find_query_str() {
                 prefix[$#MATCH/2+1,-1]=()
             done
         elif [[ $qtype == input ]]; then
-            local fv=${${(v)compcap}[1]}
+            local fv=${${(v)_fzf_tab_compcap}[1]}
             local -A v=("${(@0)fv}")
             tmp=$v[PREFIX]
             if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
@@ -108,7 +108,7 @@ _fzf_tab_find_query_str() {
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath
     typeset -ga candidates=()
-    for k _v in ${(kv)compcap}; do
+    for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         # add a character to describe the type of the files
         # TODO: can be color?
@@ -128,7 +128,7 @@ _fzf_tab_get_candidates() {
 }
 
 _fzf_tab_complete() {
-    local -A compcap
+    local -A _fzf_tab_compcap
     local choice
 
     IN_FZF_TAB=1
@@ -137,9 +137,9 @@ _fzf_tab_complete() {
 
     emulate -L zsh
 
-    case $#compcap in
+    case $#_fzf_tab_compcap in
         0) return;;
-        1) choice=${(k)compcap};;
+        1) choice=${(k)_fzf_tab_compcap};;
         *)
             local query candidates=()
             _fzf_tab_find_query_str  # sets `query`
@@ -152,7 +152,7 @@ _fzf_tab_complete() {
     compstate[insert]=
     compstate[list]=
     if [[ -n $choice ]]; then
-        local -A v=("${(@0)${compcap[$choice]}}")
+        local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:-Q}" -Q -- $v[word]

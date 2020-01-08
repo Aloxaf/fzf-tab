@@ -120,7 +120,6 @@ function _fzf_tab_get_candidates() {
     candidates=("${(@on)candidates}")
 }
 
-# TODO: can I use `compadd` to apply my choice?
 function _fzf_tab_complete() {
     local -A compcap
     local choice
@@ -137,7 +136,7 @@ function _fzf_tab_complete() {
         _fzf_tab_find_query_str  # sets `query`
         _fzf_tab_get_candidates  # sets `candidates`
         choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
-        choice=${choice%%$'\0'}
+        choice=${choice%%$'\0'*}
       ;;
     }
 

@@ -1,7 +1,15 @@
+# temporarily change options
+'builtin' 'local' '-a' '_fzf_tab_opts'
+[[ ! -o 'aliases'         ]] || _fzf_tab_opts+=('aliases')
+[[ ! -o 'sh_glob'         ]] || _fzf_tab_opts+=('sh_glob')
+[[ ! -o 'no_brace_expand' ]] || _fzf_tab_opts+=('no_brace_expand')
+'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
+
 zmodload zsh/zutil
 
 # thanks Valodim/zsh-capture-completion
 function compadd() {
+    emulate -L zsh
     # parse all options
     local -A apre hpre dscrs _oad
     local -a isfile _opts __
@@ -125,8 +133,10 @@ function _fzf_tab_complete() {
     local choice
 
     IN_FZF_TAB=1
-    _main_complete
+    _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
     IN_FZF_TAB=0
+
+    emulate -L zsh
 
     case $#compcap in
       0) return;;
@@ -155,17 +165,19 @@ function _fzf_tab_complete() {
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
 function fzf-tab-complete() {
-    zle _fzf_tab_complete
+    zle _fzf_tab_complete  # must run with user options; don't add `emulate -L zsh` above this line
     zle redisplay
 }
 
 zle -N fzf-tab-complete
 
 function disable-fzf-tab() {
+    emulate -L zsh
     bindkey '^I' expand-or-complete
 }
 
 function enable-fzf-tab() {
+    emulate -L zsh
     local binding=$(bindkey '^I')
     if [[ ! $binding =~ "undefined-key" && $binding != fzf-tab-complete ]] {
         fzf_tab_default_completion=$binding[(w)2]
@@ -174,3 +186,7 @@ function enable-fzf-tab() {
 }
 
 enable-fzf-tab
+
+# restore options
+(( ${#_fzf_tab_opts} )) && setopt ${_fzf_tab_opts[@]}
+'builtin' 'unset' '_fzf_tab_opts'

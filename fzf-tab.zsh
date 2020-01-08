@@ -106,10 +106,12 @@ _fzf_tab_find_query_str() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    local dsuf k _v filepath
+    local dsuf k _v filepath first_word
+    local -i same_word=1
     typeset -ga candidates=()
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
+        [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
         # add a character to describe the type of the files
         # TODO: can be color?
         dsuf=
@@ -123,6 +125,7 @@ _fzf_tab_get_candidates() {
         fi
         candidates+=$k$'\0'$dsuf
     done
+    (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
 }
@@ -137,13 +140,14 @@ _fzf_tab_complete() {
 
     emulate -L zsh
 
-    case $#_fzf_tab_compcap in
+    local query candidates=()
+    _fzf_tab_get_candidates  # sets `candidates`
+
+    case $#candidates in
         0) return;;
-        1) choice=${(k)_fzf_tab_compcap};;
+        1) choice=${${(k)_fzf_tab_compcap}[1]};;
         *)
-            local query candidates=()
             _fzf_tab_find_query_str  # sets `query`
-            _fzf_tab_get_candidates  # sets `candidates`
             choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
             choice=${choice%%$'\0'*}
             ;;

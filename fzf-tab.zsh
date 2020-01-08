@@ -177,11 +177,21 @@ disable-fzf-tab() {
         bindkey '^I' $_fzf_tab_orig_widget
         unset _fzf_tab_orig_widget
     fi
+    case $_fzf_tab_orig_list_grouped in
+        0) zstyle ':completion:*' list-grouped false ;;
+        1) zstyle ':completion:*' list-grouped true ;;
+        2) zstyle -d ':completion:*' list-grouped ;;
+    esac
+    unset _fzf_tab_orig_list_groupded
 }
 
 enable-fzf-tab() {
     emulate -L zsh
     typeset -g _fzf_tab_orig_widget="${$(bindkey '^I')##* }"
+    zstyle -t ':completion:*' list-grouped false
+    typeset -g _fzf_tab_orig_list_grouped=$?
+
+    zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
 }
 

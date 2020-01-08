@@ -35,7 +35,7 @@ function compadd() {
 
     # store these values in compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
-    local expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
+    local i expanded __tmp_value="<"$'\0'">" # ensure that compcap's key will always exists
     # NOTE: I don't know why, but if I use `for i ($keys)` here I will get a coredump
     for i ({1..$#keys}) {
         expanded=${(P)keys[i]}
@@ -173,15 +173,15 @@ zle -N fzf-tab-complete
 
 function disable-fzf-tab() {
     emulate -L zsh
-    bindkey '^I' expand-or-complete
+    if (( $+_fzf_tab_orig_widget )); then
+        bindkey '^I' $_fzf_tab_orig_widget
+        unset _fzf_tab_orig_widget
+    fi
 }
 
 function enable-fzf-tab() {
     emulate -L zsh
-    local binding=$(bindkey '^I')
-    if [[ ! $binding =~ "undefined-key" && $binding != fzf-tab-complete ]] {
-        fzf_tab_default_completion=$binding[(w)2]
-    }
+    typeset -g _fzf_tab_orig_widget="${$(bindkey '^I')##* }"
     bindkey '^I' fzf-tab-complete
 }
 

@@ -65,6 +65,7 @@ compadd() {
     builtin compadd -Q -U ''
 }
 
+: ${FZF_TAB_MERGE_HEADERS:='1'}
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --color=hl:255 --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
@@ -109,11 +110,32 @@ _fzf_tab_find_query_str() {
     done
 }
 
+# pupulates array `headers` with group descriptions
+_fzf_tab_get_headers() {
+    typeset -ga headers=()
+    local MATCH match mbegin mend tmp=()
+    local -i len=0 tabsize=8
+    # we need the value of tabsize to calculate the actual width
+    [[ $FZF_TAB_OPTS =~ '.*--tabstop[= ]([0-9]+).*' ]] && tabsize=$match
+    for k in {1..$#_fzf_tab_groups}; do
+        if (( len + $#_fzf_tab_groups[k] > COLUMNS - 2)) \
+               || (( $#tmp && ! FZF_TAB_MERGE_HEADERS )); then
+            headers+=${(pj:\t:)tmp}
+            len=0
+            tmp=()
+        fi
+        tmp+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$'\033[00m'
+        len+=$#_fzf_tab_groups[k]
+        (( len % tabsize != 0 )) && (( len += tabsize - len % tabsize ))
+    done
+    (( $#tmp )) && headers+=${(pj:\t:)tmp}
+}
+
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath first_word
     local -i same_word=1
-    typeset -ga candidates=() headers=()
+    typeset -ga candidates=()
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
@@ -143,10 +165,6 @@ _fzf_tab_get_candidates() {
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
-
-    for k in {1..$#_fzf_tab_groups}; do
-        headers+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$'\033[00m'
-    done
 }
 
 _fzf_tab_complete() {
@@ -168,6 +186,7 @@ _fzf_tab_complete() {
         1) choice=${${(k)_fzf_tab_compcap}[1]};;
         *)
             _fzf_tab_find_query_str  # sets `query`
+            _fzf_tab_get_headers     # sets `headers`
             if (( $#headers )); then
                 choice=$($FZF_TAB_COMMAND \
                              ${(z)FZF_TAB_OPTS} ${query:+-q$query} --header-lines=$#headers \

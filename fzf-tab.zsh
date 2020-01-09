@@ -158,8 +158,9 @@ _fzf_tab_complete() {
     if [[ -n $choice ]]; then
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
+        [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:-Q}" -Q -- $v[word]
+               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
         # the first result is '' (see the last line of compadd)
         compstate[insert]='2'
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '

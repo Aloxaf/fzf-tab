@@ -64,8 +64,9 @@ compadd() {
 
 # when insert multi results, a whitespace will be added to each result
 # remove left space of our fake result because I can't remove right space
+# FIXME: what if the left char is not whitespace: `echo $widgets[\t`
 _fzf_tab_remove_space() {
-    LBUFFER[-1]=''
+    [[ LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
@@ -152,7 +153,7 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
-        1) choice=${${(k)_fzf_tab_compcap}[1]};;
+        1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
             choices=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})

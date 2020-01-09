@@ -7,8 +7,6 @@
 
 zmodload zsh/zutil
 
-autoload -U colors; colors
-
 # thanks Valodim/zsh-capture-completion
 compadd() {
     emulate -L zsh
@@ -34,6 +32,9 @@ compadd() {
     if (( $#__hits == 0 )); then
         return
     fi
+
+    # keep order of group description
+    _fzf_tab_groups+=$expl
 
     # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile expl PREFIX SUFFIX IPREFIX ISUFFIX)
@@ -67,6 +68,8 @@ compadd() {
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
+: ${(A)=FZF_TAB_GROUP_COLOR=$'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
+       $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m' }
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # sets `query` to the valid query string
@@ -110,8 +113,6 @@ _fzf_tab_find_query_str() {
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath first_word
     local -i same_word=1
-    local -a fgs=(white cyan yellow magenta blue red green)
-    local -A header_color
     typeset -ga candidates=() headers=()
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
@@ -130,26 +131,27 @@ _fzf_tab_get_candidates() {
 
         # add color to description if they have group description
         if [[ $v[expl] ]]; then
-            if (( ! $+header_color[$v[expl]] && $#fgs )); then
-                header_color[$v[expl]]=$fg[$fgs[1]]
-                fgs[1]=()
-            fi
-            candidates+=$header_color[$v[expl]]$k$'\0'$dsuf$reset_color
+            local index=$_fzf_tab_groups[(ie)$v[expl]]
+            local color=$FZF_TAB_GROUP_COLOR[$index]
+            # add a hidden group index at start of string to keep group order when sorting
+            # FIXME: only support 16 groups
+            candidates+=$(( [##16] index ))$'\b'$color$'\0'$k$'\0'$dsuf$reset_color
         else
-            candidates+=$k$'\0'$dsuf
+            candidates+=1$'\b\0'$k$'\0'$dsuf
         fi
     done
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
 
-    for k _v in ${(kv)header_color}; do
-        headers+=$_v$k$reset_color
+    for k in {1..$#_fzf_tab_groups}; do
+        headers+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$reset_color
     done
 }
 
 _fzf_tab_complete() {
     local -A _fzf_tab_compcap
+    local -Ua _fzf_tab_groups
     local choice
 
     IN_FZF_TAB=1
@@ -174,7 +176,7 @@ _fzf_tab_complete() {
                 choice=$($FZF_TAB_COMMAND \
                              ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
             fi
-            choice=${choice%%$'\0'*}
+            choice=${${choice%$'\0'*}#*$'\0'}
             ;;
     esac
 
@@ -183,8 +185,9 @@ _fzf_tab_complete() {
     if [[ -n $choice ]]; then
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
+        [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:-Q}" -Q -- $v[word]
+               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
         # the first result is '' (see the last line of compadd)
         compstate[insert]='2'
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '

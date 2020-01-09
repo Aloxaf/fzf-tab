@@ -13,8 +13,8 @@ compadd() {
     # parse all options
     local -A apre hpre dscrs _oad expl
     local -a isfile _opts __
-    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs O:=_oad A:=_oad D:=_oad f=isfile \
-               i: S: s: I: X:=expl x: r: R: W: F: M+: E: q e Q n U C \
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X:=expl O:=_oad A:=_oad D:=_oad f=isfile \
+               i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
@@ -37,7 +37,7 @@ compadd() {
     _fzf_tab_groups+=$expl
 
     # store these values in _fzf_tab_compcap
-    local -a keys=(apre hpre isfile expl PREFIX SUFFIX IPREFIX ISUFFIX)
+    local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
     local key expanded __tmp_value="<"$'\0'">" # ensure that _fzf_tab_compcap's key will always exists
     for key in $keys; do
         expanded=${(P)key}
@@ -45,6 +45,9 @@ compadd() {
             __tmp_value+=$'\0'$key$'\0'$expanded
         fi
     done
+    if [[ $expl ]]; then
+        __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
+    fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
 
     # dscr - the string to show to users
@@ -152,12 +155,11 @@ _fzf_tab_get_candidates() {
         fi
 
         # add color to description if they have group description
-        if [[ $v[expl] ]]; then
-            local index=$_fzf_tab_groups[(ie)$v[expl]]
-            local color=$FZF_TAB_GROUP_COLOR[$index]
+        if [[ $v[group] ]]; then
+            local color=$FZF_TAB_GROUP_COLOR[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
             # FIXME: only support 16 groups
-            candidates+=$(( [##16] index ))$'\b'$color$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$(( [##16] $v[group] ))$'\b'$color$'\0'$k$'\0'$dsuf$'\033[00m'
         else
             candidates+=1$'\b\0'$k$'\0'$dsuf
         fi

@@ -169,7 +169,7 @@ _fzf_tab_complete() {
     done
 
     if (( $#choices == 1 )); then
-        compstate[insert]='1'
+        compstate[insert]='2'
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
     else
         compstate[insert]='all'

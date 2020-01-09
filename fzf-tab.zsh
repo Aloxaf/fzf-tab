@@ -67,7 +67,7 @@ compadd() {
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
+: ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --color=hl:255 --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
 : ${(A)=FZF_TAB_GROUP_COLOR=$'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
        $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m' }
 : ${(A)=FZF_TAB_QUERY=prefix input first}

@@ -135,7 +135,7 @@ _fzf_tab_get_candidates() {
             local color=$FZF_TAB_GROUP_COLOR[$index]
             # add a hidden group index at start of string to keep group order when sorting
             # FIXME: only support 16 groups
-            candidates+=$(( [##16] index ))$'\b'$color$'\0'$k$'\0'$dsuf$reset_color
+            candidates+=$(( [##16] index ))$'\b'$color$'\0'$k$'\0'$dsuf$'\033[00m'
         else
             candidates+=1$'\b\0'$k$'\0'$dsuf
         fi
@@ -145,7 +145,7 @@ _fzf_tab_get_candidates() {
     candidates=("${(@on)candidates}")
 
     for k in {1..$#_fzf_tab_groups}; do
-        headers+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$reset_color
+        headers+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$'\033[00m'
     done
 }
 

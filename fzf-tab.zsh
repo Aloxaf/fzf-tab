@@ -58,8 +58,14 @@ compadd() {
         fi
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
     done
-    # hack: pretend to have done a successful compadd ( see _alternative:76 )
-    nm=-1
+    # tell zsh that the match is successful
+    builtin compadd -qS '' -R _fzf_tab_remove_space ''
+}
+
+# when insert multi results, a whitespace will be added to each result
+# remove left space of our fake result because I can't remove right space
+_fzf_tab_remove_space() {
+    LBUFFER[-1]=''
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}

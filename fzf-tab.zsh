@@ -118,7 +118,7 @@ _fzf_tab_get_headers() {
     # we need the value of tabsize to calculate the actual width
     [[ $FZF_TAB_OPTS =~ '.*--tabstop[= ]([0-9]+).*' ]] && tabsize=$match
     for k in {1..$#_fzf_tab_groups}; do
-        if (( len + $#_fzf_tab_groups[k] > COLUMNS - 2)) \
+        if (( len + $#_fzf_tab_groups[k] > COLUMNS - 5)) \
                || (( $#tmp && ! FZF_TAB_MERGE_HEADERS )); then
             headers+=${(pj:\t:)tmp}
             len=0

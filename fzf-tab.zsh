@@ -7,14 +7,16 @@
 
 zmodload zsh/zutil
 
+autoload -U colors; colors
+
 # thanks Valodim/zsh-capture-completion
 compadd() {
     emulate -L zsh
     # parse all options
-    local -A apre hpre dscrs _oad
+    local -A apre hpre dscrs _oad expl
     local -a isfile _opts __
     zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs O:=_oad A:=_oad D:=_oad f=isfile \
-               i: S: s: I: X: x: r: R: W: F: M+: E: q e Q n U C \
+               i: S: s: I: X:=expl x: r: R: W: F: M+: E: q e Q n U C \
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
@@ -34,7 +36,7 @@ compadd() {
     fi
 
     # store these values in _fzf_tab_compcap
-    local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
+    local -a keys=(apre hpre isfile expl PREFIX SUFFIX IPREFIX ISUFFIX)
     local key expanded __tmp_value="<"$'\0'">" # ensure that _fzf_tab_compcap's key will always exists
     for key in $keys; do
         expanded=${(P)key}
@@ -64,7 +66,7 @@ compadd() {
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=15'}
+: ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # sets `query` to the valid query string
@@ -108,7 +110,9 @@ _fzf_tab_find_query_str() {
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath first_word
     local -i same_word=1
-    typeset -ga candidates=()
+    local -a fgs=(white cyan yellow magenta blue red green)
+    local -A header_color
+    typeset -ga candidates=() headers=()
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
@@ -123,11 +127,25 @@ _fzf_tab_get_candidates() {
                 dsuf=/
             fi
         fi
-        candidates+=$k$'\0'$dsuf
+
+        # add color to description if they have group description
+        if [[ $v[expl] ]]; then
+            if (( ! $+header_color[$v[expl]] && $#fgs )); then
+                header_color[$v[expl]]=$fg[$fgs[1]]
+                fgs[1]=()
+            fi
+            candidates+=$header_color[$v[expl]]$k$'\0'$dsuf$reset_color
+        else
+            candidates+=$k$'\0'$dsuf
+        fi
     done
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
+
+    for k _v in ${(kv)header_color}; do
+        headers+=$_v$k$reset_color
+    done
 }
 
 _fzf_tab_complete() {
@@ -140,7 +158,7 @@ _fzf_tab_complete() {
 
     emulate -L zsh
 
-    local query candidates=()
+    local query candidates=() headers=()
     _fzf_tab_get_candidates  # sets `candidates`
 
     case $#candidates in
@@ -148,7 +166,14 @@ _fzf_tab_complete() {
         1) choice=${${(k)_fzf_tab_compcap}[1]};;
         *)
             _fzf_tab_find_query_str  # sets `query`
-            choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+            if (( $#headers )); then
+                choice=$($FZF_TAB_COMMAND \
+                             ${(z)FZF_TAB_OPTS} ${query:+-q$query} --header-lines=$#headers \
+                             <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
+            else
+                choice=$($FZF_TAB_COMMAND \
+                             ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+            fi
             choice=${choice%%$'\0'*}
             ;;
     esac

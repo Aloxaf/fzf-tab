@@ -9,7 +9,6 @@ zmodload zsh/zutil
 
 # thanks Valodim/zsh-capture-completion
 compadd() {
-    emulate -L zsh
     # parse all options
     local -A apre hpre dscrs _oad
     local -a isfile _opts __

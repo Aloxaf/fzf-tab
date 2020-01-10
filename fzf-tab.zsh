@@ -168,7 +168,7 @@ _fzf_tab_get_candidates() {
             # FIXME: only support 16 groups
             candidates+=$(( [##16] $v[group] ))$'\b'$color$'\0'$k$'\0'$dsuf$'\033[00m'
         else
-            candidates+=1$'\b\0'$k$'\0'$dsuf
+            candidates+=1$'\b'$FZF_TAB_GROUP_COLOR[1]$'\0'$k$'\0'$dsuf
         fi
     done
     (( same_word )) && candidates[2,-1]=()
@@ -196,13 +196,12 @@ _fzf_tab_complete() {
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
+            local -a command=($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
             if (( $#headers )); then
-                choice=$($FZF_TAB_COMMAND \
-                             ${(z)FZF_TAB_OPTS} ${query:+-q$query} --header-lines=$#headers \
+                choice=$($command --header-lines=$#headers \
                              <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
-                choice=$($FZF_TAB_COMMAND \
-                             ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+                choice=$($command <<<${(pj:\n:)candidates})
             fi
             choice=${${choice%$'\0'*}#*$'\0'}
             ;;

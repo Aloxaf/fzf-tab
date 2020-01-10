@@ -68,12 +68,17 @@ compadd() {
     builtin compadd -Q -U ''
 }
 
+: ${FZF_TAB_PREFIX='·'}
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --color=hl:255 --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
 : ${(A)=FZF_TAB_GROUP_COLOR=$'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
        $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m' }
 : ${(A)=FZF_TAB_QUERY=prefix input first}
+
+(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
+    --ansi --color=hl:255 --cycle --nth=2,3 -d '\0' --layout=reverse
+    --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --height=90%
+)
 
 # sets `query` to the valid query string
 _fzf_tab_find_query_str() {
@@ -166,9 +171,9 @@ _fzf_tab_get_candidates() {
             local color=$FZF_TAB_GROUP_COLOR[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
             # FIXME: only support 16 groups
-            candidates+=$(( [##16] $v[group] ))$'\b'$color$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$(([##16]$v[group]))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         else
-            candidates+=1$'\b'$FZF_TAB_GROUP_COLOR[1]$'\0'$k$'\0'$dsuf
+            candidates+=1$'\b'$FZF_TAB_GROUP_COLOR[1]$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi
     done
     (( same_word )) && candidates[2,-1]=()
@@ -196,7 +201,8 @@ _fzf_tab_complete() {
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
-            local -a command=($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query})
+            local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS ${query:+-q$query})
+            [[ ${(t)FZF_TAB_OPTS} == *"scalar"* ]] && command[2]=(${(z)FZF_TAB_OPTS})
             if (( $#headers )); then
                 choice=$($command --header-lines=$#headers \
                              <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})

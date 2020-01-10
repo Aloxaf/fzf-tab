@@ -45,6 +45,7 @@ compadd() {
         fi
     done
     if [[ $expl ]]; then
+        # store group index
         __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
     fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
@@ -73,6 +74,7 @@ compadd() {
 : ${(A)=FZF_TAB_GROUP_COLOR=$'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
        $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m' }
 : ${(A)=FZF_TAB_QUERY=prefix input first}
+: ${FZF_TAB_GROUP:=full} # full brief
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi --color=hl:255 --cycle --nth=2,3 -d '\0' --layout=reverse
@@ -129,6 +131,8 @@ _fzf_tab_get_headers() {
     mlen+=1
 
     for (( i=1; i<=$#_fzf_tab_groups; i++ )); do
+        [[ $_fzf_tab_groups[i] == "__hide__"* ]] && continue
+
         if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
             headers+=$tmp
             tmp='' && len=0
@@ -149,6 +153,8 @@ _fzf_tab_get_headers() {
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath first_word
     local -i same_word=1
+    local -Ua duplicate_groups=()
+    local -A word_map=()
     typeset -ga candidates=()
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
@@ -174,10 +180,28 @@ _fzf_tab_get_candidates() {
         else
             candidates+=1$'\b'$FZF_TAB_GROUP_COLOR[1]$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi
+
+        # check group with duplicate member
+        if [[ $FZF_TAB_GROUP == brief ]]; then
+            if (( $+word_map[$v[word]] && $+v[group] )); then
+                duplicate_groups+=$v[group]  # add this group
+                duplicate_groups+=$word_map[$v[word]]  # add previous group
+            fi
+            word_map[$v[word]]=$v[group]
+        fi
     done
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
+
+    # hide needless group
+    if [[ $FZF_TAB_GROUP == brief ]]; then
+        local i indexs=({1..$#_fzf_tab_groups})
+        for i in ${indexs:|duplicate_groups}; do
+            # NOTE: _fzf_tab_groups is unique array
+            _fzf_tab_groups[i]="__hide__$i"
+        done
+    fi
 }
 
 _fzf_tab_complete() {

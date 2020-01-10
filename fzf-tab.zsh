@@ -34,7 +34,7 @@ compadd() {
     fi
 
     # keep order of group description
-    _fzf_tab_groups+=$expl
+    [[ -n $expl ]] && _fzf_tab_groups+=$expl
 
     # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
@@ -68,7 +68,6 @@ compadd() {
     builtin compadd -Q -U ''
 }
 
-: ${FZF_TAB_MERGE_HEADERS:='1'}
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_OPTS='--ansi --cycle --layout=reverse --color=hl:255 --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=90%'}
@@ -125,16 +124,15 @@ _fzf_tab_get_headers() {
     done
     mlen+=1
 
-    for i in {1..$#_fzf_tab_groups}; do
+    for (( i=1; i<=$#_fzf_tab_groups; i++ )); do
         if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
             headers+=$tmp
-            tmp=''
-            len=0
+            tmp='' && len=0
         fi
         if (( len + mlen > COLUMNS - 5 )); then
             # the last column doesn't need padding
-            tmp+=$FZF_TAB_GROUP_COLOR[i]$_fzf_tab_groups[i]$'\033[00m'
-            len+=$#_fzf_tab_groups[i]
+            headers+=$tmp$FZF_TAB_GROUP_COLOR[i]$_fzf_tab_groups[i]$'\033[00m'
+            tmp='' && len=0
         else
             tmp+=$FZF_TAB_GROUP_COLOR[i]${(r:$mlen:)_fzf_tab_groups[i]}$'\033[00m'
             len+=$mlen

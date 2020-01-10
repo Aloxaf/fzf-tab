@@ -116,22 +116,31 @@ _fzf_tab_find_query_str() {
 # pupulates array `headers` with group descriptions
 _fzf_tab_get_headers() {
     typeset -ga headers=()
-    local MATCH match mbegin mend tmp=()
-    local -i len=0 tabsize=8
-    # we need the value of tabsize to calculate the actual width
-    [[ $FZF_TAB_OPTS =~ '.*--tabstop[= ]([0-9]+).*' ]] && tabsize=$match
-    for k in {1..$#_fzf_tab_groups}; do
-        if (( len + $#_fzf_tab_groups[k] > COLUMNS - 5)) \
-               || (( $#tmp && ! FZF_TAB_MERGE_HEADERS )); then
-            headers+=${(pj:\t:)tmp}
-            len=0
-            tmp=()
-        fi
-        tmp+=$FZF_TAB_GROUP_COLOR[k]$_fzf_tab_groups[k]$'\033[00m'
-        len+=$#_fzf_tab_groups[k]
-        (( len % tabsize != 0 )) && (( len += tabsize - len % tabsize ))
+    local i tmp
+    local -i mlen=0 len=0
+
+    # calculate the max column width
+    for i in $_fzf_tab_groups; do
+        (( $#i > mlen )) && mlen=$#i
     done
-    (( $#tmp )) && headers+=${(pj:\t:)tmp}
+    mlen+=1
+
+    for i in {1..$#_fzf_tab_groups}; do
+        if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
+            headers+=$tmp
+            tmp=''
+            len=0
+        fi
+        if (( len + mlen > COLUMNS - 5 )); then
+            # the last column doesn't need padding
+            tmp+=$FZF_TAB_GROUP_COLOR[i]$_fzf_tab_groups[i]$'\033[00m'
+            len+=$#_fzf_tab_groups[i]
+        else
+            tmp+=$FZF_TAB_GROUP_COLOR[i]${(r:$mlen:)_fzf_tab_groups[i]}$'\033[00m'
+            len+=$mlen
+        fi
+    done
+    (( $#tmp )) && headers+=$tmp
 }
 
 # pupulates array `candidates` with completion candidates

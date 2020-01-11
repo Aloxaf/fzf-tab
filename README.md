@@ -64,16 +64,15 @@ Defualt value:
 
 ```bash
 FZF_TAB_OPTS=(
-    --ansi --color=hl:255  # Enable ANSI color support, necessary for showing groups
-    --nth=2,3 -d '\0'      # Don't search FZF_TAB_PREFIX
+    --ansi   # Enable ANSI color support, necessary for showing groups
+    '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
+    --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=90%
     --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --cycle
-    '--query=$query'       # $query will be expanded to query string at runtime.
+    '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
 ```
-
-**NOTE:** If `zstyle ':completion:*:descriptions' format` is not set, `--color=hl:255` will be removed.
 
 #### `FZF_TAB_INSERT_SPACE`
 
@@ -90,7 +89,7 @@ Possible values:
 - `first`: just a flag. If set, the first valid query string will be use
 - `longest`: another flag. If set, the longest valid query string will be use
 
-#### `FZF_TAB_GROUP`
+#### `FZF_TAB_SHOW_GROUP`
 
 When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display these group descriptions as headers.
 
@@ -104,14 +103,18 @@ A prefix to indicate the color, default value: `·`
 
 **NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
 
-#### `FZF_TAB_GROUP_COLOR`
+#### `FZF_TAB_SINGLE_COLOR`
+
+Color when there is no group, default value: `$'\033[37m'` (white)
+
+#### `FZF_TAB_GROUP_COLORS`
 
 Color of different group and their descriptions.
 
 Default value:
 
 ```bash
-FZF_TAB_GROUP_COLOR=(
+FZF_TAB_GROUP_COLORS=(
     $'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
     $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m'
 )

@@ -2,7 +2,9 @@
 
 Replace zsh's default completion selection menu with fzf!
 
-![](http://storage.aloxaf.cn/fzf-tab.gif?v=2)
+<img width="70%" src="http://storage.aloxaf.cn/fzf-tab.gif?v=2">
+
+<img width="70%" src="http://storage.aloxaf.cn/fzf-tab.webp">
 
 ## Install
 
@@ -71,7 +73,7 @@ FZF_TAB_OPTS=(
 )
 ```
 
-NOTE: If `zstyle ':completion:*:descriptions' format` is not set, `--color=hl:255` will be removed.
+**NOTE:** If `zstyle ':completion:*:descriptions' format` is not set, `--color=hl:255` will be removed.
 
 #### `FZF_TAB_INSERT_SPACE`
 
@@ -100,7 +102,7 @@ Defualt value: full
 
 A prefix to indicate the color, default value: `·`
 
-If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
+**NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
 
 #### `FZF_TAB_GROUP_COLOR`
 
@@ -115,7 +117,7 @@ FZF_TAB_GROUP_COLOR=(
 )
 ```
 
-If not set `zstyle ':completion:*:descriptions' format`, it will be set to white.
+**NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to white.
 
 ## Difference from other plugins
 

@@ -11,24 +11,24 @@ Replace zsh's default completion selection menu with fzf!
 ### Manual
 
 First, clone this repository
-```bash
+```zsh
 git clone https://github.com/Aloxaf/fzf-tab ~/somewhere
 ```
 
 Then add the following line to your `~/.zshrc`
-```bash
+```zsh
 source ~/somewhere/fzf-tab.plugin.zsh
 ```
 
 ### Antigen
 
-```bash
+```zsh
 antigen bundle Aloxaf/fzf-tab
 ```
 
 ### Zplugin
 
-```bash
+```zsh
 zplugin light Aloxaf/fzf-tab
 ```
 
@@ -36,7 +36,7 @@ zplugin light Aloxaf/fzf-tab
 
 Clone this repository to your custom directory and then add `fzf-tab` to your plugin list.
 
-```bash
+```zsh
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 ```
 
@@ -62,7 +62,7 @@ Parameters of fuzzy search program.
 
 Defualt value:
 
-```bash
+```zsh
 FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
@@ -113,14 +113,35 @@ Color of different group and their descriptions.
 
 Default value:
 
-```bash
+```zsh
 FZF_TAB_GROUP_COLORS=(
-    $'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
-    $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m'
+    $'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' $'\033[93m' \
+    $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m'
 )
 ```
 
-**NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to white.
+To choose the color you want, you can first use this function to print the palette:
+
+```zsh
+# Usage: palette
+palette() {
+    local -a colors
+    for i in {000..255}; do
+        colors+=("%F{$i}$i%f")
+    done
+    print -cP $colors
+}
+```
+
+And then use this helper function to get escape sequence for the color code:
+
+```zsh
+# Usage: printc COLOR_CODE
+printc() {
+    local color="%F{$1}"
+    echo -E ${(qqqq)${(%)color}}
+}
+```
 
 ## Difference from other plugins
 

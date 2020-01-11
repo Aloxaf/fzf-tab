@@ -68,19 +68,31 @@ compadd() {
     builtin compadd -Q -U ''
 }
 
-: ${FZF_TAB_PREFIX='·'}
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${(A)=FZF_TAB_GROUP_COLOR=$'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' \
-       $'\033[93m' $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m' }
 : ${(A)=FZF_TAB_QUERY=prefix input first}
-: ${FZF_TAB_GROUP:=full} # full brief
+: ${FZF_TAB_GROUP:=full}
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
-    --ansi --color=hl:255 --cycle --nth=2,3 -d '\0' --layout=reverse
-    --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --height=90%
-    '--query=$query' '--header-lines=$#headers'
+    --ansi --color=hl:255  # Enable ANSI color support, necessary for showing groups
+    --nth=2,3 -d '\0'      # Don't search FZF_TAB_PREFIX
+    --layout=reverse --height=90%
+    --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --cycle
+    '--query=$query'       # $query will be expanded to query string at runtime.
+    '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
+
+if zstyle -m ':completion:*:descriptions' format '*'; then
+    : ${FZF_TAB_PREFIX='·'}
+    : ${(A)=FZF_TAB_GROUP_COLOR=\
+        $'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' $'\033[93m' \
+        $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m'
+    }
+else
+    : ${FZF_TAB_PREFIX=''}
+    : ${(A)=FZF_TAB_GROUP_COLOR=$'\033[37m'}
+    FZF_TAB_OPTS=(${FZF_TAB_OPTS:#--color=hl:255})
+fi
 
 # sets `query` to the valid query string
 _fzf_tab_find_query_str() {
@@ -179,7 +191,7 @@ _fzf_tab_get_candidates() {
             # FIXME: only support 16 groups
             candidates+=$(([##16]$v[group]))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         else
-            candidates+=1$'\b'$FZF_TAB_GROUP_COLOR[1]$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$FZF_TAB_GROUP_COLOR[1]$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi
 
         # check group with duplicate member

@@ -49,6 +49,7 @@ compadd() {
         __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
     fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
+    __tmp_value+=$'\0'"args"$'\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -62,7 +63,7 @@ compadd() {
         else
             continue
         fi
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     done
     # tell zsh that the match is successful
     builtin compadd -Q -U ''

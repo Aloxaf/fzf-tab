@@ -79,6 +79,7 @@ compadd() {
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi --color=hl:255 --cycle --nth=2,3 -d '\0' --layout=reverse
     --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --height=90%
+    '--query=$query' '--header-lines=$#headers'
 )
 
 # sets `query` to the valid query string
@@ -162,7 +163,7 @@ _fzf_tab_get_candidates() {
         # add a character to describe the type of the files
         # TODO: can be color?
         dsuf=
-        if [[ -n $v[isfile] ]]; then
+        if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)k}
             if [[ -L $filepath ]]; then
                 dsuf=@
@@ -172,7 +173,7 @@ _fzf_tab_get_candidates() {
         fi
 
         # add color to description if they have group description
-        if [[ $v[group] ]]; then
+        if (( $+v[group] )); then
             local color=$FZF_TAB_GROUP_COLOR[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
             # FIXME: only support 16 groups
@@ -184,7 +185,7 @@ _fzf_tab_get_candidates() {
         # check group with duplicate member
         if [[ $FZF_TAB_GROUP == brief ]]; then
             if (( $+word_map[$v[word]] && $+v[group] )); then
-                duplicate_groups+=$v[group]  # add this group
+                duplicate_groups+=$v[group]            # add this group
                 duplicate_groups+=$word_map[$v[word]]  # add previous group
             fi
             word_map[$v[word]]=$v[group]
@@ -224,13 +225,14 @@ _fzf_tab_complete() {
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
-            local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS ${query:+-q$query})
-            [[ ${(t)FZF_TAB_OPTS} == *"scalar"* ]] && command[2]=(${(z)FZF_TAB_OPTS})
+
+            [[ ${(t)FZF_TAB_OPTS} != *"array"* ]] && FZF_TAB_OPTS=(${(z)FZF_TAB_OPTS})
+            local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS)
+
             if (( $#headers )); then
-                choice=$($command --header-lines=$#headers \
-                             <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
+                choice=$(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
-                choice=$($command <<<${(pj:\n:)candidates})
+                choice=$(${(eX)command} <<<${(pj:\n:)candidates})
             fi
             choice=${${choice%$'\0'*}#*$'\0'}
             ;;

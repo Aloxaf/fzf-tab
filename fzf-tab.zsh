@@ -256,11 +256,11 @@ _fzf_tab_complete() {
             local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS)
 
             if (( $#headers )); then
-                choices=($(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates}))
+                choices=$(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
-                choices=($(${(eX)command} <<<${(pj:\n:)candidates}))
+                choices=$(${(eX)command} <<<${(pj:\n:)candidates})
             fi
-            choice=${${${(f)choice}%$'\0'*}#*$'\0'}
+            choices=(${${${(f)choices}%$'\0'*}#*$'\0'})
             ;;
     esac
 

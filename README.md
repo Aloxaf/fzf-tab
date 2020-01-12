@@ -49,7 +49,7 @@ Just press <kdb>Tab</kdb> as usual~
 fzf-tab uses the default keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
 But you can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results.
 
-Avaiable commands:
+Available commands:
 
 - `disable-fzf-tab`: Use it when you come across some bugs
 
@@ -65,9 +65,9 @@ The fuzzy search program, default value: `fzf`
 
 #### `FZF_TAB_OPTS`
 
-Parameters of fuzzy search program.
+Parameters of the fuzzy search program.
 
-Defualt value:
+Default value:
 
 ```zsh
 FZF_TAB_OPTS=(
@@ -83,25 +83,25 @@ FZF_TAB_OPTS=(
 
 #### `FZF_TAB_INSERT_SPACE`
 
-Whether to automatically insert a whitespace after the result, default value: `1`
+Whether to automatically insert a space after the result, default value: `1`
 
 #### `FZF_TAB_QUERY`
 
-The strategy for generating query string, defualt value: `(prefix input first)`
+The strategy for generating query string, default value: `(prefix input first)`
 
 Possible values:
 
-- `input`: use user's input as query string, just like zsh's defualt behavior
+- `input`: use user's input as query string, just like zsh's default behavior
 - `prefix`: use the longest common prefix for all candidates as the query string
-- `first`: just a flag. If set, the first valid query string will be use
-- `longest`: another flag. If set, the longest valid query string will be use
+- `first`: just a flag. If set, the first valid query string will be used
+- `longest`: another flag. If set, the longest valid query string will be used
 
 #### `FZF_TAB_FAKE_COMPADD`
 
 How to do a fake compadd. This variable only affects the result of multiple selections.
 
 - `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
-- `fakeadd`: Try to deceive the completion system. Sometimes it failes and then leads to unwanted results.
+- `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
 (eg. `sudo git \t` will get not only git subcommands but also local files)
 
 #### `FZF_TAB_SHOW_GROUP`
@@ -110,7 +110,7 @@ When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display t
 
 Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
 
-Defualt value: full
+Default value: full
 
 #### `FZF_TAB_PREFIX`
 

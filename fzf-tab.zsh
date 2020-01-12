@@ -82,10 +82,10 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${(A)=FZF_TAB_QUERY=prefix input first}
-: ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
+: ${(A)=FZF_TAB_QUERY=prefix input first}
+: ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
     $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \

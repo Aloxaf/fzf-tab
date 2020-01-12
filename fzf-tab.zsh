@@ -66,10 +66,21 @@ compadd() {
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
     # tell zsh that the match is successful
-    builtin compadd -Q -U ''
+    case $FZF_TAB_FAKE_COMPADD in
+        fakeadd) nm=-1 ;;  # see _alternative:76
+        *) builtin compadd -qS '' -R _fzf_tab_remove_space '' ;;
+    esac
+}
+
+# when insert multi results, a whitespace will be added to each result
+# remove left space of our fake result because I can't remove right space
+# FIXME: what if the left char is not whitespace: `echo $widgets[\t`
+_fzf_tab_remove_space() {
+    [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
+: ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${FZF_TAB_SHOW_GROUP:=full}
@@ -85,7 +96,7 @@ compadd() {
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=90%
-    --tiebreak=begin --bind=tab:down,ctrl-j:accept,change:top --cycle
+    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -223,7 +234,7 @@ _fzf_tab_get_candidates() {
 _fzf_tab_complete() {
     local -A _fzf_tab_compcap
     local -Ua _fzf_tab_groups
-    local choice
+    local choice choices
 
     IN_FZF_TAB=1
     _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
@@ -236,7 +247,7 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
-        1) choice=${${(k)_fzf_tab_compcap}[1]};;
+        1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
@@ -245,24 +256,30 @@ _fzf_tab_complete() {
             local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS)
 
             if (( $#headers )); then
-                choice=$(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
+                choices=($(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates}))
             else
-                choice=$(${(eX)command} <<<${(pj:\n:)candidates})
+                choices=($(${(eX)command} <<<${(pj:\n:)candidates}))
             fi
-            choice=${${choice%$'\0'*}#*$'\0'}
+            choice=${${${(f)choice}%$'\0'*}#*$'\0'}
             ;;
     esac
 
-    compstate[insert]=
-    compstate[list]=
-    if [[ -n $choice ]]; then
+    for choice in $choices; do
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
-        # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'
+    done
+
+    compstate[list]=
+    compstate[insert]='all'
+    if (( $#choices == 1 )); then
+        if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
+            compstate[insert]='1'
+        else
+            compstate[insert]='2'
+        fi
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
     fi
 }

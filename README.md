@@ -44,7 +44,10 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 ## Usage
 
-Just press TAB as usual~
+Just press <kdb>Tab</kdb> as usual~
+
+fzf-tab uses the default keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
+But you can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results.
 
 Avaiable commands:
 
@@ -92,6 +95,14 @@ Possible values:
 - `prefix`: use the longest common prefix for all candidates as the query string
 - `first`: just a flag. If set, the first valid query string will be use
 - `longest`: another flag. If set, the longest valid query string will be use
+
+#### `FZF_TAB_FAKE_COMPADD`
+
+How to do a fake compadd. This variable only affects the result of multiple selections.
+
+- `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
+- `fakeadd`: Try to deceive the completion system. Sometimes it failes and then leads to unwanted results.
+(eg. `sudo git \t` will get not only git subcommands but also local files)
 
 #### `FZF_TAB_SHOW_GROUP`
 

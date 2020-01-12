@@ -122,6 +122,16 @@ A prefix to indicate the color, default value: `·`
 
 Color when there is no group, default value: `$'\033[37m'` (white)
 
+#### `FZF_TAB_SINGLE_GROUP`
+
+The setting when there is only one group, default value: `(color header)`
+
+Possible values:
+
+- `prefix`: show `$FZF_TAB_PREFIX`
+- `color`: show group color
+- `header`: show group header
+
 #### `FZF_TAB_GROUP_COLORS`
 
 Color for different groups and their descriptions.

@@ -83,6 +83,7 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
+: ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
@@ -150,6 +151,10 @@ _fzf_tab_get_headers() {
     local i tmp
     local -i mlen=0 len=0
 
+    if (( $#_fzf_tab_groups == 1 && ! $FZF_TAB_SINGLE_GROUP[(I)header] )); then
+        return
+    fi
+
     # calculate the max column width
     for i in $_fzf_tab_groups; do
         (( $#i > mlen )) && mlen=$#i
@@ -182,6 +187,11 @@ _fzf_tab_get_candidates() {
     local -Ua duplicate_groups=()
     local -A word_map=()
     typeset -ga candidates=()
+
+    if (( $#_fzf_tab_groups == 1 )); then
+        (( $FZF_TAB_SINGLE_GROUP[(I)prefix] )) || local FZF_TAB_PREFIX=''
+        (( $FZF_TAB_SINGLE_GROUP[(I)color] )) || local FZF_TAB_GROUP_COLORS=($FZF_TAB_NO_GROUP_COLOR)
+    fi
 
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")

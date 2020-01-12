@@ -40,7 +40,10 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 ## Usage
 
-Just press TAB as usual~
+Just press <kdb>Tab</kdb> as usual~
+
+fzf-tab use the defualt keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
+But you can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results.
 
 Some variables:
 

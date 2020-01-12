@@ -75,7 +75,7 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS="--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15"}
+: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # sets `query` to the valid query string
@@ -164,8 +164,6 @@ _fzf_tab_complete() {
             ;;
     esac
 
-    compstate[insert]=
-    compstate[list]=
     for choice in $choices; do
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
@@ -174,11 +172,15 @@ _fzf_tab_complete() {
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
     done
 
+    compstate[list]=
+    compstate[insert]='all'
     if (( $#choices == 1 )); then
-        compstate[insert]='2'
+        if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
+            compstate[insert]='1'
+        else
+            compstate[insert]='2'
+        fi
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
-    else
-        compstate[insert]='all'
     fi
 }
 

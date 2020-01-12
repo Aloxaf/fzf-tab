@@ -9,7 +9,6 @@ zmodload zsh/zutil
 
 # thanks Valodim/zsh-capture-completion
 compadd() {
-    emulate -L zsh
     # parse all options
     local -A apre hpre dscrs _oad
     local -a isfile _opts __
@@ -43,6 +42,7 @@ compadd() {
         fi
     done
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
+    __tmp_value+=$'\0'"args"$'\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -56,7 +56,7 @@ compadd() {
         else
             continue
         fi
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}$'\0'"args"$'\0'${(pj:\1:)_opts}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     done
     # tell zsh that the match is successful
     builtin compadd -qS '' -R _fzf_tab_remove_space ''
@@ -71,8 +71,7 @@ _fzf_tab_remove_space() {
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_BIND:='tab:down,ctrl-j:accept,ctrl-space:toggle'}
-: ${FZF_TAB_OPTS="--cycle --layout=reverse --tiebreak=begin -m --bind $FZF_TAB_BIND --height=15"}
+: ${FZF_TAB_OPTS="--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15"}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # sets `query` to the valid query string
@@ -166,8 +165,9 @@ _fzf_tab_complete() {
     for choice in $choices; do
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
+        [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:-Q}" -Q -- $v[word]
+               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
     done
 
     if (( $#choices == 1 )); then

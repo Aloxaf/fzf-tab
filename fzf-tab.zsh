@@ -69,7 +69,7 @@ compadd() {
 # remove left space of our fake result because I can't remove right space
 # FIXME: what if the left char is not whitespace: `echo $widgets[\t`
 _fzf_tab_remove_space() {
-    [[ LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
+    [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}

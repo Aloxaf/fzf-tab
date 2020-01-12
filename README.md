@@ -42,7 +42,7 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 Just press <kdb>Tab</kdb> as usual~
 
-fzf-tab use the defualt keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
+fzf-tab uses the default keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
 But you can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results.
 
 Some variables:
@@ -57,15 +57,15 @@ Some variables:
 
     - `input`: just like zsh's default behavior
     - `prefix`: the query string will be the longest common prefix for all matches
-    - `first`: with this flag the fisrt valid query string will be use (default)
-    - `longest`: with this flag the longest valid query string will be use
+    - `first`: with this flag, the first valid query string will be used (default)
+    - `longest`: with this flag, the longest valid query string will be used
 
   The default value is `(prefix input first)`, which means fzf-tab will first try to find the longest common prefix for all matches, if not found it will use your input.
 
-- `FZF_TAB_FAKE_COMPADD`: How to do a fake compadd. This variable only affects the result of multiple selection.
+- `FZF_TAB_FAKE_COMPADD`: How to do a fake compadd. This variable only affects the result of multiple selections.
 
-    - `default`: Call compadd with empty string. It will sometimes add an extra whitespace if you select multiple results.
-    - `fakeadd`: Try to deceive the completion system. Sometimes it failes, and then leads to unwanted results.
+    - `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
+    - `fakeadd`: Try to deceive the completion system. Sometimes it failes and then leads to unwanted results.
     (eg. `sudo git \t` will get not only git subcommands but also local files)
 
 Some commands:
@@ -87,8 +87,7 @@ Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completi
 
 By default, fzf-tab will call the widget previously bound to "^I" to get the completion list. So there is no problem in most cases, unless fzf-tab is initialized before a plugin which doesn't handle the previous binding properly.
 
-So if you find your fzf-
-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
+So if you find your fzf-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
 
 ## Related projects
 

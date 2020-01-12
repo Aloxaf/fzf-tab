@@ -37,7 +37,7 @@ compadd() {
 
     # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
-    local key expanded __tmp_value="<"$'\0'">" # ensure that _fzf_tab_compcap's key will always exists
+    local key expanded __tmp_value=$'<\0>' # placeholder
     for key in $keys; do
         expanded=${(P)key}
         if [[ $expanded ]]; then
@@ -49,7 +49,7 @@ compadd() {
         __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
     fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
-    __tmp_value+=$'\0'"args"$'\0'${(pj:\1:)_opts}
+    __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -63,7 +63,7 @@ compadd() {
         else
             continue
         fi
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
     # tell zsh that the match is successful
     builtin compadd -Q -U ''
@@ -73,10 +73,11 @@ compadd() {
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${FZF_TAB_SHOW_GROUP:=full}
-: ${FZF_TAB_SINGLE_COLOR:=$'\033[37m'}
+: ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
-   $'\033[36m' $'\033[33m' $'\033[35m' $'\033[34m' $'\033[31m' $'\033[32m' $'\033[93m' \
-   $'\033[38;5;21m' $'\033[38;5;28m' $'\033[38;5;094m' $'\033[38;5;144m' $'\033[38;5;210m'
+    $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
+    $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
+    $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
@@ -170,6 +171,7 @@ _fzf_tab_get_candidates() {
     local -Ua duplicate_groups=()
     local -A word_map=()
     typeset -ga candidates=()
+
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
@@ -190,7 +192,7 @@ _fzf_tab_get_candidates() {
             local color=$FZF_TAB_GROUP_COLORS[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
             # FIXME: only support 16 groups
-            candidates+=$(([##16]$v[group]))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$(([##16]$v[group]-1))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         else
             candidates+=$FZF_TAB_SINGLE_COLOR$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi

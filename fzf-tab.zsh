@@ -59,7 +59,10 @@ compadd() {
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     done
     # tell zsh that the match is successful
-    builtin compadd -qS '' -R _fzf_tab_remove_space ''
+    case $FZF_TAB_FAKE_COMPADD in
+        fakeadd) nm=-1 ;;
+        *) builtin compadd -qS '' -R _fzf_tab_remove_space '' ;;
+    esac
 }
 
 # when insert multi results, a whitespace will be added to each result
@@ -70,6 +73,7 @@ _fzf_tab_remove_space() {
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
+: ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_OPTS="--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15"}
 : ${(A)=FZF_TAB_QUERY=prefix input first}

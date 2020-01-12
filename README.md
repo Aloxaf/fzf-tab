@@ -59,6 +59,12 @@ Some variables:
 
   The default value is `(prefix input first)`, which means fzf-tab will first try to find the longest common prefix for all matches, if not found it will use your input.
 
+- `FZF_TAB_FAKE_COMPADD`: How to do a fake compadd. This variable only affects the result of multiple selection.
+
+    - `default`: Call compadd with empty string. It will sometimes add an extra whitespace if you select multiple results.
+    - `fakeadd`: Try to deceive the completion system. Sometimes it failes, and then leads to unwanted results.
+    (eg. `sudo git \t` will get not only git subcommands but also local files)
+
 Some commands:
 
 - `disable-fzf-tab`: Use it when you come across some bugs
@@ -78,7 +84,8 @@ Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completi
 
 By default, fzf-tab will call the widget previously bound to "^I" to get the completion list. So there is no problem in most cases, unless fzf-tab is initialized before a plugin which doesn't handle the previous binding properly.
 
-So if you find your fzf-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
+So if you find your fzf-
+tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
 
 ## Related projects
 

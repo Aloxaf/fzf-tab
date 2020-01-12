@@ -59,12 +59,23 @@ compadd() {
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
     done
     # tell zsh that the match is successful
-    builtin compadd -Q -U ''
+    case $FZF_TAB_FAKE_COMPADD in
+        fakeadd) nm=-1 ;;
+        *) builtin compadd -qS '' -R _fzf_tab_remove_space '' ;;
+    esac
+}
+
+# when insert multi results, a whitespace will be added to each result
+# remove left space of our fake result because I can't remove right space
+# FIXME: what if the left char is not whitespace: `echo $widgets[\t`
+_fzf_tab_remove_space() {
+    [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
 : ${FZF_TAB_INSERT_SPACE:='1'}
+: ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin --bind tab:down,ctrl-j:accept,change:top --height=15'}
+: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 
 # sets `query` to the valid query string
@@ -132,7 +143,7 @@ _fzf_tab_get_candidates() {
 
 _fzf_tab_complete() {
     local -A _fzf_tab_compcap
-    local choice
+    local choice choices
 
     IN_FZF_TAB=1
     _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
@@ -145,24 +156,30 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
-        1) choice=${${(k)_fzf_tab_compcap}[1]};;
+        1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
-            choice=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
-            choice=${choice%%$'\0'*}
+            choices=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
+            choices=(${${(f)choices}%%$'\0'*})
             ;;
     esac
 
-    compstate[insert]=
-    compstate[list]=
-    if [[ -n $choice ]]; then
+    for choice in $choices; do
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
-        # the first result is '' (see the last line of compadd)
-        compstate[insert]='2'
+    done
+
+    compstate[list]=
+    compstate[insert]='all'
+    if (( $#choices == 1 )); then
+        if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
+            compstate[insert]='1'
+        else
+            compstate[insert]='2'
+        fi
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
     fi
 }

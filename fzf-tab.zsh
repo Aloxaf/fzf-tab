@@ -61,7 +61,7 @@ compadd() {
     # tell zsh that the match is successful
     case $FZF_TAB_FAKE_COMPADD in
         fakeadd) nm=-1 ;;
-        *) builtin compadd -qS '' -R _fzf_tab_remove_space '' ;;
+        *) builtin compadd -U -qS '' -R _fzf_tab_remove_space '' ;;
     esac
 }
 

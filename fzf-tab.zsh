@@ -68,7 +68,7 @@ compadd() {
     # tell zsh that the match is successful
     case $FZF_TAB_FAKE_COMPADD in
         fakeadd) nm=-1 ;;  # see _alternative:76
-        *) builtin compadd -qS '' -R _fzf_tab_remove_space '' ;;
+        *) builtin compadd -U -qS '' -R _fzf_tab_remove_space '' ;;
     esac
 }
 
@@ -96,7 +96,7 @@ _fzf_tab_remove_space() {
     --ansi   # Enable ANSI color support, necessary for showing groups
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
-    --layout=reverse --height=90%
+    --layout=reverse --height=70%
     --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime

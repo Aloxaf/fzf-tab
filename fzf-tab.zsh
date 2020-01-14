@@ -283,8 +283,9 @@ _fzf_tab_complete() {
     done
 
     compstate[list]=
-    compstate[insert]='all'
+    compstate[insert]=
     if (( $#choices == 1 )); then
+        compstate[insert]='all'
         if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
             compstate[insert]='1'
         else

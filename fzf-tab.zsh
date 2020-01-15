@@ -10,10 +10,10 @@ zmodload zsh/zutil
 # thanks Valodim/zsh-capture-completion
 compadd() {
     # parse all options
-    local -A apre hpre dscrs _oad
+    local -A apre hpre dscrs _oad expl
     local -a isfile _opts __
-    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs O:=_oad A:=_oad D:=_oad f=isfile \
-               i: S: s: I: X: x: r: R: W: F: M+: E: q e Q n U C \
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X:=expl O:=_oad A:=_oad D:=_oad f=isfile \
+               i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
@@ -32,17 +32,24 @@ compadd() {
         return
     fi
 
+    # keep order of group description
+    [[ -n $expl ]] && _fzf_tab_groups+=$expl
+
     # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
-    local key expanded __tmp_value="<"$'\0'">" # ensure that _fzf_tab_compcap's key will always exists
+    local key expanded __tmp_value=$'<\0>' # placeholder
     for key in $keys; do
         expanded=${(P)key}
         if [[ $expanded ]]; then
             __tmp_value+=$'\0'$key$'\0'$expanded
         fi
     done
+    if [[ $expl ]]; then
+        # store group index
+        __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
+    fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
-    __tmp_value+=$'\0'"args"$'\0'${(pj:\1:)_opts}
+    __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -56,11 +63,11 @@ compadd() {
         else
             continue
         fi
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0'"word"$'\0'$word}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
     # tell zsh that the match is successful
     case $FZF_TAB_FAKE_COMPADD in
-        fakeadd) nm=-1 ;;
+        fakeadd) nm=-1 ;;  # see _alternative:76
         *) builtin compadd -U -qS '' -R _fzf_tab_remove_space '' ;;
     esac
 }
@@ -75,8 +82,31 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_INSERT_SPACE:='1'}
 : ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_OPTS='--cycle --layout=reverse --tiebreak=begin -m --bind tab:down,ctrl-j:accept,ctrl-space:toggle --height=15'}
+: ${FZF_TAB_SHOW_GROUP:=full}
+: ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
+: ${(A)=FZF_TAB_SINGLE_GROUP=color header}
+: ${(A)=FZF_TAB_GROUP_COLORS=\
+    $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
+    $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
+    $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
+}
+
+(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
+    --ansi   # Enable ANSI color support, necessary for showing groups
+    '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
+    --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
+    --layout=reverse --height=70%
+    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    '--query=$query'   # $query will be expanded to query string at runtime.
+    '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
+)
+
+if zstyle -m ':completion:*:descriptions' format '*'; then
+    : ${FZF_TAB_PREFIX='·'}
+else
+    : ${FZF_TAB_PREFIX=''}
+fi
 
 # sets `query` to the valid query string
 _fzf_tab_find_query_str() {
@@ -115,18 +145,61 @@ _fzf_tab_find_query_str() {
     done
 }
 
+# pupulates array `headers` with group descriptions
+_fzf_tab_get_headers() {
+    typeset -ga headers=()
+    local i tmp
+    local -i mlen=0 len=0
+
+    if (( $#_fzf_tab_groups == 1 && ! $FZF_TAB_SINGLE_GROUP[(I)header] )); then
+        return
+    fi
+
+    # calculate the max column width
+    for i in $_fzf_tab_groups; do
+        (( $#i > mlen )) && mlen=$#i
+    done
+    mlen+=1
+
+    for (( i=1; i<=$#_fzf_tab_groups; i++ )); do
+        [[ $_fzf_tab_groups[i] == "__hide__"* ]] && continue
+
+        if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
+            headers+=$tmp
+            tmp='' && len=0
+        fi
+        if (( len + mlen > COLUMNS - 5 )); then
+            # the last column doesn't need padding
+            headers+=$tmp$FZF_TAB_GROUP_COLORS[i]$_fzf_tab_groups[i]$'\033[00m'
+            tmp='' && len=0
+        else
+            tmp+=$FZF_TAB_GROUP_COLORS[i]${(r:$mlen:)_fzf_tab_groups[i]}$'\033[00m'
+            len+=$mlen
+        fi
+    done
+    (( $#tmp )) && headers+=$tmp
+}
+
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf k _v filepath first_word
     local -i same_word=1
+    local -Ua duplicate_groups=()
+    local -A word_map=()
     typeset -ga candidates=()
+
+    if (( $#_fzf_tab_groups == 1 )); then
+        (( $FZF_TAB_SINGLE_GROUP[(I)prefix] )) || local FZF_TAB_PREFIX=''
+        (( $FZF_TAB_SINGLE_GROUP[(I)color] )) || local FZF_TAB_GROUP_COLORS=($FZF_TAB_NO_GROUP_COLOR)
+    fi
+
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
         # add a character to describe the type of the files
         # TODO: can be color?
         dsuf=
-        if [[ -n $v[isfile] ]]; then
+        if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)k}
             if [[ -L $filepath ]]; then
                 dsuf=@
@@ -134,15 +207,43 @@ _fzf_tab_get_candidates() {
                 dsuf=/
             fi
         fi
-        candidates+=$k$'\0'$dsuf
+
+        # add color to description if they have group description
+        if (( $+v[group] )); then
+            local color=$FZF_TAB_GROUP_COLORS[$v[group]]
+            # add a hidden group index at start of string to keep group order when sorting
+            # FIXME: only support 16 groups
+            candidates+=$(([##16]$v[group]-1))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+        else
+            candidates+=$FZF_TAB_SINGLE_COLOR$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+        fi
+
+        # check group with duplicate member
+        if [[ $FZF_TAB_SHOW_GROUP == brief ]]; then
+            if (( $+word_map[$v[word]] && $+v[group] )); then
+                duplicate_groups+=$v[group]            # add this group
+                duplicate_groups+=$word_map[$v[word]]  # add previous group
+            fi
+            word_map[$v[word]]=$v[group]
+        fi
     done
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")
+
+    # hide needless group
+    if [[ $FZF_TAB_SHOW_GROUP == brief ]]; then
+        local i indexs=({1..$#_fzf_tab_groups})
+        for i in ${indexs:|duplicate_groups}; do
+            # NOTE: _fzf_tab_groups is unique array
+            _fzf_tab_groups[i]="__hide__$i"
+        done
+    fi
 }
 
 _fzf_tab_complete() {
     local -A _fzf_tab_compcap
+    local -Ua _fzf_tab_groups
     local choice choices
 
     IN_FZF_TAB=1
@@ -151,7 +252,7 @@ _fzf_tab_complete() {
 
     emulate -L zsh
 
-    local query candidates=()
+    local query candidates=() headers=()
     _fzf_tab_get_candidates  # sets `candidates`
 
     case $#candidates in
@@ -159,8 +260,17 @@ _fzf_tab_complete() {
         1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
-            choices=$($FZF_TAB_COMMAND ${(z)FZF_TAB_OPTS} ${query:+-q$query} <<<${(pj:\n:)candidates})
-            choices=(${${(f)choices}%%$'\0'*})
+            _fzf_tab_get_headers     # sets `headers`
+
+            [[ ${(t)FZF_TAB_OPTS} != *"array"* ]] && FZF_TAB_OPTS=(${(z)FZF_TAB_OPTS})
+            local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS)
+
+            if (( $#headers )); then
+                choices=$(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
+            else
+                choices=$(${(eX)command} <<<${(pj:\n:)candidates})
+            fi
+            choices=(${${${(f)choices}%$'\0'*}#*$'\0'})
             ;;
     esac
 

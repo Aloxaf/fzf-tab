@@ -175,13 +175,14 @@ _fzf_tab_complete() {
     compstate[list]=
     compstate[insert]=
     if (( $#choices == 1 )); then
-        compstate[insert]='all'
         if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
             compstate[insert]='1'
         else
             compstate[insert]='2'
         fi
         (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+    elif (( $#choice > 1 )); then
+        compstate[insert]='all'
     fi
 }
 

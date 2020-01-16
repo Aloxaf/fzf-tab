@@ -227,6 +227,8 @@ _fzf_tab_get_candidates() {
             word_map[$v[word]]=$v[group]
         fi
     done
+    (( $#candidates == 0 )) && return
+
     (( same_word )) && candidates[2,-1]=()
     local LC_ALL=C
     candidates=("${(@on)candidates}")

@@ -301,7 +301,17 @@ _fzf_tab_complete() {
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
 fzf-tab-complete() {
-    zle _fzf_tab_complete  # must run with user options; don't add `emulate -L zsh` above this line
+    # complete or not complete, this is a question
+    local -i should_complete=0
+
+    # hack: hook _main_complete to check whether completion function will be called
+    functions[_main_complete_bak]=$functions[_main_complete]
+    functions[_main_complete]="should_complete=1"
+    zle $_fzf_tab_orig_widget
+    functions[_main_complete]=$functions[_main_complete_bak]
+
+    # must run with user options; don't add `emulate -L zsh` above this line
+    (( $should_complete )) && zle _fzf_tab_complete
     zle redisplay
 }
 

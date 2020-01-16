@@ -84,6 +84,7 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
+: ${FZF_TAB_CONTINUOUS_COMP='directory'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
@@ -282,6 +283,11 @@ _fzf_tab_complete() {
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
+
+        local filepath=${(Q)~${v[hpre]}}${(Q)choice}
+        if [[ $+v[file] && $FZF_TAB_CONTINUOUS_COMP == "directory" && -d $filepath ]]; then
+            typeset -gi _fzf_tab_continue=1
+        fi
     done
 
     compstate[list]=
@@ -302,21 +308,25 @@ zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
 fzf-tab-complete() {
     # complete or not complete, this is a question
-    local -i _fzf_tab_should_complete=0  # this name must be ugly to avoid clashes
-    if (( ${+functions[_main_complete]} )); then
-      # hack: hook _main_complete to check whether completion function will be called
-      local orig_main_complete=${functions[_main_complete]}
-      function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
-      {
-        zle $_fzf_tab_orig_widget
-      } always {
-        functions[_main_complete]=$orig_main_complete
-      }
-    fi
-
-    # must run with user options; don't add `emulate -L zsh` above this line
-    (( ! _fzf_tab_should_complete )) || zle _fzf_tab_complete
-    zle redisplay
+    # this name must be ugly to avoid clashes
+    local -i _fzf_tab_continue=1 _fzf_tab_should_complete=0
+    while (( _fzf_tab_continue )); do
+        _fzf_tab_should_complete=0
+        _fzf_tab_continue=0
+        if (( ${+functions[_main_complete]} )); then
+            # hack: hook _main_complete to check whether completion function will be called
+            local orig_main_complete=${functions[_main_complete]}
+            function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
+            {
+                zle $_fzf_tab_orig_widget
+            } always {
+                functions[_main_complete]=$orig_main_complete
+            }
+        fi
+        # must run with user options; don't add `emulate -L zsh` above this line
+        (( ! _fzf_tab_should_complete )) || zle _fzf_tab_complete
+        zle redisplay
+    done
 }
 
 zle -N fzf-tab-complete

@@ -84,7 +84,6 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
-: ${FZF_TAB_CONTINUOUS_COMP='directory'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
@@ -95,6 +94,7 @@ _fzf_tab_remove_space() {
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
+    --expect='/'
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=70%
@@ -277,6 +277,11 @@ _fzf_tab_complete() {
             ;;
     esac
 
+    if [[ $choices[1] == "/" ]]; then
+        typeset -gi _fzf_tab_continue=1
+        choices[1]=()
+    fi
+
     for choice in $choices; do
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
@@ -285,9 +290,6 @@ _fzf_tab_complete() {
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
 
         local filepath=${(Q)~${v[hpre]}}${(Q)choice}
-        if [[ $+v[file] && $FZF_TAB_CONTINUOUS_COMP == "directory" && -d $filepath ]]; then
-            typeset -gi _fzf_tab_continue=1
-        fi
     done
 
     compstate[list]=

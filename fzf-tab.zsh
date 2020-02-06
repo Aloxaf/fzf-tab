@@ -94,7 +94,7 @@ _fzf_tab_remove_space() {
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='/'
+    --expect='/' # For continuous completion 
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=70%

@@ -70,6 +70,7 @@ Default value:
 ```zsh
 FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
+    --expect='/' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=90%

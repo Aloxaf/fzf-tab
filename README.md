@@ -42,10 +42,10 @@ git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 
 ## Usage
 
-Just press <kdb>Tab</kdb> as usual~
+Just press <kbd>Tab</kbd> as usual~
 
-fzf-tab uses the default keybindings of fzf, except that <kdb>Tab</kdb> is used to scroll down the completions.
-But you can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results.
+You can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results,
+and <kbd>/</kbd> to trigger continuous completion (useful when complete a deep path).
 
 Available commands:
 

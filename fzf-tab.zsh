@@ -288,8 +288,6 @@ _fzf_tab_complete() {
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
                builtin compadd "${args[@]:--Q}" -Q -- $v[word]
-
-        local filepath=${(Q)~${v[hpre]}}${(Q)choice}
     done
 
     compstate[list]=

@@ -97,8 +97,8 @@ _fzf_tab_remove_space() {
     --expect='/' # For continuous completion 
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search FZF_TAB_PREFIX
-    --layout=reverse --height=70%
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --layout=reverse --height=75%
+    --tiebreak=begin -e -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -332,6 +332,7 @@ fzf-tab-complete() {
 zle -N fzf-tab-complete
 
 disable-fzf-tab() {
+    typeset -g _ZSH_FZF_TAB_DISABLED
     emulate -L zsh
     if (( $+_fzf_tab_orig_widget )); then
         bindkey '^I' $_fzf_tab_orig_widget
@@ -346,6 +347,7 @@ disable-fzf-tab() {
 }
 
 enable-fzf-tab() {
+    unset _ZSH_FZF_TAB_DISABLED
     emulate -L zsh
     typeset -g _fzf_tab_orig_widget="${$(bindkey '^I')##* }"
     zstyle -t ':completion:*' list-grouped false
@@ -355,7 +357,16 @@ enable-fzf-tab() {
     bindkey '^I' fzf-tab-complete
 }
 
+fzf-tab-toggle() {
+	if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
+		enable-fzf-tab
+	else
+		disable-fzf-tab
+	fi
+}
+
 enable-fzf-tab
+zle -N fzf-tab-toggle
 
 # restore options
 (( ${#_fzf_tab_opts} )) && setopt ${_fzf_tab_opts[@]}

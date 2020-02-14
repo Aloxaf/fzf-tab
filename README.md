@@ -53,6 +53,13 @@ Available commands:
 
 - `enable-fzf-tab`: Use it when fzf-tab doesn't initialize properly.
 
+Key Bindings:
+
+- `fzf-tab-toggle`: Use it disable/enable plugin.
+
+For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' fzf-tab-toggle`
+
+
 ### Configure
 
 Here are some variables which can be used to control the behavior of fzf-tab.

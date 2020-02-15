@@ -358,16 +358,16 @@ enable-fzf-tab() {
     bindkey '^I' fzf-tab-complete
 }
 
-fzf-tab-toggle() {
-	if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
-		enable-fzf-tab
-	else
-		disable-fzf-tab
-	fi
+toggle-fzf-tab() {
+	  if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
+		    enable-fzf-tab
+	  else
+		    disable-fzf-tab
+	  fi
 }
 
 enable-fzf-tab
-zle -N fzf-tab-toggle
+zle -N toggle-fzf-tab
 
 # restore options
 (( ${#_fzf_tab_opts} )) && setopt ${_fzf_tab_opts[@]}

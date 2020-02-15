@@ -55,10 +55,9 @@ Available commands:
 
 Key Bindings:
 
-- `fzf-tab-toggle`: Use it disable/enable plugin.
+- `toggle-fzf-tab`: Use it disable/enable plugin.
 
-For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' fzf-tab-toggle`
-
+For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
 ### Configure
 

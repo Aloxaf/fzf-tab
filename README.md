@@ -77,7 +77,7 @@ Default value:
 ```zsh
 FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='/' # For continuous completion
+    --expect='$FZF_TAB_CONTINUOUS_TRIGGER' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=90%
@@ -174,6 +174,10 @@ printc() {
     echo -E ${(qqqq)${(%)color}}
 }
 ```
+
+#### `FZF_TAB_CONTINUOUS_TRIGGER`
+
+The key trigger continuous completion. Default value: `/`
 
 ## Difference from other plugins
 

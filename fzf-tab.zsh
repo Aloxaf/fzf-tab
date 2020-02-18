@@ -232,7 +232,6 @@ _fzf_tab_get_candidates() {
     (( $#candidates == 0 )) && return
 
     (( same_word )) && candidates[2,-1]=()
-    local LC_ALL=C
     candidates=("${(@on)candidates}")
 
     # hide needless group

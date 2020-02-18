@@ -365,19 +365,19 @@ enable-fzf-tab() {
 }
 
 toggle-fzf-tab() {
-	  if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
-		    enable-fzf-tab
-	  else
-		    disable-fzf-tab
-	  fi
+    if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
+        enable-fzf-tab
+    else
+        disable-fzf-tab
+    fi
 }
 
 toggle-sort-fzf-tab() {
-	  if [[ ${FZF_TAB_SORT} == 1 ]]; then
-	        FZF_TAB_SORT=0
-	  else
-		    FZF_TAB_SORT=1
-	  fi
+    if [[ ${FZF_TAB_SORT} == 1 ]]; then
+        FZF_TAB_SORT=0
+    else
+        FZF_TAB_SORT=1
+    fi
 }
 
 enable-fzf-tab

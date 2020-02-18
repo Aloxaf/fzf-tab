@@ -53,7 +53,7 @@ compadd() {
 
     # dscr - the string to show to users
     # word - the string to be inserted
-    local dscr word i
+    local dscr word i cnt=$#_fzf_tab_compcap
     for i in {1..$#__hits}; do
         word=$__hits[i] && dscr=$__dscr[i]
         if [[ -n $dscr ]]; then
@@ -62,6 +62,9 @@ compadd() {
             dscr=$word
         else
             continue
+        fi
+        if [[ $FZF_TAB_SORT != "1" ]]; then
+            dscr=$((i + cnt))$'\b'$dscr
         fi
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
@@ -83,6 +86,7 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
 : ${FZF_TAB_SHOW_GROUP:=full}
+: ${FZF_TAB_SORT:='1'}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
 : ${FZF_TAB_CONTINUOUS_TRIGGER:='/'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
@@ -184,6 +188,7 @@ _fzf_tab_get_headers() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
+    setopt localoptions extendedglob
     local dsuf k _v filepath first_word
     local -i same_word=1
     local -Ua duplicate_groups=()
@@ -214,8 +219,7 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$FZF_TAB_GROUP_COLORS[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            # FIXME: only support 16 groups
-            candidates+=$(([##16]$v[group]-1))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$v[group]$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         else
             candidates+=$FZF_TAB_SINGLE_COLOR$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi
@@ -232,7 +236,10 @@ _fzf_tab_get_candidates() {
     (( $#candidates == 0 )) && return
 
     (( same_word )) && candidates[2,-1]=()
+
+    # sort and remove sort group or other index
     candidates=("${(@on)candidates}")
+    candidates=(${(@)candidates//[0-9]#$'\b'})
 
     # hide needless group
     if [[ $FZF_TAB_SHOW_GROUP == brief ]]; then
@@ -365,8 +372,17 @@ toggle-fzf-tab() {
 	  fi
 }
 
+toggle-sort-fzf-tab() {
+	  if [[ ${FZF_TAB_SORT} == 1 ]]; then
+	        FZF_TAB_SORT=0
+	  else
+		    FZF_TAB_SORT=1
+	  fi
+}
+
 enable-fzf-tab
 zle -N toggle-fzf-tab
+zle -N toggle-sort-fzf-tab
 
 # restore options
 (( ${#_fzf_tab_opts} )) && setopt ${_fzf_tab_opts[@]}

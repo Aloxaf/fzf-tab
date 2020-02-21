@@ -85,6 +85,8 @@ _fzf_tab_remove_space() {
 : ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
 : ${FZF_TAB_CONTINUOUS_TRIGGER:='/'}
+: ${FZF_TAB_CUSTOM_COMPLETIONS:='1'}
+: ${FZF_TAB_CUSTOM_COMPLETIONS_PREFIX:='_fzf_complete_'}
 : ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
@@ -95,7 +97,7 @@ _fzf_tab_remove_space() {
 
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$FZF_TAB_CONTINUOUS_TRIGGER' # For continuous completion 
+    --expect='$FZF_TAB_CONTINUOUS_TRIGGER' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height=75%
@@ -306,7 +308,24 @@ _fzf_tab_complete() {
 
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
+_fzf_tab_try_custom_completion() {
+    # do not steal fzf's completions
+    [[ $LBUFFER =~ ${(q)FZF_COMPLETION_TRIGGER-'**'}$ ]] && return 1
+    local tokens=(${(z)LBUFFER})
+    [[ ${LBUFFER[-1]} = ' ' ]] && tokens+=("")
+    local cmd=${tokens[1]}
+    if (( $+functions[${FZF_TAB_CUSTOM_COMPLETIONS_PREFIX}${cmd}] )); then
+        local prefix=${tokens[-1]}
+        local lbuf
+        [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER || lbuf=${LBUFFER:0:-${#tokens[-1]}}
+        prefix="$prefix" eval _fzf_complete_${cmd} ${(q)lbuf}
+        return 0
+    fi
+    return 1
+}
+
 fzf-tab-complete() {
+    (( FZF_TAB_CUSTOM_COMPLETIONS )) && _fzf_tab_try_custom_completion && return
     # complete or not complete, this is a question
     # this name must be ugly to avoid clashes
     local -i _fzf_tab_continue=1 _fzf_tab_should_complete=0

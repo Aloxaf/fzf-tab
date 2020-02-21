@@ -59,6 +59,25 @@ Key Bindings:
 
 For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
+### Custom completions
+
+There exists mechanism for overwriting completion action for particular command
+[similar to fzf](https://github.com/junegunn/fzf/wiki/Examples-(completion)).
+If function named `_fzf_complete_foo` is found, it will be used for handling completions
+of `foo` command.
+
+If you also have [fzf's completions](https://github.com/junegunn/fzf#fuzzy-completion-for-bash-and-zsh)
+enabled (`completion.zsh` is sourced), you can use it's `_fzf_complete` helper function, for example:
+```
+_fzf_complete_foo() {
+  _fzf_complete "--multi --reverse" "$@" < <(
+    echo foo
+    echo bar
+    echo bazz
+  )
+}
+```
+
 ### Configure
 
 Here are some variables which can be used to control the behavior of fzf-tab.
@@ -177,6 +196,16 @@ printc() {
 #### `FZF_TAB_CONTINUOUS_TRIGGER`
 
 The key trigger continuous completion. Default value: `/`
+
+#### FZF_TAB_CUSTOM_COMPLETIONS
+
+Whether to search for custom completion functions. Default value: `1`
+
+#### FZF_TAB_CUSTOM_COMPLETIONS_PREFIX
+
+Default value: `"_fzf_complete_"`
+
+note: The default value matches fzf name convention so that the same functions can be used both by fzf and fzf-tab.
 
 ## Difference from other plugins
 

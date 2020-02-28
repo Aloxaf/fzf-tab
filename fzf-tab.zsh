@@ -308,24 +308,29 @@ _fzf_tab_complete() {
 
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
+# note: this function is called with user options
 _fzf_tab_try_custom_completion() {
     # do not steal fzf's completions
-    [[ $LBUFFER =~ ${(q)FZF_COMPLETION_TRIGGER-'**'}$ ]] && return 1
-    local tokens=(${(z)LBUFFER})
-    [[ ${LBUFFER[-1]} = ' ' ]] && tokens+=("")
-    local cmd=${tokens[1]}
-    if (( $+functions[${FZF_TAB_CUSTOM_COMPLETIONS_PREFIX}${cmd}] )); then
-        local prefix=${tokens[-1]}
-        local lbuf
-        [ -z "${tokens[-1]}" ] && lbuf=$LBUFFER || lbuf=${LBUFFER:0:-${#tokens[-1]}}
-        prefix="$prefix" eval _fzf_complete_${cmd} ${(q)lbuf}
-        return 0
-    fi
-    return 1
+    [[ $LBUFFER != *"${FZF_COMPLETION_TRIGGER-**}" ]] || return
+    local func prefix lbuf
+    () {
+        emulate -L zsh
+        local tokens=(${(z)LBUFFER})
+        func=${FZF_TAB_CUSTOM_COMPLETIONS_PREFIX}${tokens[1]}
+        (( $+functions[$func] )) || return
+        if [[ $LBUFFER == *' ' ]]; then
+          lbuf=$LBUFFER
+        else
+          prefix=$tokens[-1]
+          lbuf=${LBUFFER:0:-$#prefix}
+        fi
+    } || return
+    # must run with user options; don't add `emulate -L zsh` above this line
+    "$func" "$lbuf" || true
 }
 
 fzf-tab-complete() {
-    (( FZF_TAB_CUSTOM_COMPLETIONS )) && _fzf_tab_try_custom_completion && return
+    (( ! FZF_TAB_CUSTOM_COMPLETIONS )) || ! _fzf_tab_try_custom_completion || return 0
     # complete or not complete, this is a question
     # this name must be ugly to avoid clashes
     local -i _fzf_tab_continue=1 _fzf_tab_should_complete=0

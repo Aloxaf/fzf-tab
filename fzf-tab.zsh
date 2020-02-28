@@ -32,6 +32,9 @@ compadd() {
         return
     fi
 
+    # store $curcontext for furthur usage
+    _fzf_tab_curcontext=${curcontext/:[^:]#:/:fzf_tab:}
+
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl
 
@@ -53,7 +56,8 @@ compadd() {
 
     # dscr - the string to show to users
     # word - the string to be inserted
-    local dscr word i
+    local dscr word i sort cnt=$#_fzf_tab_compcap
+    zstyle -b "$_fzf_tab_curcontext" sort sort
     for i in {1..$#__hits}; do
         word=$__hits[i] && dscr=$__dscr[i]
         if [[ -n $dscr ]]; then
@@ -63,13 +67,16 @@ compadd() {
         else
             continue
         fi
+        [[ $sort == "yes" ]] || dscr=$((i + cnt))$'\b'$dscr
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
+
     # tell zsh that the match is successful
-    case $FZF_TAB_FAKE_COMPADD in
-        fakeadd) nm=-1 ;;  # see _alternative:76
-        *) builtin compadd -U -qS '' -R _fzf_tab_remove_space '' ;;
-    esac
+    if zstyle -t "$_fzf_tab_curcontext" fake_compadd "fakeadd"; then
+        nm=-1  # see _alternative:76
+    else
+        builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
+    fi
 }
 
 # when insert multi results, a whitespace will be added to each result
@@ -79,13 +86,8 @@ _fzf_tab_remove_space() {
     [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
-: ${FZF_TAB_INSERT_SPACE:='1'}
-: ${FZF_TAB_FAKE_COMPADD:='default'}
 : ${FZF_TAB_COMMAND:='fzf'}
-: ${FZF_TAB_SHOW_GROUP:=full}
 : ${FZF_TAB_NO_GROUP_COLOR:=$'\033[37m'}
-: ${FZF_TAB_CONTINUOUS_TRIGGER:='/'}
-: ${(A)=FZF_TAB_QUERY=prefix input first}
 : ${(A)=FZF_TAB_SINGLE_GROUP=color header}
 : ${(A)=FZF_TAB_GROUP_COLORS=\
     $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
@@ -93,9 +95,17 @@ _fzf_tab_remove_space() {
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
 
+# Some users may still use variable
+zstyle ':fzf_tab:*' continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
+zstyle ':fzf_tab:*' fake-compadd ${FZF_TAB_FAKE_COMPADD:-default}
+zstyle ':fzf_tab:*' insert-space ${FZF_TAB_INSERT_SPACE:-true}
+zstyle ':fzf_tab:*' query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
+zstyle ':fzf_tab:*' show-group ${FZF_TAB_SHOW_GROUP:-full}
+zstyle ':fzf_tab:*' sort true
+
 (( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$FZF_TAB_CONTINUOUS_TRIGGER' # For continuous completion 
+    --expect='$continuous_trigger' # For continuous completion 
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
@@ -112,9 +122,10 @@ fi
 
 # sets `query` to the valid query string
 _fzf_tab_find_query_str() {
-    local key qtype tmp
+    local key qtype tmp query_string
     typeset -g query=
-    for qtype in $FZF_TAB_QUERY; do
+    zstyle -a "$_fzf_tab_curcontext" query_string query_string
+    for qtype in $query_string; do
         if [[ $qtype == prefix ]]; then
             # find the longest common prefix among ${(k)_fzf_tab_compcap}
             local -a keys=(${(k)_fzf_tab_compcap})
@@ -139,7 +150,7 @@ _fzf_tab_find_query_str() {
             fi
             tmp=${${tmp#$v[hpre]}#$v[apre]}
         fi
-        if (( $FZF_TAB_QUERY[(I)longest] )); then
+        if (( $query_string[(I)longest] )); then
             (( $#tmp > $#query )) && query=$tmp
         elif [[ -n $tmp ]]; then
             query=$tmp && break
@@ -184,7 +195,8 @@ _fzf_tab_get_headers() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    local dsuf k _v filepath first_word
+    setopt localoptions extendedglob
+    local dsuf k _v filepath first_word show_group
     local -i same_word=1
     local -Ua duplicate_groups=()
     local -A word_map=()
@@ -194,6 +206,8 @@ _fzf_tab_get_candidates() {
         (( $FZF_TAB_SINGLE_GROUP[(I)prefix] )) || local FZF_TAB_PREFIX=''
         (( $FZF_TAB_SINGLE_GROUP[(I)color] )) || local FZF_TAB_GROUP_COLORS=($FZF_TAB_NO_GROUP_COLOR)
     fi
+
+    zstyle -s "$_fzf_tab_curcontext" show_group show_group
 
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
@@ -214,14 +228,13 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$FZF_TAB_GROUP_COLORS[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            # FIXME: only support 16 groups
-            candidates+=$(([##16]$v[group]-1))$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
+            candidates+=$v[group]$'\b'$color$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         else
             candidates+=$FZF_TAB_SINGLE_COLOR$FZF_TAB_PREFIX$'\0'$k$'\0'$dsuf$'\033[00m'
         fi
 
         # check group with duplicate member
-        if [[ $FZF_TAB_SHOW_GROUP == brief ]]; then
+        if [[ $show_group == brief ]]; then
             if (( $+word_map[$v[word]] && $+v[group] )); then
                 duplicate_groups+=$v[group]            # add this group
                 duplicate_groups+=$word_map[$v[word]]  # add previous group
@@ -232,10 +245,12 @@ _fzf_tab_get_candidates() {
     (( $#candidates == 0 )) && return
 
     (( same_word )) && candidates[2,-1]=()
+    # sort and remove sort group or other index
     candidates=("${(@on)candidates}")
+    candidates=(${(@)candidates//[0-9]#$'\b'})
 
     # hide needless group
-    if [[ $FZF_TAB_SHOW_GROUP == brief ]]; then
+    if [[ $show_group == brief ]]; then
         local i indexs=({1..$#_fzf_tab_groups})
         for i in ${indexs:|duplicate_groups}; do
             # NOTE: _fzf_tab_groups is unique array
@@ -247,7 +262,7 @@ _fzf_tab_get_candidates() {
 _fzf_tab_complete() {
     local -A _fzf_tab_compcap
     local -Ua _fzf_tab_groups
-    local choice choices
+    local choice choices _fzf_tab_curcontext continuous_trigger
 
     IN_FZF_TAB=1
     _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
@@ -264,6 +279,8 @@ _fzf_tab_complete() {
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
+            # sets continuous_trigger
+            zstyle -s "$_fzf_tab_curcontext" continuous-trigger continuous_trigger 
 
             [[ ${(t)FZF_TAB_OPTS} != *"array"* ]] && FZF_TAB_OPTS=(${(z)FZF_TAB_OPTS})
             local -a command=($FZF_TAB_COMMAND $FZF_TAB_OPTS)
@@ -277,7 +294,7 @@ _fzf_tab_complete() {
             ;;
     esac
 
-    if [[ $choices[1] == $FZF_TAB_CONTINUOUS_TRIGGER ]]; then
+    if [[ $choices[1] == $continuous_trigger ]]; then
         typeset -gi _fzf_tab_continue=1
         choices[1]=()
     fi
@@ -293,12 +310,13 @@ _fzf_tab_complete() {
     compstate[list]=
     compstate[insert]=
     if (( $#choices == 1 )); then
-        if [[ $FZF_TAB_FAKE_COMPADD == "fakeadd" ]]; then
+        if zstyle -t "$_fzf_tab_curcontext" fake-compadd "fakeadd"; then
             compstate[insert]='1'
         else
             compstate[insert]='2'
         fi
-        (( ! FZF_TAB_INSERT_SPACE )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+        zstyle -t "$_fzf_tab_curcontext" insert-space
+        (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
     elif (( $#choice > 1 )); then
         compstate[insert]='all'
     fi

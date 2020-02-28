@@ -124,7 +124,7 @@ fi
 _fzf_tab_find_query_str() {
     local key qtype tmp query_string
     typeset -g query=
-    zstyle -a "$_fzf_tab_curcontext" query_string query_string
+    zstyle -a "$_fzf_tab_curcontext" query-string query_string
     for qtype in $query_string; do
         if [[ $qtype == prefix ]]; then
             # find the longest common prefix among ${(k)_fzf_tab_compcap}

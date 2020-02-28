@@ -33,7 +33,7 @@ compadd() {
     fi
 
     # store $curcontext for furthur usage
-    _fzf_tab_curcontext=:fzf_tab:${curcontext}
+    _fzf_tab_curcontext=:fzf_tab:${curcontext#:}
 
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl

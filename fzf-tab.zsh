@@ -296,14 +296,17 @@ _fzf_tab_complete() {
             _fzf_tab_get -s continuous-trigger continuous_trigger
             _fzf_tab_get -a command command
             _fzf_tab_get -a extra-opts opts
-            command+=($opts)
+
+            export CTXT="${${(Av)=_fzf_tab_compcap}[1]}"
 
             if (( $#headers )); then
-                choices=$(${(eX)command} <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
+                choices=$(${(eX)command} $opts <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
-                choices=$(${(eX)command} <<<${(pj:\n:)candidates})
+                choices=$(${(eX)command} $opts <<<${(pj:\n:)candidates})
             fi
             choices=(${${${(f)choices}%$'\2'*}#*$'\2'})
+
+            unset CTXT
             ;;
     esac
 
@@ -315,7 +318,7 @@ _fzf_tab_complete() {
     for choice in $choices; do
         # if disale sort
         for i in ${(k)_fzf_tab_compcap}; do
-            [[ $i != *$choice ]] || { choice=$i; break }
+            [[ $i != *$'\2'$choice ]] || { choice=$i; break }
         done
         local -A v=("${(@ps:\2:)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")

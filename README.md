@@ -103,6 +103,16 @@ zstyle ':fzf_tab:complete:_zlua:*' query-string input
 # give a preview when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
 zstyle ':fzf_tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --preview-window=down:3:wrap
+
+# (experientment) give a preview of directory when compleing cd
+local extract="
+# remove some hidden characters
+in={}
+in=\${\${in%\$'\2'*}#*\$'\2'}
+# get ctxt for current completion
+local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+"
+zstyle ':fzf_tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
 ```
 
 zstyle is set via command like this: `zstyle ':fzf_tab:{context}' tag value`.

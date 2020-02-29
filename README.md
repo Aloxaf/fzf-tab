@@ -59,6 +59,10 @@ Key Bindings:
 
 For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
+- `sort-fzf-tab`: Use it toggle sort in plugin.
+
+For example <kbd>Ctrl</kdb>+<kdb>S</kbd> `bindkey '^S' sort-fzf-tab`
+
 ### Configure
 
 Here are some variables which can be used to control the behavior of fzf-tab.

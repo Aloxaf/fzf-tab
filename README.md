@@ -4,6 +4,35 @@ Replace zsh's default completion selection menu with fzf!
 
 [![asciicast](https://asciinema.org/a/293849.svg)](https://asciinema.org/a/293849)
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [fzf-tab](#fzf-tab)
+- [Install](#install)
+    - [Manual](#manual)
+    - [Antigen](#antigen)
+    - [Zplugin](#zplugin)
+    - [Oh-My-Zsh](#oh-my-zsh)
+- [Usage](#usage)
+    - [Configure](#configure)
+        - [command](#command)
+        - [extra-opts](#extra-opts)
+        - [continuous-trigger](#continuous-trigger)
+        - [fake-compadd](#fake-compadd)
+        - [insert-space](#insert-space)
+        - [query-string](#query-string)
+        - [prefix](#prefix)
+        - [no-group-color](#no-group-color)
+        - [single-group](#single-group)
+        - [group-colors](#group-colors)
+        - [show-group](#show-group)
+        - [sort](#sort)
+- [Difference from other plugins](#difference-from-other-plugins)
+- [Compatibility with other plugins](#compatibility-with-other-plugins)
+- [Related projects](#related-projects)
+
+<!-- markdown-toc end -->
+
 # Install
 
 ## Manual
@@ -61,46 +90,117 @@ For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
 ## Configure
 
-### Variables
-
-Here are some variables which can be used to control the behavior of fzf-tab.
-
-#### `FZF_TAB_COMMAND`
-
-The fuzzy search program, default value: `fzf`
-
-#### `FZF_TAB_OPTS`
-
-Parameters of the fuzzy search program.
-
-Default value:
+fzf-tab used to use global variables for configuration. 
+Now it use zstyle, because zstyle can give you more control over fzf-tab's behavior, eg:
 
 ```zsh
-FZF_TAB_OPTS=(
+# disable sort when completing options of any command
+zstyle ':fzf_tab:complete:*:options' sort false
+
+# use input as query string when completing zlua
+zstyle ':fzf_tab:complete:_zlua:*' query-string input
+
+# give a preview when completing `kill`
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf_tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --preview-window=down:3:wrap
+```
+
+zstyle is set via command like this: `zstyle ':fzf_tab:{context}' tag value`.
+See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fzutil-Module) for more information.
+
+You can use <kbd>C-x h</kbd> to get possible context for a command:
+Note: This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
+
+```zsh
+❯ rg -- # Press `C-x h` here
+tags in context :completion::complete:rg::
+    operand-argument-1 options  (_arguments _rg _ripgrep)
+tags in context :completion::complete:rg:options:
+    options  (_arguments _rg _ripgrep)
+tags in context :completion::files-enhance:::
+    globbed-files  (_files _files_enhance)
+```
+
+Here are avaiable tags:
+
+### command
+
+How to start the fuzzy search program.
+
+Default value:
+```zsh
+FZF_TAB_COMMAND=(
+    fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
+    --nth=2,3 --delimiter='\x02'  # Don't search FZF_TAB_PREFIX
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
+zstyle ':fzf_tab:*' command $FZF_TAB_COMMAND
 ```
 
-#### `FZF_TAB_PREFIX`
+### extra-opts
 
-A prefix to indicate the color, default value: `·`
+Extra options for command
+
+Default value: None
+
+### continuous-trigger
+
+The key to trigger a continuous completion. It's useful when complete a long path.
+
+Default value: `zstyle ':fzf_tab:*' continuous-trigger '/'`
+
+### fake-compadd
+
+How to do a fake compadd. This only affects the result of multiple selections.
+
+- `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
+- `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
+(eg. `sudo git \t` will get not only git subcommands but also local files)
+
+Default value: `zstyle ':fzf_tab:*' fake-compadd default`
+
+### insert-space
+
+Whether to automatically insert a space after the result.
+
+Default value: `zstyle ':fzf_tab:*' insert-space true`
+
+### query-string
+
+The strategy for generating query string.
+
+Possible values:
+
+- `input`: use user's input as query string, just like zsh's default behavior
+- `prefix`: use the longest common prefix for all candidates as the query string
+- `first`: just a flag. If set, the first valid query string will be used
+- `longest`: another flag. If set, the longest valid query string will be used
+
+Default value: `zstyle ':fzf_tab:*' query-string prefix input first`
+
+### prefix
+
+A prefix to indicate the color.
+
+Default value: `zstyle ':fzf_tab:*:' prefix '·'`
 
 **NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
 
-#### `FZF_TAB_NO_GROUP_COLOR`
+### no-group-color
 
-Color when there is no group, default value: `$'\033[37m'` (white)
+Color when there is no group.
 
-#### `FZF_TAB_SINGLE_GROUP`
+Default value: `zstyle ':fzf_tab:*' $'\033[37m'` (white)
 
-The setting when there is only one group, default value: `(color header)`
+### single-group
+
+What to show when there is only one group.
 
 Possible values:
 
@@ -108,7 +208,9 @@ Possible values:
 - `color`: show group color
 - `header`: show group header
 
-#### `FZF_TAB_GROUP_COLORS`
+Default value: `zstyle ':fzf_tab:*' single-group color header`
+
+### group-colors
 
 Color for different groups and their descriptions.
 
@@ -120,6 +222,7 @@ FZF_TAB_GROUP_COLORS=(
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 )
+zstyle ':fzf_tab:*' group-colors $FZF_TAB_GROUP_COLORS
 ```
 
 To choose the color you want, you can first use this function to print the palette:
@@ -145,72 +248,7 @@ printc() {
 }
 ```
 
-### Zstyle
-
-zstyle can give you more control over fzf-tab's behavior, eg:
-
-```zsh
-# disable sort when completing options of any command
-zstyle ':fzf_tab:complete:*:options' sort false
-
-# use input as query string when completing zlua
-zstyle ':fzf_tab:complete:_zlua:*' query-string input
-```
-
-zstyle is set via command like this: `zstyle ':fzf_tab:{context}' tag value`.
-See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fzutil-Module) for more information.
-
-You can use <kbd>C-x h</kbd> to get possible context for a command:
-Note: This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
-
-```zsh
-❯ rg -- # Press `C-x h` here
-tags in context :completion::complete:rg::
-    operand-argument-1 options  (_arguments _rg _ripgrep)
-tags in context :completion::complete:rg:options:
-    options  (_arguments _rg _ripgrep)
-tags in context :completion::files-enhance:::
-    globbed-files  (_files _files_enhance)
-```
-
-Here are avaiable tags:
-
-#### continuous-trigger
-
-The key to trigger a continuous completion. It's useful when complete a long path.
-
-Default value: `zstyle ':fzf_tab:*' continuous-trigger '/'`
-
-#### fake-compadd
-
-How to do a fake compadd. This only affects the result of multiple selections.
-
-- `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
-- `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
-(eg. `sudo git \t` will get not only git subcommands but also local files)
-
-Default value: `zstyle ':fzf_tab:*' fake-compadd default`
-
-#### insert-space
-
-Whether to automatically insert a space after the result.
-
-Default value: `zstyle ':fzf_tab:*' insert-space true`
-
-#### query-string
-
-The strategy for generating query string.
-
-Possible values:
-
-- `input`: use user's input as query string, just like zsh's default behavior
-- `prefix`: use the longest common prefix for all candidates as the query string
-- `first`: just a flag. If set, the first valid query string will be used
-- `longest`: another flag. If set, the longest valid query string will be used
-
-Default value: `zstyle ':fzf_tab:*' query-string prefix input first`
-
-#### show-group
+### show-group
 
 When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display these group descriptions as headers.
 
@@ -218,7 +256,7 @@ Set to `full` to show all descriptions, set to `brief` to only show descriptions
 
 Default value: `zstyle ':fzf_tab:*' show-group full`
 
-#### sort
+### sort
 
 Whether sort the result.
 

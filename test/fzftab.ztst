@@ -1,0 +1,113 @@
+# Tests for fzf tab.
+
+%prep
+  unset -m LC_\*
+  ZSH_TEST_LANG=
+  langs=(en_{US,GB}.{UTF-,utf}8 en.UTF-8
+         $(locale -a 2>/dev/null | egrep 'utf8|UTF-8'))
+  for LANG in $langs; do
+    if [[ é = ? ]]; then
+      ZSH_TEST_LANG=$LANG
+      break;
+    fi
+  done
+  if [[ $OSTYPE = cygwin ]]; then
+    ZTST_unimplemented="the zsh/zpty module does not work on Cygwin"
+  elif ( zmodload zsh/zpty 2>/dev/null ); then
+    . $ZTST_srcdir/comptest
+    mkdir comp.tmp
+    cd comp.tmp
+    comptestinit -z zsh &&
+    {
+      comptesteval 'compdef _tst tst'
+      mkdir dir1 &&
+      mkdir dir2 &&
+      touch file1 &&
+      touch file2
+    }
+  else
+    ZTST_unimplemented="the zsh/zpty module is not available"
+  fi
+
+  comptesteval ". $ZTST_srcdir/../fzf-tab.zsh"
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+  comptesteval '
+  zstyle ":fzf-tab:*" no-group-color "<LC><C0><RC>"
+  zstyle ":fzf-tab:*" group-colors "<LC><C1><RC>" "<LC><C2><RC>" "<LC><C3><RC>" "<LC><C4><RC>"
+  _fzf_tab_orig_widget=expand-or-complete
+  fzf-tab-complete-with-report() {
+    print -lr "<WIDGET><fzf-tab-complete>"
+    zle fzf-tab-complete 2>&1
+    print -lr - "<LBUFFER>$LBUFFER</LBUFFER>" "<RBUFFER>$RBUFFER</RBUFFER>"
+    zle clear-screen
+    zle -R
+  }
+  zle -N fzf-tab-complete-with-report
+  bindkey "^I" fzf-tab-complete-with-report
+  '
+
+%test
+
+  comptest $': \t'
+0:directories and files
+>line: {: }{}
+>QUERY:{}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+>C1:{file1}
+>C1:{file2}
+
+  comptest $': d\t'
+0:prefix
+>line: {: d}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
+  comptesteval '_tst () { compadd d c b a }'
+  comptest $'tst \t'
+0:normal
+>line: {tst a }{}
+>QUERY:{}
+>C0:{a}
+>C0:{b}
+>C0:{c}
+>C0:{d}
+
+  comptesteval 'zstyle ":completion:*:tst:*" sort false'
+  comptest $'tst \t'
+0:no sort
+>line: {tst d }{}
+>QUERY:{}
+>C0:{d}
+>C0:{c}
+>C0:{b}
+>C0:{a}
+
+  comptesteval 'zstyle ":fzf-tab:*:tst:*" insert-space false'
+  comptest $'tst \t'
+0:no space
+>line: {tst d}{}
+>QUERY:{}
+>C0:{d}
+>C0:{c}
+>C0:{b}
+>C0:{a}
+
+  comptesteval 'zstyle ":fzf-tab:*:tst:*" extra-opts -n 1,2'
+  comptest $'tst \t'
+0:multi select
+>line: {tst c d }{}
+>QUERY:{}
+>C0:{d}
+>C0:{c}
+>C0:{b}
+>C0:{a}
+
+
+%clean
+
+  zmodload -ui zsh/zpty
+

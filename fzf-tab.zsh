@@ -33,7 +33,7 @@ compadd() {
     fi
 
     # store $curcontext for furthur usage
-    _fzf_tab_curcontext=:fzf-tab:${curcontext#:}
+    _fzf_tab_curcontext=${curcontext#:}
 
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl
@@ -57,7 +57,7 @@ compadd() {
     # dscr - the string to show to users
     # word - the string to be inserted
     local dscr word i sort cnt=$#_fzf_tab_compcap
-    _fzf_tab_get -b sort sort
+    zstyle -s ":completion:$_fzf_tab_curcontext" sort sort
     for i in {1..$#__hits}; do
         word=$__hits[i] && dscr=$__dscr[i]
         if [[ -n $dscr ]]; then
@@ -67,7 +67,7 @@ compadd() {
         else
             continue
         fi
-        [[ $sort == "yes" ]] || dscr=$((i + cnt))$'\b'$dscr
+        [[ $sort != (no|false|0|off) ]] || dscr=$((i + cnt))$'\b'$dscr
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\2word\2'$word}
     done
 
@@ -108,7 +108,7 @@ _fzf_tab_add_default() {
 }
 
 _fzf_tab_get() {
-    zstyle $1 "$_fzf_tab_curcontext" ${@:2}
+    zstyle $1 ":fzf-tab:$_fzf_tab_curcontext" ${@:2}
 }
 
 # Some users may still use variable
@@ -118,7 +118,6 @@ _fzf_tab_add_default insert-space ${FZF_TAB_INSERT_SPACE:-true}
 _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
 _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
 _fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
-_fzf_tab_add_default sort true
 _fzf_tab_add_default command ${FZF_TAB_COMMAND:-fzf} $FZF_TAB_OPTS
 _fzf_tab_add_default extra-opts ''
 _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
@@ -242,9 +241,9 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$v[group]$'\b'$color$prefix$'\2'$k$'\2'$dsuf$'\033[00m'
+            candidates+=$v[group]$'\b'$color$prefix$'\2'$k$'\2'$dsuf
         else
-            candidates+=$no_group_color$'\2'$k$'\2'$dsuf$'\033[00m'
+            candidates+=$no_group_color$'\2'$k$'\2'$dsuf
         fi
 
         # check group with duplicate member

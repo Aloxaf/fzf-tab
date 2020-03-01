@@ -33,7 +33,7 @@ compadd() {
     fi
 
     # store $curcontext for furthur usage
-    _fzf_tab_curcontext=:fzf_tab:${curcontext#:}
+    _fzf_tab_curcontext=:fzf-tab:${curcontext#:}
 
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl
@@ -103,8 +103,8 @@ FZF_TAB_OPTS=(
 )
 
 _fzf_tab_add_default() {
-    zstyle -t ':fzf_tab:*' $1
-    (( $? != 2 )) || zstyle ':fzf_tab:*' $1 ${@:2}
+    zstyle -t ':fzf-tab:*' $1
+    (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
 }
 
 _fzf_tab_get() {

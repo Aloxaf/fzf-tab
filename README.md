@@ -95,14 +95,14 @@ Now it use zstyle, because zstyle can give you more control over fzf-tab's behav
 
 ```zsh
 # disable sort when completing options of any command
-zstyle ':fzf_tab:complete:*:options' sort false
+zstyle ':fzf-tab:complete:*:options' sort false
 
 # use input as query string when completing zlua
-zstyle ':fzf_tab:complete:_zlua:*' query-string input
+zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # give a preview when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf_tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --preview-window=down:3:wrap
 
 # (experientment) give a preview of directory when compleing cd
 local extract="
@@ -112,10 +112,10 @@ in=\${\${in%\$'\2'*}#*\$'\2'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
-zstyle ':fzf_tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
+zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
 ```
 
-zstyle is set via command like this: `zstyle ':fzf_tab:{context}' tag value`.
+zstyle is set via command like this: `zstyle ':fzf-tab:{context}' tag value`.
 See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fzutil-Module) for more information.
 
 You can use <kbd>C-x h</kbd> to get possible context for a command:
@@ -150,7 +150,7 @@ FZF_TAB_COMMAND=(
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
-zstyle ':fzf_tab:*' command $FZF_TAB_COMMAND
+zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
 
 ### extra-opts
@@ -163,7 +163,7 @@ Default value: None
 
 The key to trigger a continuous completion. It's useful when complete a long path.
 
-Default value: `zstyle ':fzf_tab:*' continuous-trigger '/'`
+Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
 
 ### fake-compadd
 
@@ -173,13 +173,13 @@ How to do a fake compadd. This only affects the result of multiple selections.
 - `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
 (eg. `sudo git \t` will get not only git subcommands but also local files)
 
-Default value: `zstyle ':fzf_tab:*' fake-compadd default`
+Default value: `zstyle ':fzf-tab:*' fake-compadd default`
 
 ### insert-space
 
 Whether to automatically insert a space after the result.
 
-Default value: `zstyle ':fzf_tab:*' insert-space true`
+Default value: `zstyle ':fzf-tab:*' insert-space true`
 
 ### query-string
 
@@ -192,13 +192,13 @@ Possible values:
 - `first`: just a flag. If set, the first valid query string will be used
 - `longest`: another flag. If set, the longest valid query string will be used
 
-Default value: `zstyle ':fzf_tab:*' query-string prefix input first`
+Default value: `zstyle ':fzf-tab:*' query-string prefix input first`
 
 ### prefix
 
 A prefix to indicate the color.
 
-Default value: `zstyle ':fzf_tab:*:' prefix '·'`
+Default value: `zstyle ':fzf-tab:*:' prefix '·'`
 
 **NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
 
@@ -206,7 +206,7 @@ Default value: `zstyle ':fzf_tab:*:' prefix '·'`
 
 Color when there is no group.
 
-Default value: `zstyle ':fzf_tab:*' $'\033[37m'` (white)
+Default value: `zstyle ':fzf-tab:*' $'\033[37m'` (white)
 
 ### single-group
 
@@ -218,7 +218,7 @@ Possible values:
 - `color`: show group color
 - `header`: show group header
 
-Default value: `zstyle ':fzf_tab:*' single-group color header`
+Default value: `zstyle ':fzf-tab:*' single-group color header`
 
 ### group-colors
 
@@ -232,7 +232,7 @@ FZF_TAB_GROUP_COLORS=(
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 )
-zstyle ':fzf_tab:*' group-colors $FZF_TAB_GROUP_COLORS
+zstyle ':fzf-tab:*' group-colors $FZF_TAB_GROUP_COLORS
 ```
 
 To choose the color you want, you can first use this function to print the palette:
@@ -264,13 +264,13 @@ When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display t
 
 Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
 
-Default value: `zstyle ':fzf_tab:*' show-group full`
+Default value: `zstyle ':fzf-tab:*' show-group full`
 
 ### sort
 
 Whether sort the result.
 
-Default value: `zstyle ':fzf_tab:*' sort true`
+Default value: `zstyle ':fzf-tab:*' sort true`
 
 # Difference from other plugins
 

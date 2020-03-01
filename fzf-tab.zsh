@@ -40,19 +40,19 @@ compadd() {
 
     # store these values in _fzf_tab_compcap
     local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
-    local key expanded __tmp_value=$'<\2>' # placeholder
+    local key expanded __tmp_value=$'<\0>' # placeholder
     for key in $keys; do
         expanded=${(P)key}
         if [[ $expanded ]]; then
-            __tmp_value+=$'\2'$key$'\2'$expanded
+            __tmp_value+=$'\0'$key$'\0'$expanded
         fi
     done
     if [[ $expl ]]; then
         # store group index
-        __tmp_value+=$'\2group\2'$_fzf_tab_groups[(ie)$expl]
+        __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
     fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
-    __tmp_value+=$'\2args\2'${(pj:\1:)_opts}
+    __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
     # word - the string to be inserted
@@ -68,7 +68,7 @@ compadd() {
             continue
         fi
         [[ $sort != (no|false|0|off) ]] || dscr=$((i + cnt))$'\b'$dscr
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\2word\2'$word}
+        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
 
     # tell zsh that the match is successful
@@ -91,11 +91,11 @@ _fzf_tab_remove_space() {
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
-FZF_TAB_OPTS=(
+(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --nth=2,3 --delimiter='\x02'  # Don't search FZF_TAB_PREFIX
+    --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
@@ -152,7 +152,7 @@ _fzf_tab_find_query_str() {
             done
         elif [[ $qtype == input ]]; then
             local fv=${${(v)_fzf_tab_compcap}[1]}
-            local -A v=("${(@ps:\2:)fv}")
+            local -A v=("${(@0)fv}")
             tmp=$v[PREFIX]
             if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
                 tmp=${tmp/%$v[SUFFIX]}
@@ -223,7 +223,7 @@ _fzf_tab_get_candidates() {
     fi
 
     for k _v in ${(kv)_fzf_tab_compcap}; do
-        local -A v=("${(@ps:\2:)_v}")
+        local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
         # add a character to describe the type of the files
         # TODO: can be color?
@@ -241,9 +241,9 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$v[group]$'\b'$color$prefix$'\2'$k$'\2'$dsuf
+            candidates+=$v[group]$'\b'$color$prefix$'\0'$k$'\0'$dsuf
         else
-            candidates+=$no_group_color$'\2'$k$'\2'$dsuf
+            candidates+=$no_group_color$'\0'$k$'\0'$dsuf
         fi
 
         # check group with duplicate member
@@ -296,14 +296,14 @@ _fzf_tab_complete() {
             _fzf_tab_get -a command command
             _fzf_tab_get -a extra-opts opts
 
-            export CTXT="${${(Av)=_fzf_tab_compcap}[1]}"
+            export CTXT=${${${(v)_fzf_tab_compcap}[1]}//$'\0'/$'\2'}
 
             if (( $#headers )); then
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)candidates})
             fi
-            choices=(${${${(f)choices}%$'\2'*}#*$'\2'})
+            choices=(${${${(f)choices}%$'\0'*}#*$'\0'})
 
             unset CTXT
             ;;
@@ -319,7 +319,7 @@ _fzf_tab_complete() {
         for i in ${(k)_fzf_tab_compcap}; do
             [[ $i != *$'\b'$choice ]] || { choice=$i; break }
         done
-        local -A v=("${(@ps:\2:)${_fzf_tab_compcap[$choice]}}")
+        local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \

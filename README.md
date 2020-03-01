@@ -26,7 +26,6 @@ Replace zsh's default completion selection menu with fzf!
         - [single-group](#single-group)
         - [group-colors](#group-colors)
         - [show-group](#show-group)
-        - [sort](#sort)
 - [Difference from other plugins](#difference-from-other-plugins)
 - [Compatibility with other plugins](#compatibility-with-other-plugins)
 - [Related projects](#related-projects)
@@ -95,7 +94,7 @@ Now it use zstyle, because zstyle can give you more control over fzf-tab's behav
 
 ```zsh
 # disable sort when completing options of any command
-zstyle ':fzf-tab:complete:*:options' sort false
+zstyle ':completion:complete:*:options' sort false
 
 # use input as query string when completing zlua
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
@@ -106,9 +105,8 @@ zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --p
 
 # (experientment) give a preview of directory when compleing cd
 local extract="
-# remove some hidden characters
-in={}
-in=\${\${in%\$'\2'*}#*\$'\2'}
+# trim input
+in=\${\${\"\$(<{+f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
@@ -144,7 +142,7 @@ FZF_TAB_COMMAND=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --nth=2,3 --delimiter='\x02'  # Don't search FZF_TAB_PREFIX
+    --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
@@ -265,12 +263,6 @@ When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display t
 Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
 
 Default value: `zstyle ':fzf-tab:*' show-group full`
-
-### sort
-
-Whether sort the result.
-
-Default value: `zstyle ':fzf-tab:*' sort true`
 
 # Difference from other plugins
 

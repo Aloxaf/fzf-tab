@@ -318,7 +318,7 @@ _fzf_tab_complete() {
     for choice in $choices; do
         # if disale sort
         for i in ${(k)_fzf_tab_compcap}; do
-            [[ $i != *$'\2'$choice ]] || { choice=$i; break }
+            [[ $i != *$'\b'$choice ]] || { choice=$i; break }
         done
         local -A v=("${(@ps:\2:)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")

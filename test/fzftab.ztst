@@ -34,7 +34,6 @@
   comptesteval '
   zstyle ":fzf-tab:*" no-group-color "<LC><C0><RC>"
   zstyle ":fzf-tab:*" group-colors "<LC><C1><RC>" "<LC><C2><RC>" "<LC><C3><RC>" "<LC><C4><RC>"
-  _fzf_tab_orig_widget=expand-or-complete
   fzf-tab-complete-with-report() {
     print -lr "<WIDGET><fzf-tab-complete>"
     zle fzf-tab-complete 2>&1

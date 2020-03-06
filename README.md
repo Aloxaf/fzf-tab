@@ -4,9 +4,37 @@ Replace zsh's default completion selection menu with fzf!
 
 [![asciicast](https://asciinema.org/a/293849.svg)](https://asciinema.org/a/293849)
 
-## Install
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
 
-### Manual
+- [fzf-tab](#fzf-tab)
+- [Install](#install)
+    - [Manual](#manual)
+    - [Antigen](#antigen)
+    - [Zinit](#zinit)
+    - [Oh-My-Zsh](#oh-my-zsh)
+- [Usage](#usage)
+    - [Configure](#configure)
+        - [command](#command)
+        - [extra-opts](#extra-opts)
+        - [continuous-trigger](#continuous-trigger)
+        - [fake-compadd](#fake-compadd)
+        - [insert-space](#insert-space)
+        - [query-string](#query-string)
+        - [prefix](#prefix)
+        - [no-group-color](#no-group-color)
+        - [single-group](#single-group)
+        - [group-colors](#group-colors)
+        - [show-group](#show-group)
+- [Difference from other plugins](#difference-from-other-plugins)
+- [Compatibility with other plugins](#compatibility-with-other-plugins)
+- [Related projects](#related-projects)
+
+<!-- markdown-toc end -->
+
+# Install
+
+## Manual
 
 First, clone this repository
 
@@ -20,19 +48,19 @@ Then add the following line to your `~/.zshrc`
 source ~/somewhere/fzf-tab.plugin.zsh
 ```
 
-### Antigen
+## Antigen
 
 ```zsh
 antigen bundle Aloxaf/fzf-tab
 ```
 
-### Zplugin
+## Zinit
 
 ```zsh
-zplugin light Aloxaf/fzf-tab
+zinit light Aloxaf/fzf-tab
 ```
 
-### Oh-My-Zsh
+## Oh-My-Zsh
 
 Clone this repository to your custom directory and then add `fzf-tab` to your plugin list.
 
@@ -40,7 +68,7 @@ Clone this repository to your custom directory and then add `fzf-tab` to your pl
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 ```
 
-## Usage
+# Usage
 
 Just press <kbd>Tab</kbd> as usual~
 
@@ -59,40 +87,101 @@ Key Bindings:
 
 For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
-### Configure
+## Configure
 
-Here are some variables which can be used to control the behavior of fzf-tab.
-
-#### `FZF_TAB_COMMAND`
-
-The fuzzy search program, default value: `fzf`
-
-#### `FZF_TAB_OPTS`
-
-Parameters of the fuzzy search program.
-
-Default value:
+fzf-tab use zstyle for configuration. It can give you more control over fzf-tab's behavior, eg:
 
 ```zsh
-FZF_TAB_OPTS=(
+# disable sort when completing options of any command
+zstyle ':completion:complete:*:options' sort false
+
+# use input as query string when completing zlua
+zstyle ':fzf-tab:complete:_zlua:*' query-string input
+
+# give a preview when completing `kill`
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo $(<{f})' --preview-window=down:3:wrap
+
+# (experimental) give a preview of directory when completing cd
+local extract="
+# trim input
+in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+# get ctxt for current completion
+local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+"
+zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
+```
+
+fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.
+See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fzutil-Module) for more information.
+
+You can use <kbd>C-x h</kbd> to get possible context for a command:
+
+**NOTE:** This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
+
+```zsh
+❯ rg -- # Press `C-x h` here
+tags in context :completion::complete:rg::
+    operand-argument-1 options  (_arguments _rg _ripgrep)
+tags in context :completion::complete:rg:options:
+    options  (_arguments _rg _ripgrep)
+tags in context :completion::files-enhance:::
+    globbed-files  (_files _files_enhance)
+```
+
+Here are avaiable tags in `fzf-tab` context:
+
+### command
+
+How to start the fuzzy search program.
+
+Default value:
+```zsh
+FZF_TAB_COMMAND=(
+    fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$FZF_TAB_CONTINUOUS_TRIGGER' # For continuous completion
+    --expect='$continuous_trigger' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --nth=2,3 --delimiter='\0'  # Don't search FZF_TAB_PREFIX
+    --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
+zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
 
-#### `FZF_TAB_INSERT_SPACE`
+### extra-opts
 
-Whether to automatically insert a space after the result, default value: `1`
+Extra options for command
 
-#### `FZF_TAB_QUERY`
+Default value: None
 
-The strategy for generating query string, default value: `(prefix input first)`
+### continuous-trigger
+
+The key to trigger a continuous completion. It's useful when complete a long path.
+
+Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### fake-compadd
+
+How to do a fake compadd. This only affects the result of multiple selections.
+
+- `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
+- `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
+(eg. `sudo git \t` will get not only git subcommands but also local files)
+
+Default value: `zstyle ':fzf-tab:*' fake-compadd default`
+
+### insert-space
+
+Whether to automatically insert a space after the result.
+
+Default value: `zstyle ':fzf-tab:*' insert-space true`
+
+### query-string
+
+The strategy for generating query string.
 
 Possible values:
 
@@ -101,35 +190,25 @@ Possible values:
 - `first`: just a flag. If set, the first valid query string will be used
 - `longest`: another flag. If set, the longest valid query string will be used
 
-#### `FZF_TAB_FAKE_COMPADD`
+Default value: `zstyle ':fzf-tab:*' query-string prefix input first`
 
-How to do a fake compadd. This variable only affects the result of multiple selections.
+### prefix
 
-- `default`: Call compadd with an empty string. It will sometimes add extra whitespace if you select multiple results.
-- `fakeadd`: Try to deceive the completion system. Sometimes it fails and then leads to unwanted results.
-(eg. `sudo git \t` will get not only git subcommands but also local files)
+A prefix to indicate the color.
 
-#### `FZF_TAB_SHOW_GROUP`
-
-When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display these group descriptions as headers.
-
-Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
-
-Default value: full
-
-#### `FZF_TAB_PREFIX`
-
-A prefix to indicate the color, default value: `·`
+Default value: `zstyle ':fzf-tab:*:' prefix '·'`
 
 **NOTE:** If not set `zstyle ':completion:*:descriptions' format`, it will be set to empty.
 
-#### `FZF_TAB_NO_GROUP_COLOR`
+### no-group-color
 
-Color when there is no group, default value: `$'\033[37m'` (white)
+Color when there is no group.
 
-#### `FZF_TAB_SINGLE_GROUP`
+Default value: `zstyle ':fzf-tab:*' $'\033[37m'` (white)
 
-The setting when there is only one group, default value: `(color header)`
+### single-group
+
+What to show when there is only one group.
 
 Possible values:
 
@@ -137,7 +216,9 @@ Possible values:
 - `color`: show group color
 - `header`: show group header
 
-#### `FZF_TAB_GROUP_COLORS`
+Default value: `zstyle ':fzf-tab:*' single-group color header`
+
+### group-colors
 
 Color for different groups and their descriptions.
 
@@ -149,6 +230,7 @@ FZF_TAB_GROUP_COLORS=(
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 )
+zstyle ':fzf-tab:*' group-colors $FZF_TAB_GROUP_COLORS
 ```
 
 To choose the color you want, you can first use this function to print the palette:
@@ -174,18 +256,22 @@ printc() {
 }
 ```
 
-#### `FZF_TAB_CONTINUOUS_TRIGGER`
+### show-group
 
-The key trigger continuous completion. Default value: `/`
+When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display these group descriptions as headers.
 
-## Difference from other plugins
+Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
+
+Default value: `zstyle ':fzf-tab:*' show-group full`
+
+# Difference from other plugins
 
 fzf-tab doesn't do "complete", it just shows your results of the default completion system.
 
 So it works EVERYWHERE (variables, function names, directory stack, in-word completion, etc.).
 And most of your configure for default completion system is still valid.
 
-## Compatibility with other plugins
+# Compatibility with other plugins
 
 Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completion.zsh](https://github.com/junegunn/fzf/blob/master/shell/completion.zsh) or [ohmyzsh/lib/completion.zsh](https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/completion.zsh#L61-L73).
 
@@ -193,6 +279,6 @@ By default, fzf-tab will call the widget previously bound to "^I" to get the com
 
 So if you find your fzf-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
 
-## Related projects
+# Related projects
 
 - https://github.com/lincheney/fzf-tab-completion (fzf tab completion for zsh, bash and GNU readline apps)

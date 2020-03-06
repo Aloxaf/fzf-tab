@@ -7,6 +7,8 @@
 
 zmodload zsh/zutil
 
+source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
+
 # thanks Valodim/zsh-capture-completion
 compadd() {
     # parse all options
@@ -207,8 +209,9 @@ _fzf_tab_get_headers() {
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     setopt localoptions extendedglob
-    local dsuf k _v filepath first_word show_group group_colors no_group_color prefix bs=$'\b'
-    local -i same_word=1
+    local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
+    local -a list_colors group_colors
+    local -i  same_word=1
     local -Ua duplicate_groups=()
     local -A word_map=()
     typeset -ga candidates=()
@@ -216,6 +219,10 @@ _fzf_tab_get_candidates() {
     _fzf_tab_get -s show-group show_group
     _fzf_tab_get -a group-colors group_colors
     _fzf_tab_get -s no-group-color no_group_color
+
+    zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
+    local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+	  local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
 
     if (( $#_fzf_tab_groups == 1 )); then
         _fzf_tab_get -m single-group prefix || prefix=''
@@ -225,9 +232,8 @@ _fzf_tab_get_candidates() {
     for k _v in ${(kv)_fzf_tab_compcap}; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
-        # add a character to describe the type of the files
-        # TODO: can be color?
-        dsuf=
+        # add character and color to describe the type of the files
+        dsuf='' && dpre=''
         if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)k}
             if [[ -L $filepath ]]; then
@@ -235,15 +241,20 @@ _fzf_tab_get_candidates() {
             elif [[ -d $filepath ]]; then
                 dsuf=/
             fi
+            # add color if have list-colors
+            if (( $#list_colors )); then
+                fzf-tab-lscolors::match-by $filepath lstat
+                dpre=$'\033['$reply[1]'m'
+            fi
         fi
 
         # add color to description if they have group index
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$v[group]$'\b'$color$prefix$'\0'$k$'\0'$dsuf
+            candidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$k$'\0'$dsuf
         else
-            candidates+=$no_group_color$'\0'$k$'\0'$dsuf
+            candidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
 
         # check group with duplicate member

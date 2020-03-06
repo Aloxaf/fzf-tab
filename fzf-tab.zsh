@@ -102,32 +102,38 @@ _fzf_tab_remove_space() {
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
 
-_fzf_tab_add_default() {
-    zstyle -t ':fzf-tab:*' $1
-    (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
-}
-
 _fzf_tab_get() {
     zstyle $1 ":fzf-tab:$_fzf_tab_curcontext" ${@:2}
 }
 
-# Some users may still use variable
-_fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
-_fzf_tab_add_default fake-compadd ${FZF_TAB_FAKE_COMPADD:-default}
-_fzf_tab_add_default insert-space ${FZF_TAB_INSERT_SPACE:-true}
-_fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
-_fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
-_fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
-_fzf_tab_add_default command ${FZF_TAB_COMMAND:-fzf} $FZF_TAB_OPTS
-_fzf_tab_add_default extra-opts ''
-_fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
-_fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
+() {
+    emulate -L zsh -o extended_glob
 
-if zstyle -m ':completion:*:descriptions' format '*'; then
-    _fzf_tab_add_default prefix '·'
-else
-    _fzf_tab_add_default prefix ''
-fi
+    _fzf_tab_add_default() {
+        zstyle -t ':fzf-tab:*' $1
+        (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
+    }
+
+    # Some users may still use variable
+    _fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
+    _fzf_tab_add_default fake-compadd ${FZF_TAB_FAKE_COMPADD:-default}
+    _fzf_tab_add_default insert-space ${FZF_TAB_INSERT_SPACE:-true}
+    _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
+    _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
+    _fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
+    _fzf_tab_add_default command ${FZF_TAB_COMMAND:-fzf} $FZF_TAB_OPTS
+    _fzf_tab_add_default extra-opts ''
+    _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
+    _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
+
+    if zstyle -m ':completion:*:descriptions' format '*'; then
+        _fzf_tab_add_default prefix '·'
+    else
+        _fzf_tab_add_default prefix ''
+    fi
+
+    unfunction _fzf_tab_add_default
+}
 
 # sets `query` to the valid query string
 _fzf_tab_find_query_str() {
@@ -206,7 +212,6 @@ _fzf_tab_get_headers() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    setopt localoptions extendedglob
     local dsuf k _v filepath first_word show_group group_colors no_group_color prefix bs=$'\b'
     local -i same_word=1
     local -Ua duplicate_groups=()
@@ -281,7 +286,7 @@ _fzf_tab_complete() {
     _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
     IN_FZF_TAB=0
 
-    emulate -L zsh
+    emulate -L zsh -o extended_glob
 
     local query candidates=() headers=() command opts
     _fzf_tab_get_candidates  # sets `candidates`
@@ -355,12 +360,7 @@ fzf-tab-complete() {
             local orig_main_complete=${functions[_main_complete]}
             function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
             {
-                # It will cause twinkling if we call the widget with zsh-autosuggest's wrapper
-                if [[ $widgets[$_fzf_tab_orig_widget] == (#b)user:_zsh_autosuggest_bound_(*) ]]; then
-                    zle autosuggest-orig-${match/_/-}
-                else
-                    zle $_fzf_tab_orig_widget
-                fi
+                zle .fzf-tab-orig-$_fzf_tab_orig_widget
             } always {
                 functions[_main_complete]=$orig_main_complete
             }
@@ -374,24 +374,49 @@ fzf-tab-complete() {
 zle -N fzf-tab-complete
 
 disable-fzf-tab() {
-    typeset -g _ZSH_FZF_TAB_DISABLED
-    emulate -L zsh
-    if (( $+_fzf_tab_orig_widget )); then
-        bindkey '^I' $_fzf_tab_orig_widget
-        unset _fzf_tab_orig_widget
-    fi
+    emulate -L zsh -o extended_glob
+    (( $+_fzf_tab_orig_widget )) || return 0
+
+    bindkey '^I' $_fzf_tab_orig_widget
     case $_fzf_tab_orig_list_grouped in
         0) zstyle ':completion:*' list-grouped false ;;
         1) zstyle ':completion:*' list-grouped true ;;
         2) zstyle -d ':completion:*' list-grouped ;;
     esac
-    unset _fzf_tab_orig_list_groupded
+    unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
+
+    # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
+    # create it if enable-fzf-tab is called again.
 }
 
 enable-fzf-tab() {
-    unset _ZSH_FZF_TAB_DISABLED
-    emulate -L zsh
-    typeset -g _fzf_tab_orig_widget="${$(bindkey '^I')##* }"
+    emulate -L zsh -o extended_glob
+    (( $+_fzf_tab_orig_widget )) && return
+
+    typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
+    if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then
+        # Widgets that get replaced by compinit.
+        local compinit_widgets=(
+            complete-word
+            delete-char-or-list
+            expand-or-complete
+            expand-or-complete-prefix
+            list-choices
+            menu-complete
+            menu-expand-or-complete
+            reverse-menu-complete
+        )
+        # Note: We prefix the name of the widget with '.' so that it doesn't get wrapped.
+        if [[ $widgets[$_fzf_tab_orig_widget] == builtin &&
+              $compinit_widgets[(Ie)$_fzf_tab_orig_widget] != 0 ]]; then
+            # We are initializing before compinit and being asked to fall back to a completion
+            # widget that isn't defined yet. Create our own copy of the widget ahead of time.
+            zle -C .fzf-tab-orig-$_fzf_tab_orig_widget .$_fzf_tab_orig_widget _main_complete
+        else
+            # Copy the widget before it's wrapped by zsh-autosuggestions and zsh-syntax-highlighting.
+            zle -A $_fzf_tab_orig_widget .fzf-tab-orig-$_fzf_tab_orig_widget
+        fi
+    fi
     zstyle -t ':completion:*' list-grouped false
     typeset -g _fzf_tab_orig_list_grouped=$?
 
@@ -400,11 +425,12 @@ enable-fzf-tab() {
 }
 
 toggle-fzf-tab() {
-	  if [[ -n "${_ZSH_FZF_TAB_DISABLED+x}" ]]; then
-		    enable-fzf-tab
-	  else
-		    disable-fzf-tab
-	  fi
+    emulate -L zsh -o extended_glob
+    if (( $+_fzf_tab_orig_widget )); then
+        disable-fzf-tab
+    else
+        enable-fzf-tab
+    fi
 }
 
 enable-fzf-tab

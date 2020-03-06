@@ -355,7 +355,12 @@ fzf-tab-complete() {
             local orig_main_complete=${functions[_main_complete]}
             function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
             {
-                zle $_fzf_tab_orig_widget
+                # It will cause twinkling if we call the widget with zsh-autosuggest's wrapper
+                if [[ $widgets[$_fzf_tab_orig_widget] == (#b)user:_zsh_autosuggest_bound_(*) ]]; then
+                    zle autosuggest-orig-${match/_/-}
+                else
+                    zle $_fzf_tab_orig_widget
+                fi
             } always {
                 functions[_main_complete]=$orig_main_complete
             }

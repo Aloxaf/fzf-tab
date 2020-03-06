@@ -134,7 +134,7 @@ comptest () {
     if [[ "$log" = (#b)*$'<LBUFFER>'(*)$'</LBUFFER>\r\n<RBUFFER>'(*)$'</RBUFFER>'* ]]; then
       print -lr "line: {$match[1]}{$match[2]}"
     fi
-    while (( ${(N)log#*(#b)(<LC><(??)><RC>(*)<EC>|<DESCRIPTION>(*)</DESCRIPTION>|<MESSAGE>(*)</MESSAGE>|<COMPADD>(*)</COMPADD>|<INSERT_POSITIONS>(*)</INSERT_POSITIONS>|<QUERY>(*)</QUERY>)} )); do
+    while (( ${(N)log#*(#b)(<LC><(??)><RC>(*)<EC>|<DESCRIPTION>(*)</DESCRIPTION>|<MESSAGE>(*)</MESSAGE>|<COMPADD>(*)</COMPADD>|<INSERT_POSITIONS>(*)</INSERT_POSITIONS>|<QUERY>(*)</QUERY>|<WARN>(*)</WARN>)} )); do
       log="${log[$mend[1]+1,-1]}"
       if (( 0 <= $mbegin[2] )); then
 	if [[ $match[2] != TC && $match[3] != \ # ]]; then
@@ -150,6 +150,8 @@ comptest () {
         print -lr "INSERT_POSITIONS:{${${match[7]}//[$'\r\n']/}}"
       elif (( 0 <= $mbegin[8] )); then
         print -lr "QUERY:{${match[8]}}"
+      elif (( 0 <= $mbegin[9] )); then
+        print -lr "WARN:{${match[9]}}"
       fi
     done
   done

@@ -11,7 +11,7 @@ Replace zsh's default completion selection menu with fzf!
 - [Install](#install)
     - [Manual](#manual)
     - [Antigen](#antigen)
-    - [Zplugin](#zplugin)
+    - [Zinit](#zinit)
     - [Oh-My-Zsh](#oh-my-zsh)
 - [Usage](#usage)
     - [Configure](#configure)
@@ -54,10 +54,10 @@ source ~/somewhere/fzf-tab.plugin.zsh
 antigen bundle Aloxaf/fzf-tab
 ```
 
-## Zplugin
+## Zinit
 
 ```zsh
-zplugin light Aloxaf/fzf-tab
+zinit light Aloxaf/fzf-tab
 ```
 
 ## Oh-My-Zsh
@@ -89,8 +89,7 @@ For example <kbd>Ctrl</kdb>+<kdb>T</kbd> `bindkey '^T' toggle-fzf-tab`
 
 ## Configure
 
-fzf-tab used to use global variables for configuration. 
-Now it use zstyle, because zstyle can give you more control over fzf-tab's behavior, eg:
+fzf-tab use zstyle for configuration. It can give you more control over fzf-tab's behavior, eg:
 
 ```zsh
 # disable sort when completing options of any command
@@ -101,23 +100,24 @@ zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # give a preview when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo {}' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo $(<{f})' --preview-window=down:3:wrap
 
-# (experientment) give a preview of directory when compleing cd
+# (experimental) give a preview of directory when completing cd
 local extract="
 # trim input
-in=\${\${\"\$(<{+f})\"%\$'\0'*}#*\$'\0'}
+in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
 zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
 ```
 
-zstyle is set via command like this: `zstyle ':fzf-tab:{context}' tag value`.
+fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.
 See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fzutil-Module) for more information.
 
 You can use <kbd>C-x h</kbd> to get possible context for a command:
-Note: This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
+
+**NOTE:** This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
 
 ```zsh
 ❯ rg -- # Press `C-x h` here
@@ -129,7 +129,7 @@ tags in context :completion::files-enhance:::
     globbed-files  (_files _files_enhance)
 ```
 
-Here are avaiable tags:
+Here are avaiable tags in `fzf-tab` context:
 
 ### command
 

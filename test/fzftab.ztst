@@ -106,6 +106,15 @@
 >C0:{b}
 >C0:{a}
 
+  comptest $': *\t'
+0:expand
+>line: {: dir1 dir2 file1 file2 }{}
+
+  comptesteval 'zstyle ":completion:*:warnings" format "<WARN>%d</WARN>"'
+  comptest $': asd\t'
+0:warnings
+>line: {: asd}{}
+>WARN:{`file'}
 
 %clean
 

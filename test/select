@@ -20,7 +20,7 @@ done
 lines[1,headers]=()
 
 for i in {1..$#lines}; do
-    print -r -- ${lines[i]//$'\2'}"<EC>" >&2
+    print -r -- ${lines[i]//$'\0'}"<EC>" >&2
 done
 
 

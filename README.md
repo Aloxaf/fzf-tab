@@ -32,6 +32,8 @@ Replace zsh's default completion selection menu with fzf!
 
 <!-- markdown-toc end -->
 
+【[中文文档](README_CN.md)】
+
 # Install
 
 ## Manual
@@ -212,7 +214,7 @@ What to show when there is only one group.
 
 Possible values:
 
-- `prefix`: show `$FZF_TAB_PREFIX`
+- `prefix`: show color prefix
 - `color`: show group color
 - `header`: show group header
 

@@ -10,7 +10,7 @@ print -r -- "<QUERY>${query//\"/}</QUERY>" >&2
 
 local -a lines=() 
 while read input; do
-    lines+=($input)
+    lines+=(${input%$'\033[00m'})
 done
 
 for ((i = 1; i <= headers; i++)); do
@@ -22,7 +22,6 @@ lines[1,headers]=()
 for i in {1..$#lines}; do
     print -r -- ${lines[i]//$'\0'}"<EC>" >&2
 done
-
 
 for i in ${(s:,:)range}; do
     print -r -- $lines[i]

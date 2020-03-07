@@ -247,6 +247,7 @@ _fzf_tab_get_candidates() {
                 dsuf=/
             fi
             # add color if have list-colors
+            # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
             if (( $#list_colors )); then
                 fzf-tab-lscolors::match-by $filepath lstat
                 dpre=$'\033['$reply[1]'m'
@@ -257,7 +258,7 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$k$'\0'$dsuf
+            candidates+=$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
         else
             candidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
@@ -275,7 +276,8 @@ _fzf_tab_get_candidates() {
 
     (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    candidates=("${(@on)candidates}")
+    candidates=(${(f)"$(sort -n -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
+    # candidates=("${(@on)candidates}")
     candidates=("${(@)candidates//[0-9]#$bs}")
 
     # hide needless group

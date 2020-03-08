@@ -248,7 +248,7 @@ _fzf_tab_get_candidates() {
             fi
             # add color if have list-colors
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-            if (( $#list_colors )); then
+            if [[ -e $filepath ]] && (( $#list_colors )); then
                 fzf-tab-lscolors::match-by $filepath lstat
                 dpre=$'\033['$reply[1]'m'
             fi

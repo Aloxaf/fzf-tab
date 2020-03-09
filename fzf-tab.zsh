@@ -283,7 +283,7 @@ _fzf_tab_complete() {
     local choice choices _fzf_tab_curcontext continuous_trigger
 
     IN_FZF_TAB=1
-    orig_main_complete  # must run with user options; don't move `emulate -L zsh` above this line
+    _fzf_tab_orig_main_complete  # must run with user options; don't move `emulate -L zsh` above this line
     IN_FZF_TAB=0
 
     emulate -L zsh -o extended_glob
@@ -355,12 +355,12 @@ fzf-tab-complete() {
         _fzf_tab_continue=0
         if (( ${+functions[_main_complete]} )); then
             # hack: hook _main_complete to trigger fzf-tab
-            functions[orig_main_complete]=${functions[_main_complete]}
+            functions[_fzf_tab_orig_main_complete]=${functions[_main_complete]}
             function _main_complete() { _fzf_tab_complete }
             {
                 zle .fzf-tab-orig-$_fzf_tab_orig_widget
             } always {
-                functions[_main_complete]=$functions[orig_main_complete]
+                functions[_main_complete]=$functions[_fzf_tab_orig_main_complete]
             }
         fi
         zle redisplay

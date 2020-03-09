@@ -32,6 +32,8 @@
 
 # 安装
 
+**注：**fzf-tab 需要在 compinit 调用之后、加载 [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) 或 [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting) 这类会 wrap 其他 widget 的插件之前加载。
+
 ## 手动
 
 首先，clone 这个 repo

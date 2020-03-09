@@ -283,7 +283,7 @@ _fzf_tab_complete() {
     local choice choices _fzf_tab_curcontext continuous_trigger
 
     IN_FZF_TAB=1
-    _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
+    orig_main_complete  # must run with user options; don't move `emulate -L zsh` above this line
     IN_FZF_TAB=0
 
     emulate -L zsh -o extended_glob
@@ -349,24 +349,20 @@ _fzf_tab_complete() {
 zle -C _fzf_tab_complete complete-word _fzf_tab_complete
 
 fzf-tab-complete() {
-    # complete or not complete, this is a question
     # this name must be ugly to avoid clashes
-    local -i _fzf_tab_continue=1 _fzf_tab_should_complete=0
+    local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
-        _fzf_tab_should_complete=0
         _fzf_tab_continue=0
         if (( ${+functions[_main_complete]} )); then
-            # hack: hook _main_complete to check whether completion function will be called
-            local orig_main_complete=${functions[_main_complete]}
-            function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
+            # hack: hook _main_complete to trigger fzf-tab
+            functions[orig_main_complete]=${functions[_main_complete]}
+            function _main_complete() { _fzf_tab_complete }
             {
                 zle .fzf-tab-orig-$_fzf_tab_orig_widget
             } always {
-                functions[_main_complete]=$orig_main_complete
+                functions[_main_complete]=$functions[orig_main_complete]
             }
         fi
-        # must run with user options; don't add `emulate -L zsh` above this line
-        (( ! _fzf_tab_should_complete )) || zle _fzf_tab_complete
         zle redisplay
     done
 }
@@ -417,6 +413,10 @@ enable-fzf-tab() {
             zle -A $_fzf_tab_orig_widget .fzf-tab-orig-$_fzf_tab_orig_widget
         fi
     fi
+
+    # Make sure _main_complete has been loaded because we will then hook it.
+    autoload +X _main_complete
+
     zstyle -t ':completion:*' list-grouped false
     typeset -g _fzf_tab_orig_list_grouped=$?
 

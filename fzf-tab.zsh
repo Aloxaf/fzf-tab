@@ -358,12 +358,11 @@ fzf-tab-complete() {
             functions[orig_main_complete]=${functions[_main_complete]}
             function _main_complete() { _fzf_tab_complete }
             {
-                zle $_fzf_tab_orig_widget
+                zle .fzf-tab-orig-$_fzf_tab_orig_widget
             } always {
                 functions[_main_complete]=$functions[orig_main_complete]
             }
         fi
-        # must run with user options; don't add `emulate -L zsh` above this line
         zle redisplay
     done
 }
@@ -391,6 +390,29 @@ enable-fzf-tab() {
     (( $+_fzf_tab_orig_widget )) && return
 
     typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
+    if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then
+        # Widgets that get replaced by compinit.
+        local compinit_widgets=(
+            complete-word
+            delete-char-or-list
+            expand-or-complete
+            expand-or-complete-prefix
+            list-choices
+            menu-complete
+            menu-expand-or-complete
+            reverse-menu-complete
+        )
+        # Note: We prefix the name of the widget with '.' so that it doesn't get wrapped.
+        if [[ $widgets[$_fzf_tab_orig_widget] == builtin &&
+              $compinit_widgets[(Ie)$_fzf_tab_orig_widget] != 0 ]]; then
+            # We are initializing before compinit and being asked to fall back to a completion
+            # widget that isn't defined yet. Create our own copy of the widget ahead of time.
+            zle -C .fzf-tab-orig-$_fzf_tab_orig_widget .$_fzf_tab_orig_widget _main_complete
+        else
+            # Copy the widget before it's wrapped by zsh-autosuggestions and zsh-syntax-highlighting.
+            zle -A $_fzf_tab_orig_widget .fzf-tab-orig-$_fzf_tab_orig_widget
+        fi
+    fi
 
     # Make sure _main_complete has been loaded because we will then hook it.
     autoload +X _main_complete

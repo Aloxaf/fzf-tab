@@ -18,6 +18,7 @@ Replace zsh's default completion selection menu with fzf!
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
         - [query-string](#query-string)
@@ -166,6 +167,12 @@ Default value: None
 The key to trigger a continuous completion. It's useful when complete a long path.
 
 Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### ignore
+
+Don't active fzf-tab in this context.
+
+Default value: `zstyle ':fzf-tab:*' ignore false`
 
 ### fake-compadd
 

@@ -16,6 +16,7 @@
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
         - [query-string](#query-string)
@@ -161,6 +162,12 @@ command 的额外参数
 触发连续补全的按键。
 
 默认值：`zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### ignore
+
+当前 context 下不要使用 fzf-tab
+
+默认值：`zstyle ':fzf-tab:*' ignore false`
 
 ### fake-compadd
 

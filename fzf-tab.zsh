@@ -17,7 +17,8 @@ compadd() {
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-    if (( $#_oad != 0 || ! IN_FZF_TAB )); then
+    zstyle -t ":fzf-tab:${curcontext#:}" ignore
+    if (( $#_oad != 0 || ! IN_FZF_TAB || ! $? )); then
         builtin compadd "$@"
         return
     fi
@@ -125,6 +126,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default extra-opts ''
     _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
+    _fzf_tab_add_default ignore false
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'

@@ -8,7 +8,7 @@
 zmodload zsh/zutil
 
 # thanks Valodim/zsh-capture-completion
-compadd() {
+_fzf_tab_compadd() {
     # parse all options
     local -A apre hpre dscrs _oad expl
     local -a isfile _opts __
@@ -284,9 +284,7 @@ _fzf_tab_complete() {
     local -Ua _fzf_tab_groups
     local choice choices _fzf_tab_curcontext continuous_trigger
 
-    IN_FZF_TAB=1
-    _fzf_tab_orig_main_complete  # must run with user options; don't move `emulate -L zsh` above this line
-    IN_FZF_TAB=0
+    _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
 
     emulate -L zsh -o extended_glob
 
@@ -349,23 +347,17 @@ _fzf_tab_complete() {
     fi
 }
 
-zle -C _fzf_tab_complete complete-word _fzf_tab_complete
-
 fzf-tab-complete() {
     # this name must be ugly to avoid clashes
     local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
-        if (( ${+functions[_main_complete]} )); then
-            # hack: hook _main_complete to trigger fzf-tab
-            functions[_fzf_tab_orig_main_complete]=${functions[_main_complete]}
-            function _main_complete() { _fzf_tab_complete }
-            {
-                zle .fzf-tab-orig-$_fzf_tab_orig_widget
-            } always {
-                functions[_main_complete]=$functions[_fzf_tab_orig_main_complete]
-            }
-        fi
+        IN_FZF_TAB=1
+        {
+            zle .fzf-tab-orig-$_fzf_tab_orig_widget
+        } always {
+            IN_FZF_TAB=0
+        }
         zle redisplay
     done
 }
@@ -383,6 +375,12 @@ disable-fzf-tab() {
         2) zstyle -d ':completion:*' list-grouped ;;
     esac
     unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
+
+    # unhook compadd so that _approximate can work properply
+    unfunction compadd
+
+    functions -c _fzf_tab__main_complete _main_complete
+    functions -c _fzf_tab__approximate _approximate
 
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
     # create it if enable-fzf-tab is called again.
@@ -417,14 +415,30 @@ enable-fzf-tab() {
         fi
     fi
 
-    # Make sure _main_complete has been loaded because we will then hook it.
-    autoload +X _main_complete
-
     zstyle -t ':completion:*' list-grouped false
     typeset -g _fzf_tab_orig_list_grouped=$?
 
     zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
+
+    # hook compadd
+    functions -c _fzf_tab_compadd compadd
+
+    # hook _main_complete to trigger fzf-tab
+    functions -c _main_complete _fzf_tab__main_complete
+    function _main_complete() { _fzf_tab_complete }
+
+    # TODO: This is not a full support, see #47
+    # _approximate will also hook compadd
+    # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
+    # make sure _approximate has been loaded.
+    functions -c _approximate _fzf_tab__approximate
+    function _approximate() {
+        # if not called by fzf-tab, don't do anything with compadd
+        (( ! IN_FZF_TAB )) || unfunction compadd
+        _fzf_tab__approximate
+        (( ! IN_FZF_TAB )) || functions -c _fzf_tab_compadd compadd
+    }
 }
 
 toggle-fzf-tab() {

@@ -152,6 +152,31 @@
 >C1:{a}
 >C2:{b}
 
+  comptesteval 'tst_a=1; tst_b=2'
+  comptest $': $tst_\t'
+0:variables
+>line: {: $tst_a }{}
+>QUERY:{tst_}
+>DESCRIPTION:{parameter}
+>C1:{tst_a}
+>C1:{tst_b}
+
+  comptesteval 'zstyle ":completion:*" completer _complete _approximate'
+  comptest $': drr1\t'
+0:_approximate completer(file)
+>line: {: dir1/}{}
+
+  comptest $'ecoh\t'
+  comptesteval 'zstyle -d ":completion:*" completer'
+0:_approximate completer(multiple result)
+>line: {echo}{}
+>QUERY:{echo}
+>DESCRIPTION:{external command}
+>DESCRIPTION:{builtin command}
+>C2:{echo}
+>C2:{echotc}
+>C2:{echoti}
+
 %clean
 
   zmodload -ui zsh/zpty

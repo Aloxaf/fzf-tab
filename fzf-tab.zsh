@@ -327,7 +327,7 @@ _fzf_tab_complete() {
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
 
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:--Q}" -U -Q -- $v[word]
+               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
     done
 
     compstate[list]=
@@ -377,7 +377,7 @@ disable-fzf-tab() {
     # unhook compadd so that _approximate can work properply
     unfunction compadd
 
-    functions[_main_complete]=$functions[_fzf_tab__main_complete]
+    functions -c _fzf_tab__main_complete _main_complete
     functions[_approximate]=${functions[_fzf_tab__approximate]//_fzf_tab_compadd/builtin compadd}
 
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
@@ -419,24 +419,23 @@ enable-fzf-tab() {
     zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
 
-    # make sure they have been loaded because we will then hook it.
-    autoload +XUz _main_complete _approximate
-
     # hook compadd
-    functions[compadd]=$functions[_fzf_tab_compadd]
+    functions -c _fzf_tab_compadd compadd
 
     # hook _main_complete to trigger fzf-tab
-    functions[_fzf_tab__main_complete]=$functions[_main_complete]
+    functions -c _main_complete _fzf_tab__main_complete
     function _main_complete() { _fzf_tab_complete }
 
     # _approximate will also hook compadd
     # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
+    # make sure _approximate has been loaded.
+    autoload +XUz _approximate
     functions[_fzf_tab__approximate]=${functions[_approximate]//builtin compadd/_fzf_tab_compadd}
     function _approximate() {
         # if not called by fzf-tab, don't do anything with compadd
         (( ! IN_FZF_TAB )) || unfunction compadd
         _fzf_tab__approximate
-        (( ! IN_FZF_TAB )) || functions[compadd]=$functions[_fzf_tab_compadd]
+        (( ! IN_FZF_TAB )) || functions -c _fzf_tab_compadd compadd
     }
 }
 

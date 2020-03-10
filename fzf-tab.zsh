@@ -293,6 +293,7 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
+        # NOTE: won't trigger continuous completion
         1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`

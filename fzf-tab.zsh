@@ -347,44 +347,12 @@ _fzf_tab_complete() {
     fi
 }
 
-_fzf_tab_hook() {
-    if [[ $1 == "-d" ]]; then
-        functions[$2]=$functions[_fzf_tab_$2]
-        return
-    fi
-    if [[ $functions[$1] == "builtin autoload"* || -z $functions[$1] ]]; then
-        autoload +XUz $1
-    fi
-    functions[_fzf_tab_$1]=$functions[$1]
-}
-
 fzf-tab-complete() {
     # this name must be ugly to avoid clashes
     local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
-
-        # hook _main_complete to trigger fzf-tab
-        _fzf_tab_hook _main_complete
-        function _main_complete() { _fzf_tab_complete }
-
-        # _approximate will also hook compadd
-        # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
-        _fzf_tab_hook _approximate
-        functions[_fzf_tab__approximate]=${functions[_fzf_tab__approximate]//builtin compadd/_fzf_tab_compadd}
-        function _approximate() {
-            unfunction compadd
-            _fzf_tab__approximate
-            _fzf_tab_hook -d compadd
-        }
-
-        {
-            zle .fzf-tab-orig-$_fzf_tab_orig_widget
-        } always {
-            _fzf_tab_hook -d _main_complete
-            _fzf_tab_hook -d _approximate
-        }
-
+        zle .fzf-tab-orig-$_fzf_tab_orig_widget
         zle redisplay
     done
 }
@@ -405,6 +373,9 @@ disable-fzf-tab() {
 
     # unhook compadd so that _approximate can work properply
     unfunction compadd
+
+    functions[_main_complete]=$functions[_fzf_tab__main_complete]
+    functions[_approximate]=${functions[_fzf_tab__approximate]//_fzf_tab_compadd/builtin compadd}
 
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
     # create it if enable-fzf-tab is called again.
@@ -445,7 +416,24 @@ enable-fzf-tab() {
     zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
 
+    # make sure they have been loaded because we will then hook it.
+    autoload +X _main_complete _approximate
+
+    # hook compadd
     functions[compadd]=$functions[_fzf_tab_compadd]
+
+    # hook _main_complete to trigger fzf-tab
+    functions[_fzf_tab__main_complete]=$functions[_main_complete]
+    function _main_complete() { _fzf_tab_complete }
+
+    # _approximate will also hook compadd
+    # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
+    functions[_fzf_tab__approximate]=${functions[_approximate]//builtin compadd/_fzf_tab_compadd}
+    function _approximate() {
+        unfunction compadd
+        _fzf_tab__approximate
+        functions[compadd]=$functions[_fzf_tab_compadd]
+    }
 }
 
 toggle-fzf-tab() {

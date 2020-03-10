@@ -282,9 +282,7 @@ _fzf_tab_complete() {
     local -Ua _fzf_tab_groups
     local choice choices _fzf_tab_curcontext continuous_trigger
 
-    IN_FZF_TAB=1
     _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
-    IN_FZF_TAB=0
 
     emulate -L zsh -o extended_glob
 
@@ -352,7 +350,12 @@ fzf-tab-complete() {
     local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
-        zle .fzf-tab-orig-$_fzf_tab_orig_widget
+        IN_FZF_TAB=1
+        {
+            zle .fzf-tab-orig-$_fzf_tab_orig_widget
+        } always {
+            IN_FZF_TAB=0
+        }
         zle redisplay
     done
 }
@@ -417,7 +420,7 @@ enable-fzf-tab() {
     bindkey '^I' fzf-tab-complete
 
     # make sure they have been loaded because we will then hook it.
-    autoload +X _main_complete _approximate
+    autoload +XUz _main_complete _approximate
 
     # hook compadd
     functions[compadd]=$functions[_fzf_tab_compadd]
@@ -430,9 +433,10 @@ enable-fzf-tab() {
     # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
     functions[_fzf_tab__approximate]=${functions[_approximate]//builtin compadd/_fzf_tab_compadd}
     function _approximate() {
-        unfunction compadd
+        # if not called by fzf-tab, don't do anything with compadd
+        (( ! IN_FZF_TAB )) || unfunction compadd
         _fzf_tab__approximate
-        functions[compadd]=$functions[_fzf_tab_compadd]
+        (( ! IN_FZF_TAB )) || functions[compadd]=$functions[_fzf_tab_compadd]
     }
 }
 

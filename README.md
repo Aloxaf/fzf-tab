@@ -121,8 +121,6 @@ See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_
 
 You can use <kbd>C-x h</kbd> to get possible context for a command:
 
-**NOTE:** This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
-
 ```zsh
 ❯ rg -- # Press `C-x h` here
 tags in context :completion::complete:rg::

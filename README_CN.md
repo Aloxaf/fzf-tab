@@ -117,6 +117,8 @@ zstyle 的更多信息详见 [zsh's doc](http://zsh.sourceforge.net/Doc/Release/
 
 你可以使用 <kbd>C-x h</kbd> 来获取补全一个命令时可能的 context。
 
+**注：**执行这个命令后，你需要使用 `enable-fzf-tab` 来重新激活 fzf-tab
+
 ```zsh
 ❯ rg -- # 按下 `C-x h`
 tags in context :completion::complete:rg::

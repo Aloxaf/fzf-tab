@@ -98,7 +98,7 @@ _fzf_tab_remove_space() {
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -377,7 +377,7 @@ disable-fzf-tab() {
     unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
 
     # unhook compadd so that _approximate can work properply
-    unfunction compadd
+    unfunction compadd 2>/dev/null
 
     functions[_main_complete]=$functions[_fzf_tab__main_complete]
     functions[_approximate]=$functions[_fzf_tab__approximate]
@@ -388,7 +388,7 @@ disable-fzf-tab() {
 
 enable-fzf-tab() {
     emulate -L zsh -o extended_glob
-    (( $+_fzf_tab_orig_widget )) && return
+    (( ! $+_fzf_tab_orig_widget )) || disable-fzf-tab
 
     typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
     if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then

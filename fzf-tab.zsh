@@ -422,7 +422,7 @@ enable-fzf-tab() {
     bindkey '^I' fzf-tab-complete
 
     # make sure we can copy them
-    autoload +XUz _main_complete _approximate
+    autoload +X -Uz _main_complete _approximate
 
     # hook compadd
     functions[compadd]=$functions[_fzf_tab_compadd]

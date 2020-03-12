@@ -49,7 +49,7 @@
 
   comptest $': \t'
 0:directories and files
->line: {: }{}
+>line: {: dir1/}{}
 >QUERY:{}
 >DESCRIPTION:{file}
 >C1:{dir1/}
@@ -59,7 +59,7 @@
 
   comptest $': d\t'
 0:prefix
->line: {: d}{}
+>line: {: dir1/}{}
 >QUERY:{dir}
 >DESCRIPTION:{file}
 >C1:{dir1/}
@@ -87,6 +87,7 @@
 
   comptesteval 'zstyle ":fzf-tab:*:tst:*" insert-space false'
   comptest $'tst \t'
+  comptesteval 'zstyle ":fzf-tab:*:tst:*" insert-space true'
 0:no space
 >line: {tst d}{}
 >QUERY:{}
@@ -97,6 +98,7 @@
 
   comptesteval 'zstyle ":fzf-tab:*:tst:*" extra-opts -n 1,2'
   comptest $'tst \t'
+  comptesteval 'zstyle ":fzf-tab:*:tst:*" extra-opts ""'
 0:multi select
 >line: {tst c d }{}
 >QUERY:{}
@@ -114,6 +116,41 @@
 0:warnings
 >line: {: asd}{}
 >WARN:{`file'}
+>WARN:{`file'}
+# FIXME：why two warnings？
+
+  comptesteval "touch 'abc def'"
+  comptest $': ./a\t'
+0:filename with space
+>line: {: ./abc\ def }{}
+
+  comptest $': ./abdef\C-b\C-b\C-b\t'
+0:complete in word
+>line: {: ./abc\ def }{}
+
+  comptest $': ./abc def\C-b\C-b\C-b\C-b\t'
+  comptesteval "rm 'abc def'"
+0:complete in word(with known bug)
+>line: {: ./abc\ def}{ def}
+
+  comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
+  comptest $': ./a/d/h\t'
+0:nested directory
+>line: {: ./abc/def/h}{}
+>QUERY:{d}
+>DESCRIPTION:{file}
+>C1:{def/}
+>C1:{dfe/}
+
+  comptesteval '_tst() { a=(a); _describe "group1" a; a=(b); _describe "group2" a }'
+  comptest $'tst \t'
+0:multi headers
+>line: {tst a }{}
+>QUERY:{}
+>DESCRIPTION:{group1}
+>DESCRIPTION:{group2}
+>C1:{a}
+>C2:{b}
 
 %clean
 

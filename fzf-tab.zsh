@@ -10,7 +10,7 @@ zmodload zsh/zutil
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 # thanks Valodim/zsh-capture-completion
-compadd() {
+_fzf_tab_compadd() {
     # parse all options
     local -A apre hpre dscrs _oad expl
     local -a isfile _opts __
@@ -19,7 +19,8 @@ compadd() {
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-    if (( $#_oad != 0 || ! IN_FZF_TAB )); then
+    zstyle -t ":fzf-tab:${curcontext#:}" ignore
+    if (( $#_oad != 0 || ! IN_FZF_TAB || ! $? )); then
         builtin compadd "$@"
         return
     fi
@@ -99,7 +100,7 @@ _fzf_tab_remove_space() {
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -127,6 +128,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default extra-opts ''
     _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
+    _fzf_tab_add_default ignore false
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'
@@ -295,9 +297,7 @@ _fzf_tab_complete() {
     local -Ua _fzf_tab_groups
     local choice choices _fzf_tab_curcontext continuous_trigger
 
-    IN_FZF_TAB=1
-    _main_complete  # must run with user options; don't move `emulate -L zsh` above this line
-    IN_FZF_TAB=0
+    _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
 
     emulate -L zsh -o extended_glob
 
@@ -306,6 +306,7 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
+        # NOTE: won't trigger continuous completion
         1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
@@ -359,27 +360,17 @@ _fzf_tab_complete() {
     fi
 }
 
-zle -C _fzf_tab_complete complete-word _fzf_tab_complete
-
 fzf-tab-complete() {
-    # complete or not complete, this is a question
     # this name must be ugly to avoid clashes
-    local -i _fzf_tab_continue=1 _fzf_tab_should_complete=0
+    local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
-        _fzf_tab_should_complete=0
         _fzf_tab_continue=0
-        if (( ${+functions[_main_complete]} )); then
-            # hack: hook _main_complete to check whether completion function will be called
-            local orig_main_complete=${functions[_main_complete]}
-            function _main_complete() { typeset -g _fzf_tab_should_complete=1; }
-            {
-                zle .fzf-tab-orig-$_fzf_tab_orig_widget
-            } always {
-                functions[_main_complete]=$orig_main_complete
-            }
-        fi
-        # must run with user options; don't add `emulate -L zsh` above this line
-        (( ! _fzf_tab_should_complete )) || zle _fzf_tab_complete
+        IN_FZF_TAB=1
+        {
+            zle .fzf-tab-orig-$_fzf_tab_orig_widget
+        } always {
+            IN_FZF_TAB=0
+        }
         zle redisplay
     done
 }
@@ -398,13 +389,19 @@ disable-fzf-tab() {
     esac
     unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
 
+    # unhook compadd so that _approximate can work properply
+    unfunction compadd 2>/dev/null
+
+    functions[_main_complete]=$functions[_fzf_tab__main_complete]
+    functions[_approximate]=$functions[_fzf_tab__approximate]
+
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
     # create it if enable-fzf-tab is called again.
 }
 
 enable-fzf-tab() {
     emulate -L zsh -o extended_glob
-    (( $+_fzf_tab_orig_widget )) && return
+    (( ! $+_fzf_tab_orig_widget )) || disable-fzf-tab
 
     typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
     if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then
@@ -430,11 +427,34 @@ enable-fzf-tab() {
             zle -A $_fzf_tab_orig_widget .fzf-tab-orig-$_fzf_tab_orig_widget
         fi
     fi
+
     zstyle -t ':completion:*' list-grouped false
     typeset -g _fzf_tab_orig_list_grouped=$?
 
     zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
+
+    # make sure we can copy them
+    autoload +X -Uz _main_complete _approximate
+
+    # hook compadd
+    functions[compadd]=$functions[_fzf_tab_compadd]
+
+    # hook _main_complete to trigger fzf-tab
+    functions[_fzf_tab__main_complete]=$functions[_main_complete]
+    function _main_complete() { _fzf_tab_complete }
+
+    # TODO: This is not a full support, see #47
+    # _approximate will also hook compadd
+    # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
+    # make sure _approximate has been loaded.
+    functions[_fzf_tab__approximate]=$functions[_approximate]
+    function _approximate() {
+        # if not called by fzf-tab, don't do anything with compadd
+        (( ! IN_FZF_TAB )) || unfunction compadd
+        _fzf_tab__approximate
+        (( ! IN_FZF_TAB )) || functions[compadd]=$functions[_fzf_tab_compadd]
+    }
 }
 
 toggle-fzf-tab() {

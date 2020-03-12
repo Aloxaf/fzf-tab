@@ -18,6 +18,7 @@ Replace zsh's default completion selection menu with fzf!
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
         - [query-string](#query-string)
@@ -32,7 +33,11 @@ Replace zsh's default completion selection menu with fzf!
 
 <!-- markdown-toc end -->
 
+【[中文文档](README_CN.md)】
+
 # Install
+
+**NOTE:** fzf-tab needs to be sourced after `compinit`, but before plugins which will wrap widgets like [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting).
 
 ## Manual
 
@@ -117,7 +122,7 @@ See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_
 
 You can use <kbd>C-x h</kbd> to get possible context for a command:
 
-**NOTE:** This command will break fzf-tab totally, you need to restart zsh to re-enable fzf-tab.
+**NOTE:** You need to use `enable-fzf-tab` to active fzf-tab again after this command.
 
 ```zsh
 ❯ rg -- # Press `C-x h` here
@@ -162,6 +167,12 @@ Default value: None
 The key to trigger a continuous completion. It's useful when complete a long path.
 
 Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### ignore
+
+Don't active fzf-tab in this context.
+
+Default value: `zstyle ':fzf-tab:*' ignore false`
 
 ### fake-compadd
 
@@ -212,7 +223,7 @@ What to show when there is only one group.
 
 Possible values:
 
-- `prefix`: show `$FZF_TAB_PREFIX`
+- `prefix`: show color prefix
 - `color`: show group color
 - `header`: show group header
 

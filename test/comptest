@@ -38,8 +38,7 @@ zstyle ":completion:*:default" list-colors "no=<NO>" "fi=<FI>" "di=<DI>" "ln=<LN
 zstyle ":completion:*" group-name ""
 zstyle ":completion:*:messages" format "<MESSAGE>%d</MESSAGE>
 "
-zstyle ":completion:*:descriptions" format "<DESCRIPTION>%d</DESCRIPTION>
-"
+zstyle ":completion:*:descriptions" format "<DESCRIPTION>%d</DESCRIPTION>"
 zstyle ":completion:*:options" verbose yes
 zstyle ":completion:*:values" verbose yes
 setopt noalwayslastprompt listrowsfirst completeinword

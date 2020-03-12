@@ -16,6 +16,7 @@
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
         - [query-string](#query-string)
@@ -116,6 +117,8 @@ zstyle 的更多信息详见 [zsh's doc](http://zsh.sourceforge.net/Doc/Release/
 
 你可以使用 <kbd>C-x h</kbd> 来获取补全一个命令时可能的 context。
 
+**注：**执行这个命令后，你需要使用 `enable-fzf-tab` 来重新激活 fzf-tab
+
 ```zsh
 ❯ rg -- # 按下 `C-x h`
 tags in context :completion::complete:rg::
@@ -159,6 +162,12 @@ command 的额外参数
 触发连续补全的按键。
 
 默认值：`zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### ignore
+
+当前 context 下不要使用 fzf-tab
+
+默认值：`zstyle ':fzf-tab:*' ignore false`
 
 ### fake-compadd
 

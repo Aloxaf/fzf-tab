@@ -17,7 +17,8 @@ _fzf_tab_compadd() {
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
     # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-    if (( $#_oad != 0 || ! IN_FZF_TAB )); then
+    zstyle -t ":fzf-tab:${curcontext#:}" ignore
+    if (( $#_oad != 0 || ! IN_FZF_TAB || ! $? )); then
         builtin compadd "$@"
         return
     fi
@@ -97,7 +98,7 @@ _fzf_tab_remove_space() {
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -125,6 +126,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default extra-opts ''
     _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
+    _fzf_tab_add_default ignore false
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'
@@ -291,6 +293,7 @@ _fzf_tab_complete() {
 
     case $#candidates in
         0) return;;
+        # NOTE: won't trigger continuous completion
         1) choices=(${${(k)_fzf_tab_compcap}[1]});;
         *)
             _fzf_tab_find_query_str  # sets `query`
@@ -377,7 +380,7 @@ disable-fzf-tab() {
     # unhook compadd so that _approximate can work properply
     unfunction compadd
 
-    functions -c _fzf_tab__main_complete _main_complete
+    functions[_main_complete]=$functions[_fzf_tab__main_complete]
     functions[_approximate]=${functions[_fzf_tab__approximate]//_fzf_tab_compadd/builtin compadd}
 
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
@@ -386,7 +389,7 @@ disable-fzf-tab() {
 
 enable-fzf-tab() {
     emulate -L zsh -o extended_glob
-    (( $+_fzf_tab_orig_widget )) && return
+    (( ! $+_fzf_tab_orig_widget )) || disable-fzf-tab
 
     typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
     if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then
@@ -419,11 +422,14 @@ enable-fzf-tab() {
     zstyle ':completion:*' list-grouped false
     bindkey '^I' fzf-tab-complete
 
+    # make sure we can copy them
+    autoload +X -Uz _main_complete _approximate
+
     # hook compadd
-    functions -c _fzf_tab_compadd compadd
+    functions[compadd]=$functions[_fzf_tab_compadd]
 
     # hook _main_complete to trigger fzf-tab
-    functions -c _main_complete _fzf_tab__main_complete
+    functions[_fzf_tab__main_complete]=$functions[_main_complete]
     function _main_complete() { _fzf_tab_complete }
 
     # _approximate will also hook compadd
@@ -435,7 +441,7 @@ enable-fzf-tab() {
         # if not called by fzf-tab, don't do anything with compadd
         (( ! IN_FZF_TAB )) || unfunction compadd
         _fzf_tab__approximate
-        (( ! IN_FZF_TAB )) || functions -c _fzf_tab_compadd compadd
+        (( ! IN_FZF_TAB )) || functions[compadd]=$functions[_fzf_tab_compadd]
     }
 }
 

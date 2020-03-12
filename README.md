@@ -18,6 +18,7 @@ Replace zsh's default completion selection menu with fzf!
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
         - [query-string](#query-string)
@@ -121,6 +122,8 @@ See [zsh's doc](http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_
 
 You can use <kbd>C-x h</kbd> to get possible context for a command:
 
+**NOTE:** You need to use `enable-fzf-tab` to active fzf-tab again after this command.
+
 ```zsh
 ❯ rg -- # Press `C-x h` here
 tags in context :completion::complete:rg::
@@ -164,6 +167,12 @@ Default value: None
 The key to trigger a continuous completion. It's useful when complete a long path.
 
 Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### ignore
+
+Don't active fzf-tab in this context.
+
+Default value: `zstyle ':fzf-tab:*' ignore false`
 
 ### fake-compadd
 

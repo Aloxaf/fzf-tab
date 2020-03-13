@@ -73,7 +73,7 @@ _fzf_tab_compadd() {
     done
 
     # tell zsh that the match is successful
-    if _fzf_tab_get -t fake_compadd "fakeadd"; then
+    if _fzf_tab_get -t fake-compadd "fakeadd"; then
         nm=-1  # see _alternative:76
     else
         builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
@@ -328,8 +328,8 @@ _fzf_tab_complete() {
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
-        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+        builtin compadd "${args[@]:--Q}" -Q -- $v[word]
     done
 
     compstate[list]=

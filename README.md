@@ -1,5 +1,8 @@
 # fzf-tab
 
+[![Test](https://github.com/Aloxaf/fzf-tab/workflows/Test/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions?query=workflow%3ATest)
+[![GitHub license](https://img.shields.io/github/license/Aloxaf/fzf-tab)](https://github.com/Aloxaf/fzf-tab/blob/master/LICENSE)
+
 Replace zsh's default completion selection menu with fzf!
 
 [![asciicast](https://asciinema.org/a/293849.svg)](https://asciinema.org/a/293849)

@@ -243,21 +243,30 @@ _fzf_tab_get_candidates() {
         dsuf='' && dpre=''
         if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)k}
-            if [[ -L $filepath ]]; then
-                dsuf=@
-            elif [[ -d $filepath ]]; then
+            if [[ -d $filepath ]]; then
                 dsuf=/
             fi
-            # add color if have list-colors
+            # add color and resolve symlink if have list-colors
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
             if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
                 fzf-tab-lscolors::match-by $filepath lstat follow
-                local color=$reply[1]
-                if [[ $color == target && -e $filepath ]]; then
-                    fzf-tab-lscolors::match-by $filepath stat
-                    color=$reply[1]
+                # If this is a symlink
+                if [[ $reply[2] ]]; then
+                    local sym_color=$reply[1]
+                    local rsv_color=$reply[1]
+                    local rsv=$reply[2]
+                    # If this is not a broken symlink
+                    if [[ -e $rsv ]]; then
+                        fzf-tab-lscolors::match-by $rsv stat
+                        rsv_color=$reply[2]
+                    fi
+                    dpre=$'\033[0m\033['$sym_color'm'
+                    dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+                else
+                    dpre=$'\033[0m\033['$reply[1]'m'
                 fi
-                dpre=$'\033[0m\033['$color'm'
+            elif [[ -L $filepath ]]; then
+                dsuf=@
             fi
         fi
 

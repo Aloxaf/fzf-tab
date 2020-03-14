@@ -250,9 +250,12 @@ _fzf_tab_get_candidates() {
             fi
             # add color if have list-colors
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-            if [[ -e $filepath ]] && (( $#list_colors )); then
-                fzf-tab-lscolors::match-by $filepath stat
-                dpre=$'\033['$reply[1]'m'
+            if (( $#list_colors )); then
+                fzf-tab-lscolors::match-by $filepath lstat
+                if [[ $reply[2] && -e $filepath ]]; then
+                    fzf-tab-lscolors::match-by $filepath stat
+                fi
+                dpre=$'\033[0m\033['$reply[1]'m'
             fi
         fi
 
@@ -278,8 +281,12 @@ _fzf_tab_get_candidates() {
 
     (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    candidates=(${(f)"$(sort -n -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
-    # candidates=("${(@on)candidates}")
+    if (( $#list_colors || $#candidates >= 1000 )); then
+        # if enable list_colors, we should skip the first field
+        candidates=(${(f)"$(sort -n -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
+    else
+        candidates=("${(@on)candidates}")
+    fi
     candidates=("${(@)candidates//[0-9]#$bs}")
 
     # hide needless group

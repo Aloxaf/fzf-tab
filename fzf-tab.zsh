@@ -252,10 +252,12 @@ _fzf_tab_get_candidates() {
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
             if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
                 fzf-tab-lscolors::match-by $filepath lstat follow
-                if [[ ($reply[1] == target || $reply[2]) && -e $filepath ]]; then
+                local color=$reply[1]
+                if [[ $color == target && -e $filepath ]]; then
                     fzf-tab-lscolors::match-by $filepath stat
+                    color=$reply[1]
                 fi
-                dpre=$'\033[0m\033['$reply[1]'m'
+                dpre=$'\033[0m\033['$color'm'
             fi
         fi
 
@@ -281,9 +283,9 @@ _fzf_tab_get_candidates() {
 
     (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    if (( $#list_colors || $#candidates >= 1000 )); then
+    if (( $#list_colors || $#candidates >= 10000 )); then
         # if enable list_colors, we should skip the first field
-        candidates=(${(f)"$(sort -n -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
+        candidates=(${(f)"$(sort -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
     else
         candidates=("${(@on)candidates}")
     fi

@@ -322,9 +322,12 @@ _fzf_tab_complete() {
 
     for choice in $choices; do
         # if disale sort
-        for i in ${(k)_fzf_tab_compcap}; do
-            [[ $i != *$'\b'$choice ]] || { choice=$i; break }
-        done
+        if ! zstyle -t ":completion:$_fzf_tab_curcontext" sort; then
+            for i in ${(k)_fzf_tab_compcap}; do
+                [[ $i != *$'\b'$choice ]] || { choice=$i; break }
+            done
+        fi
+
         local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string

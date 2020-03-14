@@ -154,7 +154,7 @@ ${pfx}::match-by () {
 		;;
 		f|follow)
 			(($#lstat)) || zstat -A lstat -L $name || return 1
-			reply+=("$stat[14]")
+			reply+=("$lstat[14]")
 		;;
 		a|all)
 			# Match case

@@ -38,7 +38,7 @@ local file reply
 for file; do
 	ls-color::match-by $file all
 	# point to symlink resolution if it exists
-	print '\e['$reply[1]'m'$file'\e[0m'${reply[2]:+' → \e['$reply[2]'m'$reply[3]'\e[0m'}
+	print '\e['$reply[1]'m'$file'\e[0m'${reply[2]:+' → \e['$reply[3]'m'$reply[2]'\e[0m'}
 done
 
 # =======================

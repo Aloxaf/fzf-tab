@@ -145,7 +145,7 @@ ${pfx}::match-by () {
 		s|stat)
 			(($#stat)) || zstat -A stat    $name || return 1
 			${pfx}::from-mode $name $stat[3]
-			reply=("$REPLY")
+			reply+=("$REPLY")
 			if [[ $REPLY || ${arg[1]} = S ]]; then
 				reply+=("$REPLY")
 			else # fall back to name

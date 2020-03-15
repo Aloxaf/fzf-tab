@@ -6,6 +6,7 @@
 'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
 
 zmodload zsh/zutil
+zmodload -F zsh/stat b:zstat
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
@@ -214,6 +215,54 @@ _fzf_tab_get_headers() {
     (( $#tmp )) && headers+=$tmp
 }
 
+_fzf_tab_colorize() {
+    emulate -L zsh -o cbases -o octalzeroes
+
+    local REPLY
+    local -a reply stat lstat
+
+    # fzf-tab-lscolors::match-by $1 lstat follow
+    zstat -A lstat -L $1
+    if (( lstat[3] & 0170000 )); then
+        # follow symlink
+        zstat -A stat $1 2>/dev/null
+    fi
+    fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
+    if [[ $REPLY ]]; then
+        reply+=("$REPLY")
+    else # fall back to name
+        fzf-tab-lscolors::from-name $1
+        reply+=("$REPLY")
+    fi
+    reply+=("$lstat[14]")
+
+    # If this is a symlink
+    if [[ $reply[2] ]]; then
+        local sym_color=$reply[1]
+        local rsv_color=$reply[1]
+        local rsv=$reply[2]
+        # If this is not a broken symlink
+        if [[ -e $rsv ]]; then
+            # fzf-tab-lscolors::match-by $rsv stat
+            zstat -A stat $rsv
+            fzf-tab-lscolors::from-mode $rsv $stat[3]
+            reply+=("$REPLY")
+            if [[ $REPLY || ${arg[1]} = S ]]; then
+                reply+=("$REPLY")
+            else # fall back to name
+                fzf-tab-lscolors::from-name $1
+                reply+=("$REPLY")
+            fi
+
+            rsv_color=$reply[2]
+        fi
+        dpre=$'\033[0m\033['$sym_color'm'
+        dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+    else
+        dpre=$'\033[0m\033['$reply[1]'m'
+    fi
+}
+
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
@@ -226,10 +275,11 @@ _fzf_tab_get_candidates() {
     _fzf_tab_get -s show-group show_group
     _fzf_tab_get -a group-colors group_colors
     _fzf_tab_get -s no-group-color no_group_color
+    _fzf_tab_get -s prefix prefix
 
     zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
     local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
-	  local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+    local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
 
     if (( $#_fzf_tab_groups == 1 )); then
         _fzf_tab_get -m single-group prefix || prefix=''
@@ -249,22 +299,7 @@ _fzf_tab_get_candidates() {
             # add color and resolve symlink if have list-colors
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
             if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
-                fzf-tab-lscolors::match-by $filepath lstat follow
-                # If this is a symlink
-                if [[ $reply[2] ]]; then
-                    local sym_color=$reply[1]
-                    local rsv_color=$reply[1]
-                    local rsv=$reply[2]
-                    # If this is not a broken symlink
-                    if [[ -e $rsv ]]; then
-                        fzf-tab-lscolors::match-by $rsv stat
-                        rsv_color=$reply[2]
-                    fi
-                    dpre=$'\033[0m\033['$sym_color'm'
-                    dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
-                else
-                    dpre=$'\033[0m\033['$reply[1]'m'
-                fi
+                _fzf_tab_colorize $filepath
             elif [[ -L $filepath ]]; then
                 dsuf=@
             fi

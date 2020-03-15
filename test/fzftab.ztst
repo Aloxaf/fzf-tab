@@ -149,8 +149,8 @@
 >QUERY:{}
 >DESCRIPTION:{group1}
 >DESCRIPTION:{group2}
->C1:{a}
->C2:{b}
+>C1:{·a}
+>C2:{·b}
 
 %clean
 

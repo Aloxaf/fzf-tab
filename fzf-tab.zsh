@@ -267,7 +267,7 @@ _fzf_tab_colorize() {
 _fzf_tab_get_candidates() {
     local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
     local -a list_colors group_colors
-    local -i  same_word=1
+    local -i  same_word=1 completing_files=0
     local -Ua duplicate_groups=()
     local -A word_map=()
     typeset -ga candidates=()
@@ -303,6 +303,7 @@ _fzf_tab_get_candidates() {
             elif [[ -L $filepath ]]; then
                 dsuf=@
             fi
+            completing_files=1
         fi
 
         # add color to description if they have group index
@@ -327,7 +328,7 @@ _fzf_tab_get_candidates() {
 
     (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    if (( $#list_colors || $#candidates >= 10000 )); then
+    if (( ( completing_files && $#list_colors ) || $#candidates >= 10000 )); then
         # if enable list_colors, we should skip the first field
         candidates=(${(f)"$(sort -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
     else

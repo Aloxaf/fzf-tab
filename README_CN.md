@@ -98,18 +98,21 @@ zstyle ':completion:complete:*:options' sort false
 # 当补全 _zlua 时，使用输入作为查询字符串
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
-# 补全 `kill` 命令时提供预览
-zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo $(<{f})' --preview-window=down:3:wrap
-
-# (实验性) 补全 cd 时预览其中的内容
+# （实验性功能，未来可能更改）
 local extract="
-# 提取输入
+# 提取输入（当前选择的内容）
 in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-# 获取当前补全状态的上下文
+# 获取当前补全状态的上下文（待补全内容的前面或者后面的东西）
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
 "
-zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
+
+# 补全 `kill` 命令时提供命令行参数预览
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+
+# 补全 cd 时使用 exa 预览其中的内容
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'
+
 ```
 
 你可以通过形如 `zstyle ':fzf-tab:{context}' tag value` 的命令来配置 fzf-tab。其中 `fzf-tab` 是顶层 context。

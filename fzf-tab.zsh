@@ -72,7 +72,7 @@ _fzf_tab_compadd() {
             continue
         fi
         # TODO: need a ordered dict
-        [[ $sort != (no|false|0|off) ]] || dscr=$((i + cnt))$'\b'$dscr
+        [[ $sort == (no|false|0|off) ]] && dscr=$((i + cnt))$'\b'$dscr
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
 
@@ -301,17 +301,21 @@ _fzf_tab_get_candidates() {
             # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
             if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
                 _fzf_tab_colorize $filepath
+                completing_files=1
             elif [[ -L $filepath ]]; then
                 dsuf=@
             fi
-            completing_files=1
         fi
 
         # add color to description if they have group index
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$color$prefix$dpre$'\0'$(([##36]$v[group]))$'\b'$k$'\0'$dsuf
+            if (( completing_files )); then
+                candidates+=$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
+            else
+                candidates+=$v[group]$'\b'$color$prefix$'\0'$k$'\0'$dsuf
+            fi
         else
             candidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
@@ -329,9 +333,9 @@ _fzf_tab_get_candidates() {
 
     (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    if (( ( completing_files && $#list_colors ) || $#candidates >= 10000 )); then
+    if (( completing_files )); then
         # if enable list_colors, we should skip the first field
-        candidates=(${(f)"$(sort -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
+        candidates=(${(f)"$(sort -t '\0' -k 2V <<< ${(pj:\n:)candidates})"})
     else
         candidates=("${(@on)candidates}")
     fi

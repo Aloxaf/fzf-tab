@@ -309,7 +309,7 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
+            candidates+=$color$prefix$dpre$'\0'$(([##36]$v[group]))$'\b'$k$'\0'$dsuf
         else
             candidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
@@ -333,7 +333,7 @@ _fzf_tab_get_candidates() {
     else
         candidates=("${(@on)candidates}")
     fi
-    candidates=("${(@)candidates//[0-9]#$bs}")
+    candidates=("${(@)candidates//[0-9A-Z]#$bs}")
 
     # hide needless group
     if [[ $show_group == brief ]]; then

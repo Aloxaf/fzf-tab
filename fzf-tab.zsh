@@ -246,11 +246,11 @@ _fzf_tab_colorize() {
             # fzf-tab-lscolors::match-by $rsv stat
             zstat -A stat $rsv
             fzf-tab-lscolors::from-mode $rsv $stat[3]
-            reply+=("$REPLY")
-            if [[ $REPLY || ${arg[1]} = S ]]; then
+            reply=("$REPLY")
+            if [[ $REPLY ]]; then
                 reply+=("$REPLY")
             else # fall back to name
-                fzf-tab-lscolors::from-name $1
+                fzf-tab-lscolors::from-name $rsv
                 reply+=("$REPLY")
             fi
 

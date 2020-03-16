@@ -217,49 +217,15 @@ _fzf_tab_get_headers() {
 
 _fzf_tab_colorize() {
     emulate -L zsh -o cbases -o octalzeroes
+    local -a reply
 
-    local REPLY
-    local -a reply stat lstat
+    fzf-tab-lscolors::match-by "$1" all
 
-    # fzf-tab-lscolors::match-by $1 lstat follow
-    zstat -A lstat -L $1
-    if (( lstat[3] & 0170000 )); then
-        # follow symlink
-        zstat -A stat $1 2>/dev/null
-    fi
-    fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
-    if [[ $REPLY ]]; then
-        reply+=("$REPLY")
-    else # fall back to name
-        fzf-tab-lscolors::from-name $1
-        reply+=("$REPLY")
-    fi
-    reply+=("$lstat[14]")
-
-    # If this is a symlink
+    dpre=$'\033[0m\033['$reply[1]'m'
     if [[ $reply[2] ]]; then
-        local sym_color=$reply[1]
-        local rsv_color=$reply[1]
-        local rsv=$reply[2]
-        # If this is not a broken symlink
-        if [[ -e $rsv ]]; then
-            # fzf-tab-lscolors::match-by $rsv stat
-            zstat -A stat $rsv
-            fzf-tab-lscolors::from-mode $rsv $stat[3]
-            reply=("$REPLY")
-            if [[ $REPLY ]]; then
-                reply+=("$REPLY")
-            else # fall back to name
-                fzf-tab-lscolors::from-name $rsv
-                reply+=("$REPLY")
-            fi
-
-            rsv_color=$reply[2]
-        fi
-        dpre=$'\033[0m\033['$sym_color'm'
-        dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+        dsuf=$'\033[0m -> \033['$reply[3]'m'$reply[2]
     else
-        dpre=$'\033[0m\033['$reply[1]'m'
+        dsuf=$'\033[0m'
     fi
 }
 

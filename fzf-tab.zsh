@@ -71,6 +71,7 @@ _fzf_tab_compadd() {
         else
             continue
         fi
+        # TODO: need a ordered dict
         [[ $sort != (no|false|0|off) ]] || dscr=$((i + cnt))$'\b'$dscr
         _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
     done
@@ -292,7 +293,7 @@ _fzf_tab_get_candidates() {
         # add character and color to describe the type of the files
         dsuf='' && dpre=''
         if (( $+v[isfile] )); then
-            filepath=${(Q)~${v[hpre]}}${(Q)k}
+            filepath=${(Q)~${v[hpre]}}${(Q)${k#*$'\b'}}
             if [[ -d $filepath ]]; then
                 dsuf=/
             fi

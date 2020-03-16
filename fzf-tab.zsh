@@ -223,9 +223,9 @@ _fzf_tab_colorize() {
 
     dpre=$'\033[0m\033['$reply[1]'m'
     if [[ $reply[2] ]]; then
-        dsuf=$'\033[0m -> \033['$reply[3]'m'$reply[2]
+        dsuf+=$'\033[0m -> \033['$reply[3]'m'$reply[2]
     else
-        dsuf=$'\033[0m'
+        dsuf+=$'\033[0m'
     fi
 }
 

@@ -252,11 +252,10 @@ _fzf_tab_colorize() {
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
-    local -a list_colors group_colors
+    local -a list_colors group_colors tcandidates
     local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
     local -A word_map=()
-    typeset -ga candidates=()
 
     (( $#_fzf_tab_compcap == 0 )) && return
 
@@ -298,13 +297,10 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            if (( colorful )); then
-                candidates+=$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
-            else
-                candidates+=$v[group]$'\b'$color$prefix$'\0'$k$'\0'$dsuf
-            fi
+            # first group index is for builtin sort, sencond is for GNU sort
+            tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
         else
-            candidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
+            tcandidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
 
         # check group with duplicate member
@@ -316,19 +312,19 @@ _fzf_tab_get_candidates() {
             word_map[$v[word]]=$v[group]
         fi
     done
-    (( same_word )) && candidates[2,-1]=()
+    (( same_word )) && tcandidates[2,-1]=()
 
     # sort and remove sort group or other index
     zstyle -T ":completion:$_fzf_tab_curcontext" sort
     if (( $? != 1 )); then
         if (( colorful )); then
             # if enable list_colors, we should skip the first field
-            candidates=(${(f)"$(sort -t '\0' -k 2 <<< ${(pj:\n:)candidates})"})
+            tcandidates=(${(f)"$(sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
         else
-            candidates=("${(@on)candidates}")
+            tcandidates=("${(@on)tcandidates}")
         fi
     fi
-    candidates=("${(@)candidates//[0-9]#$bs}")
+    typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
 
     # hide needless group
     if [[ $show_group == brief ]]; then

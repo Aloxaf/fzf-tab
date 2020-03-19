@@ -1,0 +1,7 @@
+name=aloxaf/fzftab
+link=dynamic
+load=no
+
+autofeatures="b:colorize"
+
+objects="fzftab.o"

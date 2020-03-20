@@ -1,26 +1,26 @@
 #include "fzftab.mdh"
 #include "fzftab.pro"
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdlib.h>
 
-const char* get_color(const char *file, const struct stat *sb);
-const char* get_suffix(const char *file, const struct stat *sb);
-const char* colorize_from_mode(const char *file, const struct stat *sb);
-const char* colorize_from_name(const char *file);
-int compile_patterns(char *nam, char **list_colors);
+const char* get_color(const char* file, const struct stat* sb);
+const char* get_suffix(const char* file, const struct stat* sb);
+const char* colorize_from_mode(const char* file, const struct stat* sb);
+const char* colorize_from_name(const char* file);
+int compile_patterns(char* nam, char** list_colors);
 
 /* Indixes into the terminal string arrays. */
-#define COL_NO  0
-#define COL_FI  1
-#define COL_DI  2
-#define COL_LN  3
-#define COL_PI  4
-#define COL_SO  5
-#define COL_BD  6
-#define COL_CD  7
-#define COL_OR  8
-#define COL_MI  9
+#define COL_NO 0
+#define COL_FI 1
+#define COL_DI 2
+#define COL_LN 3
+#define COL_PI 4
+#define COL_SO 5
+#define COL_BD 6
+#define COL_CD 7
+#define COL_OR 8
+#define COL_MI 9
 #define COL_SU 10
 #define COL_SG 11
 #define COL_TW 12
@@ -40,19 +40,13 @@ int compile_patterns(char *nam, char **list_colors);
 #define NUM_COLS 25
 
 /* Names of the terminal strings. */
-static char *colnames[] = {
-    "no", "fi", "di", "ln", "pi", "so", "bd", "cd", "or", "mi",
-    "su", "sg", "tw", "ow", "st", "ex",
-    "lc", "rc", "ec", "tc", "sp", "ma", "hi", "du", "sa", NULL
-};
+static char* colnames[] = { "no", "fi", "di", "ln", "pi", "so", "bd", "cd", "or", "mi", "su", "sg",
+    "tw", "ow", "st", "ex", "lc", "rc", "ec", "tc", "sp", "ma", "hi", "du", "sa", NULL };
 
 /* Default values. */
-static char *defcols[] = {
-    "0", "0", "1;31", "1;36", "33", "1;35", "1;33", "1;33", NULL, NULL,
-    "37;41", "30;43", "30;42", "34;42", "37;44", "1;32",
-    "\033[", "m", NULL, "0", "0", "7", NULL, NULL, "0"
-};
-
+static char* defcols[]
+    = { "0", "0", "1;31", "1;36", "33", "1;35", "1;33", "1;33", NULL, NULL, "37;41", "30;43",
+          "30;42", "34;42", "37;44", "1;32", "\033[", "m", NULL, "0", "0", "7", NULL, NULL, "0" };
 
 struct pattern {
     Patprog pat;
@@ -60,16 +54,16 @@ struct pattern {
 };
 
 static int pat_cnt = 0;
-static struct pattern *name_color = NULL;
+static struct pattern* name_color = NULL;
 static char mode_color[NUM_COLS][20];
 
-static int bin_fzf_tab_compadd(char *nam, char **args, UNUSED(Options ops), UNUSED(int func))
+static int bin_fzf_tab_compadd(char* nam, char** args, UNUSED(Options ops), UNUSED(int func))
 {
     return 0;
 }
 
 // TODO: use ZLS_COLORS ?
-int compile_patterns(char *nam, char **list_colors)
+int compile_patterns(char* nam, char** list_colors)
 {
     // clean old name_color and set pat_cnt = 0
     if (pat_cnt != 0) {
@@ -96,8 +90,8 @@ int compile_patterns(char *nam, char **list_colors)
     name_color = zalloc(pat_cnt * sizeof(struct pattern));
 
     for (int i = 0; i < pat_cnt; i++) {
-        char *pat = dupstring(list_colors[i]);
-        char *color = strrchr(pat, '=');
+        char* pat = dupstring(list_colors[i]);
+        char* color = strrchr(pat, '=');
         *color = '\0';
         tokenize(pat);
         remnulargs(pat);
@@ -130,7 +124,7 @@ int compile_patterns(char *nam, char **list_colors)
 // colorize -c LIST_COLORS
 // colorize file
 // echo $reply
-static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
+static int bin_fzf_tab_colorize(char* nam, char** args, Options ops, UNUSED(int func))
 {
     char **array, *file;
 
@@ -159,11 +153,11 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
         return 1;
     }
 
-    const char *suffix = get_suffix(file, &sb);
-    const char *color = get_color(file, &sb);
+    const char* suffix = get_suffix(file, &sb);
+    const char* color = get_color(file, &sb);
 
-    char *symlink = "";
-    const char *symcolor = "";
+    char* symlink = "";
+    const char* symcolor = "";
     if ((sb.st_mode & S_IFMT) == S_IFLNK) {
         symlink = zalloc(PATH_MAX);
         int end = readlink(file, symlink, PATH_MAX);
@@ -177,24 +171,24 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
         }
     }
 
-    if (OPT_ISSET(ops, 'o') ) {
+    if (OPT_ISSET(ops, 'o')) {
         printf("%s%s%s"
-                    "%s"
-                    "%s%s%s"
-                    "%s",
-                    mode_color[COL_LC], color, mode_color[COL_RC], file,
-                    mode_color[COL_LC], "0", mode_color[COL_RC], suffix);
+               "%s"
+               "%s%s%s"
+               "%s",
+            mode_color[COL_LC], color, mode_color[COL_RC], file, mode_color[COL_LC], "0",
+            mode_color[COL_RC], suffix);
         if (symlink[0] != '\0') {
             printf(" -> "
-                    "%s%s%s"
-                    "%s"
-                    "%s%s%s\n",
-                    mode_color[COL_LC], symcolor, mode_color[COL_RC], symlink,
-                    mode_color[COL_LC], "0", mode_color[COL_RC]);
+                   "%s%s%s"
+                   "%s"
+                   "%s%s%s\n",
+                mode_color[COL_LC], symcolor, mode_color[COL_RC], symlink, mode_color[COL_LC], "0",
+                mode_color[COL_RC]);
             free(symlink);
         }
     } else {
-        char **reply = zalloc((4 + 1) * sizeof(char *));
+        char** reply = zalloc((4 + 1) * sizeof(char*));
         reply[4] = NULL;
 
         if (strlen(color) != 0) {
@@ -211,12 +205,14 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
 
         if (symlink[0] != '\0') {
             reply[3] = zalloc(PATH_MAX);
-            sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor,
-                    mode_color[COL_RC], symlink, mode_color[COL_LC], "0",
-                    mode_color[COL_RC]);
+            sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor, mode_color[COL_RC],
+                symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
             free(symlink);
         } else {
             reply[3] = ztrdup("");
+        }
+        for (int i = 0; i < 4; i++) {
+            reply[i] = metafy(reply[i], -1, META_REALLOC);
         }
         setaparam("reply", reply);
     }
@@ -224,15 +220,19 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
     return 0;
 }
 
-const char* get_suffix(const char *file, const struct stat *sb)
+const char* get_suffix(const char* file, const struct stat* sb)
 {
     struct stat sb2;
 
     switch (sb->st_mode & S_IFMT) {
-    case S_IFBLK: return "#";
-    case S_IFCHR: return "%";
-    case S_IFDIR: return "/";
-    case S_IFIFO: return "|";
+    case S_IFBLK:
+        return "#";
+    case S_IFCHR:
+        return "%";
+    case S_IFDIR:
+        return "/";
+    case S_IFIFO:
+        return "|";
     case S_IFLNK: {
         if (strpfx(mode_color[COL_LN], "target")) {
             if (stat(file, &sb2) == -1) {
@@ -243,7 +243,8 @@ const char* get_suffix(const char *file, const struct stat *sb)
             return "@";
         }
     }
-    default: break;
+    default:
+        break;
     }
 
     if (sb->st_mode & S_IXUSR) {
@@ -253,21 +254,20 @@ const char* get_suffix(const char *file, const struct stat *sb)
     return "";
 }
 
-const char* get_color(const char *file, const struct stat *sb)
+const char* get_color(const char* file, const struct stat* sb)
 {
     // no list-colors, return empty color
     if (pat_cnt == 0) {
         return "";
     }
-    const char *ret;
-    if ((ret = colorize_from_mode(file, sb)) ||
-        (ret = colorize_from_name(file))) {
+    const char* ret;
+    if ((ret = colorize_from_mode(file, sb)) || (ret = colorize_from_name(file))) {
         return ret;
     }
     return mode_color[COL_FI];
 }
 
-const char* colorize_from_name(const char *file)
+const char* colorize_from_name(const char* file)
 {
     for (int i = 0; i < pat_cnt; i++) {
         if (name_color[i].pat && pattry(name_color[i].pat, file)) {
@@ -277,33 +277,39 @@ const char* colorize_from_name(const char *file)
     return NULL;
 }
 
-const char* colorize_from_mode(const char *file, const struct stat *sb)
+const char* colorize_from_mode(const char* file, const struct stat* sb)
 {
     struct stat sb2;
 
     switch (sb->st_mode & S_IFMT) {
-    case S_IFDIR: return mode_color[COL_DI];
+    case S_IFDIR:
+        return mode_color[COL_DI];
     case S_IFLNK: {
         if (strpfx(mode_color[COL_LN], "target")) {
-            if (stat(file, &sb2) == -1 ) {
+            if (stat(file, &sb2) == -1) {
                 return mode_color[COL_OR];
             }
             return get_color(file, &sb2);
         }
     }
-    case S_IFIFO: return mode_color[COL_PI];
-    case S_IFSOCK: return mode_color[COL_SO];
-    case S_IFBLK: return mode_color[COL_BD];
-    case S_IFCHR: return mode_color[COL_CD];
-    default: break;
+    case S_IFIFO:
+        return mode_color[COL_PI];
+    case S_IFSOCK:
+        return mode_color[COL_SO];
+    case S_IFBLK:
+        return mode_color[COL_BD];
+    case S_IFCHR:
+        return mode_color[COL_CD];
+    default:
+        break;
     }
 
-    if (sb->st_mode & S_ISUID ) {
+    if (sb->st_mode & S_ISUID) {
         return mode_color[COL_SU];
     } else if (sb->st_mode & S_ISGID) {
         return mode_color[COL_SG];
         // tw ow st ??
-    } else if (sb->st_mode & S_IXUSR ) {
+    } else if (sb->st_mode & S_IXUSR) {
         return mode_color[COL_EX];
     }
 
@@ -311,7 +317,7 @@ const char* colorize_from_mode(const char *file, const struct stat *sb)
     size_t len = strlen(file);
     /* shortest valid suffix format is a.b */
     if (len > 2) {
-        const char *suf = file + len - 1;
+        const char* suf = file + len - 1;
         while (suf > file + 1) {
             if (suf[-1] == '.') {
                 if (sufaliastab->getnode(sufaliastab, suf)) {
@@ -327,42 +333,29 @@ const char* colorize_from_mode(const char *file, const struct stat *sb)
 }
 
 static struct builtin bintab[] = {
-    BUILTIN("fzf-tab-colorize", 0, bin_colorize, 0, -1, 0, "cvo", NULL),
+    BUILTIN("fzf-tab-colorize", 0, bin_fzf_tab_colorize, 0, -1, 0, "cvo", NULL),
     BUILTIN("fzf-tab-compadd", BINF_HANDLES_OPTS, bin_fzf_tab_compadd, 0, -1, 0, NULL, NULL),
 };
 
-static struct features module_features = {
-    bintab, sizeof(bintab)/sizeof(*bintab),
-    0
-};
+static struct features module_features = { bintab, sizeof(bintab) / sizeof(*bintab), 0 };
 
-int setup_(UNUSED(Module m))
-{
-    return 0;
-}
+int setup_(UNUSED(Module m)) { return 0; }
 
-int features_(Module m, char ***features)
+int features_(Module m, char*** features)
 {
     *features = featuresarray(m, &module_features);
     return 0;
 }
 
-int enables_(Module m, int **enables)
-{
-    return handlefeatures(m, &module_features, enables);
-}
+int enables_(Module m, int** enables) { return handlefeatures(m, &module_features, enables); }
 
-int boot_(UNUSED(Module m))
-{
-    return 0;
-}
+int boot_(UNUSED(Module m)) { return 0; }
 
-int cleanup_(UNUSED(Module m))
-{
-    return 0;
-}
+int cleanup_(UNUSED(Module m)) { return setfeatureenables(m, &module_features, NULL); }
 
 int finish_(UNUSED(Module m))
 {
+    printf("fzf-tab module unloaded.\n");
+    fflush(stdout);
     return 0;
 }

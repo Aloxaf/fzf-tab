@@ -67,8 +67,6 @@ _fzf_tab_compadd() {
             dscr=${dscr//$'\n'}
         elif [[ -n $word ]]; then
             dscr=$word
-        else
-            continue
         fi
         _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
     done
@@ -351,7 +349,7 @@ _fzf_tab_complete() {
     case $#candidates in
         0) return;;
         # NOTE: won't trigger continuous completion
-        1) choices=(${_fzf_tab_compcap[1]%$'\2'*});;
+        1) choices=("${_fzf_tab_compcap[1]%$bs*}");;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
@@ -372,17 +370,17 @@ _fzf_tab_complete() {
             ;;
     esac
 
-    if [[ $choices[1] == $continuous_trigger ]]; then
+    if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
         typeset -gi _fzf_tab_continue=1
         choices[1]=()
     fi
 
-    for choice in $choices; do
+    for choice in "$choices[@]"; do
         local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
-        builtin compadd "${args[@]:--Q}" -Q -- $v[word]
+        builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
     done
 
     compstate[list]=

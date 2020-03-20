@@ -24,6 +24,8 @@
       mkdir dir2 &&
       touch file1 &&
       touch file2
+      touch dir1/file1
+      git init
     }
   else
     ZTST_unimplemented="the zsh/zpty module is not available"
@@ -151,6 +153,11 @@
 >DESCRIPTION:{group2}
 >C1:{·a}
 >C2:{·b}
+
+  comptest $'git add dir1\t'
+0:add empty word
+>line: {git add dir1/}{}
+# FIXME：why two warnings？
 
 %clean
 

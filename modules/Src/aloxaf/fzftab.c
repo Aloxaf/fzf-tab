@@ -162,10 +162,12 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
     const char *suffix = get_suffix(file, &sb);
     const char *color = get_color(file, &sb);
 
-    char symlink[8192] = {0};
+    char *symlink = "";
     const char *symcolor = "";
     if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-        readlink(file, symlink, 8192);
+        symlink = zalloc(PATH_MAX);
+        int end = readlink(file, symlink, PATH_MAX);
+        symlink[end] = '\0';
         if (stat(file, &sb) == -1) {
             symcolor = mode_color[COL_OR];
         } else {
@@ -189,21 +191,30 @@ static int bin_colorize(char *nam, char **args, Options ops, UNUSED(int func))
                     "%s%s%s\n",
                     mode_color[COL_LC], symcolor, mode_color[COL_RC], symlink,
                     mode_color[COL_LC], "0", mode_color[COL_RC]);
+            free(symlink);
         }
     } else {
         char **reply = zalloc((4 + 1) * sizeof(char *));
-        reply[0] = zalloc(256);
-        reply[1] = zalloc(256);
-        reply[2] = zalloc(10);
-        reply[3] = zalloc(PATH_MAX);
         reply[4] = NULL;
-        sprintf(reply[0], "%s%s%s", mode_color[COL_LC], color, mode_color[COL_RC]);
-        sprintf(reply[1], "%s%s%s", mode_color[COL_LC], "0", mode_color[COL_RC]);
-        sprintf(reply[2], "%s", suffix);
+
+        if (strlen(color) != 0) {
+            reply[0] = zalloc(128);
+            reply[1] = zalloc(128);
+            sprintf(reply[0], "%s%s%s", mode_color[COL_LC], color, mode_color[COL_RC]);
+            sprintf(reply[1], "%s%s%s", mode_color[COL_LC], "0", mode_color[COL_RC]);
+        } else {
+            reply[0] = ztrdup("");
+            reply[1] = ztrdup("");
+        }
+
+        reply[2] = ztrdup(suffix);
+
         if (symlink[0] != '\0') {
+            reply[3] = zalloc(PATH_MAX);
             sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor,
                     mode_color[COL_RC], symlink, mode_color[COL_LC], "0",
                     mode_color[COL_RC]);
+            free(symlink);
         } else {
             reply[3] = ztrdup("");
         }

@@ -263,7 +263,7 @@ _fzf_tab_colorize() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    local dsuf dpre dend k _v filepath first_word show_group no_group_color prefix bs=$'\b'
+    local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
     local -a list_colors group_colors tcandidates reply
     local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
@@ -293,12 +293,12 @@ _fzf_tab_get_candidates() {
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
         # add character and color to describe the type of the files
-        dsuf='' dpre='' dend=''
+        dsuf='' dpre=''
         if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)${k#*$'\b'}}
-            if (( $+builtins[fzf-tab-colorize] )); then
+            if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
               fzf-tab-colorize $filepath 2>/dev/null
-              dpre=$reply[1] dend=$reply[2] dsuf=$reply[3]
+              dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
               if [[ $reply[4] ]]; then
                 dsuf+=" -> $reply[4]"
               fi

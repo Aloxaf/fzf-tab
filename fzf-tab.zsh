@@ -533,7 +533,7 @@ toggle-fzf-tab() {
 
 fzf-tab-build-module() {
   pushd $FZF_TAB_HOME/modules
-  ./configure --disable-gdbm --without-tcsetpgrp
+  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp
   make -j
   popd
 }

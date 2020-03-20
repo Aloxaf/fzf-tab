@@ -8,6 +8,18 @@
 zmodload zsh/zutil
 zmodload -F zsh/stat b:zstat
 
+FZF_TAB_HOME=${0:A:h}
+
+if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
+  module_path+=("$FZF_TAB_HOME/modules/Src")
+  zmodload aloxaf/fzftab
+
+  if [[ $(fzf-tab-colorize -v) != "0.1.0" ]]; then
+    print -P "%F{yellow}fzftab module needs to be rebuild%f"
+    fzf-tab-build-module
+  fi
+fi
+
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 # thanks Valodim/zsh-capture-completion
@@ -251,8 +263,8 @@ _fzf_tab_colorize() {
 
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
-    local -a list_colors group_colors tcandidates
+    local dsuf dpre dend k _v filepath first_word show_group no_group_color prefix bs=$'\b'
+    local -a list_colors group_colors tcandidates reply
     local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
     local -A word_map=()
@@ -265,8 +277,12 @@ _fzf_tab_get_candidates() {
     _fzf_tab_get -s prefix prefix
 
     zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
-    local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
-    local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+    if (( $+builtins[fzf-tab-colorize] )); then
+        fzf-tab-colorize -c list_colors
+    else
+        local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+        local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+    fi
 
     if (( $#_fzf_tab_groups == 1 )); then
         _fzf_tab_get -m single-group prefix || prefix=''
@@ -277,19 +293,28 @@ _fzf_tab_get_candidates() {
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
         # add character and color to describe the type of the files
-        dsuf='' dpre=''
+        dsuf='' dpre='' dend=''
         if (( $+v[isfile] )); then
             filepath=${(Q)~${v[hpre]}}${(Q)${k#*$'\b'}}
-            if [[ -d $filepath ]]; then
+            if (( $+builtins[fzf-tab-colorize] )); then
+              fzf-tab-colorize $filepath 2>/dev/null
+              dpre=$reply[1] dend=$reply[2] dsuf=$reply[3]
+              if [[ $reply[4] ]]; then
+                dsuf+=" -> $reply[4]"
+              fi
+              [[ $dpre ]] && colorful=1
+            else
+              if [[ -d $filepath ]]; then
                 dsuf=/
-            fi
-            # add color and resolve symlink if have list-colors
-            # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-            if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
+              fi
+              # add color and resolve symlink if have list-colors
+              # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
+              if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
                 _fzf_tab_colorize $filepath
                 colorful=1
-            elif [[ -L $filepath ]]; then
+              elif [[ -L $filepath ]]; then
                 dsuf=@
+              fi
             fi
         fi
 
@@ -504,6 +529,13 @@ toggle-fzf-tab() {
     else
         enable-fzf-tab
     fi
+}
+
+fzf-tab-build-module() {
+  pushd $FZF_TAB_HOME/modules
+  ./configure --disable-gdbm --without-tcsetpgrp
+  make -j
+  popd
 }
 
 enable-fzf-tab

@@ -71,10 +71,6 @@ static int bin_fzf_tab_compadd(char *nam, char **args, UNUSED(Options ops), UNUS
 // TODO: use ZLS_COLORS ?
 int compile_patterns(char *nam, char **list_colors)
 {
-    if (list_colors == NULL) {
-        zwarnnam(nam, "this is an empty array");
-        return 1;
-    }
     // clean old name_color and set pat_cnt = 0
     if (pat_cnt != 0) {
         while (--pat_cnt) {
@@ -87,6 +83,10 @@ int compile_patterns(char *nam, char **list_colors)
         if (defcols[i]) {
             strcpy(mode_color[i], defcols[i]);
         }
+    }
+    // empty array, just return
+    if (list_colors == NULL) {
+        return 0;
     }
 
     // how many pattens?
@@ -244,6 +244,10 @@ const char* get_suffix(const char *file, const struct stat *sb)
 
 const char* get_color(const char *file, const struct stat *sb)
 {
+    // no list-colors, return empty color
+    if (pat_cnt == 0) {
+        return "";
+    }
     const char *ret;
     if ((ret = colorize_from_mode(file, sb)) ||
         (ret = colorize_from_name(file))) {

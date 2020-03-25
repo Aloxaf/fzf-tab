@@ -159,6 +159,13 @@
 >line: {git add dir1/}{}
 # FIXME：why two warnings？
 
+  comptesteval "zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'"
+  comptesteval "touch vim.coc"
+  comptest $': coc\t'
+  comptesteval "rm vim.coc; zstyle -d ':completion:*' matcher-list"
+0:matcher-list
+>line: {: vim.coc }{}
+
 %clean
 
   zmodload -ui zsh/zpty

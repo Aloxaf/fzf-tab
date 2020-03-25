@@ -32,8 +32,9 @@ _fzf_tab_compadd() {
         __dscr=( "${(@P)${(v)dscrs}}" )
     fi
     builtin compadd -A __hits -D __dscr "$@"
+    local ret=$?
     if (( $#__hits == 0 )); then
-        return
+        return $ret
     fi
 
     # store $curcontext for furthur usage

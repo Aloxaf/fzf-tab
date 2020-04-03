@@ -251,7 +251,7 @@ _fzf_tab_colorize() {
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
-    local -a list_colors group_colors tcandidates
+    local -a list_colors group_colors tcandidates match mbegin mend
     local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
     local -A word_map=()
@@ -318,9 +318,16 @@ _fzf_tab_get_candidates() {
     if (( $? != 1 )); then
         if (( colorful )); then
             # if enable list_colors, we should skip the first field
-            tcandidates=(${(f)"$(sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+            if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
+              # this is faster but doesn't work if `find` is from busybox
+              tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+            else
+              # slower but portable
+              tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
+              tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
+            fi
         else
-            tcandidates=("${(@on)tcandidates}")
+            tcandidates=("${(@o)tcandidates}")
         fi
     fi
     typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")

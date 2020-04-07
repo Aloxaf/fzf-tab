@@ -107,6 +107,8 @@ zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # (experimental, may change in the future)
+# some boilerplate code to define the variable `extract` which will be used later
+# please remember to copy them
 local extract="
 # trim input(what you select)
 in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}

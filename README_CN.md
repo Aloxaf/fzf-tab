@@ -99,6 +99,8 @@ zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # （实验性功能，未来可能更改）
+# 一些定义 extract 变量的样板代码
+# 稍后需要使用这个变量，请记得复制这段代码
 local extract="
 # 提取输入（当前选择的内容）
 in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}

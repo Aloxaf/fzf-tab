@@ -107,11 +107,16 @@ zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # (experimental, may change in the future)
+# some boilerplate code to define the variable `extract` which will be used later
+# please remember to copy them
 local extract="
 # trim input(what you select)
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion(some thing before or after the current word)
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# real path
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
 "
 
 # give a preview of commandline arguments when completing `kill`
@@ -119,7 +124,7 @@ zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 # give a preview of directory by exa when completing cd
-zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
 ```
 
 fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.
@@ -154,7 +159,7 @@ FZF_TAB_COMMAND=(
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )

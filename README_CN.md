@@ -99,11 +99,16 @@ zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
 # （实验性功能，未来可能更改）
+# 一些定义 extract 变量的样板代码
+# 稍后需要使用这个变量，请记得复制这段代码
 local extract="
 # 提取输入（当前选择的内容）
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # 获取当前补全状态的上下文（待补全内容的前面或者后面的东西）
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# 真实路径
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
 "
 
 # 补全 `kill` 命令时提供命令行参数预览
@@ -111,7 +116,7 @@ zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 # 补全 cd 时使用 exa 预览其中的内容
-zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
 
 ```
 
@@ -147,7 +152,7 @@ FZF_TAB_COMMAND=(
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # 不搜索前缀
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query 将在运行时扩展为查询字符串
     '--header-lines=$#headers' # $#headers 将在运行时扩展为组标题数目
 )

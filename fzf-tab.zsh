@@ -44,8 +44,9 @@ _fzf_tab_compadd() {
         __dscr=( "${(@P)${(v)dscrs}}" )
     fi
     builtin compadd -A __hits -D __dscr "$@"
+    local ret=$?
     if (( $#__hits == 0 )); then
-        return
+        return $ret
     fi
 
     # store $curcontext for furthur usage
@@ -79,8 +80,6 @@ _fzf_tab_compadd() {
             dscr=${dscr//$'\n'}
         elif [[ -n $word ]]; then
             dscr=$word
-        else
-            continue
         fi
         _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
     done
@@ -111,7 +110,7 @@ _fzf_tab_remove_space() {
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,btab:up,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
 )
@@ -264,7 +263,7 @@ _fzf_tab_colorize() {
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
     local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
-    local -a list_colors group_colors tcandidates reply
+    local -a list_colors group_colors tcandidates reply match mbegin mend
     local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
     local -A word_map=()
@@ -295,7 +294,8 @@ _fzf_tab_get_candidates() {
         # add character and color to describe the type of the files
         dsuf='' dpre=''
         if (( $+v[isfile] )); then
-            filepath=${(Q)~${v[hpre]}}${(Q)${k#*$'\b'}}
+            filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
+            filepath=${(Qe)~filepath}
             if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
               fzf-tab-colorize $filepath 2>/dev/null
               dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
@@ -344,9 +344,16 @@ _fzf_tab_get_candidates() {
     if (( $? != 1 )); then
         if (( colorful )); then
             # if enable list_colors, we should skip the first field
-            tcandidates=(${(f)"$(sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+            if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
+              # this is faster but doesn't work if `find` is from busybox
+              tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+            else
+              # slower but portable
+              tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
+              tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
+            fi
         else
-            tcandidates=("${(@on)tcandidates}")
+            tcandidates=("${(@o)tcandidates}")
         fi
     fi
     typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
@@ -376,7 +383,7 @@ _fzf_tab_complete() {
     case $#candidates in
         0) return;;
         # NOTE: won't trigger continuous completion
-        1) choices=(${_fzf_tab_compcap[1]%$'\2'*});;
+        1) choices=("${_fzf_tab_compcap[1]%$bs*}");;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
@@ -397,17 +404,17 @@ _fzf_tab_complete() {
             ;;
     esac
 
-    if [[ $choices[1] == $continuous_trigger ]]; then
+    if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
         typeset -gi _fzf_tab_continue=1
         choices[1]=()
     fi
 
-    for choice in $choices; do
+    for choice in "$choices[@]"; do
         local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
-        builtin compadd "${args[@]:--Q}" -Q -- $v[word]
+        builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
     done
 
     compstate[list]=

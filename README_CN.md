@@ -103,9 +103,12 @@ zstyle ':fzf-tab:complete:_zlua:*' query-string input
 # 稍后需要使用这个变量，请记得复制这段代码
 local extract="
 # 提取输入（当前选择的内容）
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # 获取当前补全状态的上下文（待补全内容的前面或者后面的东西）
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# 真实路径
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
 "
 
 # 补全 `kill` 命令时提供命令行参数预览
@@ -113,7 +116,7 @@ zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd
 zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 # 补全 cd 时使用 exa 预览其中的内容
-zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always ${~ctxt[hpre]}$in'
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
 
 ```
 

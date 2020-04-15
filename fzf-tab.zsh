@@ -278,7 +278,8 @@ _fzf_tab_get_candidates() {
         # add character and color to describe the type of the files
         dsuf='' dpre=''
         if (( $+v[isfile] )); then
-            filepath=${(Q)~${v[hpre]}}${(Q)${k#*$'\b'}}
+            filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
+            filepath=${(Qe)~filepath}
             if [[ -d $filepath ]]; then
                 dsuf=/
             fi

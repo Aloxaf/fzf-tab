@@ -166,6 +166,24 @@
 0:matcher-list
 >line: {: vim.coc }{}
 
+  comptesteval $'cd dir1'
+  comptest $': ../d\t'
+  comptesteval $'cd ..'
+0:IPREFIX
+>line: {: ../dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
+  comptest $': $PWD/d\t'
+0:expansion
+>line: {: $PWD/dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
 %clean
 
   zmodload -ui zsh/zpty

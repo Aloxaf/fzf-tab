@@ -137,6 +137,7 @@
 
   comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
   comptest $': ./a/d/h\t'
+  comptesteval 'rm -rd abc'
 0:nested directory
 >line: {: ./abc/def/h}{}
 >QUERY:{d}
@@ -183,6 +184,20 @@
 >DESCRIPTION:{file}
 >C1:{dir1/}
 >C1:{dir2/}
+
+  comptesteval 'echo no > called'
+  comptesteval "touch 'dir\`echo yes > called\`'"
+  comptest $': d\t'
+  echo called:$(<called)
+  comptesteval "rm 'dir\`echo yes > called\`' called"
+0:don''t expand file name
+>line: {: dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+>C1:{dir`echo yes > called`}
+>called:no
 
 %clean
 

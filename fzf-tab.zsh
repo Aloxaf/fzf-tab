@@ -219,9 +219,9 @@ _fzf_tab_colorize() {
     local -a reply stat lstat
 
     # fzf-tab-lscolors::match-by $1 lstat follow
-    zstat -A lstat -L $1
+    zstat -A lstat -L -- $1
     # follow symlink
-    (( lstat[3] & 0170000 )) && zstat -A stat $1 2>/dev/null
+    (( lstat[3] & 0170000 )) && zstat -A stat -- $1 2>/dev/null
 
     fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
     # fall back to name
@@ -235,7 +235,7 @@ _fzf_tab_colorize() {
         # If this is not a broken symlink
         if [[ -e $rsv ]]; then
             # fzf-tab-lscolors::match-by $rsv stat
-            zstat -A stat $rsv
+            zstat -A stat -- $rsv
             fzf-tab-lscolors::from-mode $rsv $stat[3]
             # fall back to name
             [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $rsv
@@ -279,7 +279,7 @@ _fzf_tab_get_candidates() {
         dsuf='' dpre=''
         if (( $+v[isfile] )); then
             filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
-            filepath=${(Qe)~filepath}
+            filepath=${(Q)${(e)~filepath}}
             if [[ -d $filepath ]]; then
                 dsuf=/
             fi

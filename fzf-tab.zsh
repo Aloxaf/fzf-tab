@@ -8,17 +8,9 @@
 zmodload zsh/zutil
 zmodload -F zsh/stat b:zstat
 
-FZF_TAB_HOME=${0:A:h}
-
-if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
-  module_path+=("$FZF_TAB_HOME/modules/Src")
-  zmodload aloxaf/fzftab
-
-  if [[ $(fzf-tab-colorize -v) != "0.1.0" ]]; then
-    print -P "%F{yellow}fzftab module needs to be rebuild%f"
-    fzf-tab-build-module
-  fi
-fi
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+FZF_TAB_HOME=${0:h}
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
@@ -544,6 +536,18 @@ fzf-tab-build-module() {
   make -j
   popd
 }
+
+if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
+  module_path+=("$FZF_TAB_HOME/modules/Src")
+  zmodload aloxaf/fzftab
+
+  if [[ $FZF_TAB_MODULE_VERSION != "0.1.0" ]]; then
+    print -P "%F{yellow}fzftab module needs to be rebuild%f"
+    fzf-tab-build-module
+    zmodload -u aloxaf/fzftab
+    zmodload aloxaf/fzftab
+  fi
+fi
 
 enable-fzf-tab
 zle -N toggle-fzf-tab

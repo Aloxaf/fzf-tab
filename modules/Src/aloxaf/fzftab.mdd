@@ -2,6 +2,6 @@ name=aloxaf/fzftab
 link=dynamic
 load=no
 
-autofeatures="b:colorize"
+autofeatures="b:fzf-tab-colorize p:FZF_TAB_MODULE_VERSION"
 
 objects="fzftab.o"

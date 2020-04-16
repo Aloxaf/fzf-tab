@@ -48,6 +48,8 @@ static char* defcols[]
     = { "0", "0", "1;31", "1;36", "33", "1;35", "1;33", "1;33", NULL, NULL, "37;41", "30;43",
           "30;42", "34;42", "37;44", "1;32", "\033[", "m", NULL, "0", "0", "7", NULL, NULL, "0" };
 
+static char *fzf_tab_module_version;
+
 struct pattern {
     Patprog pat;
     char color[50];
@@ -56,11 +58,6 @@ struct pattern {
 static int pat_cnt = 0;
 static struct pattern* name_color = NULL;
 static char mode_color[NUM_COLS][20];
-
-static int bin_fzf_tab_compadd(char* nam, char** args, UNUSED(Options ops), UNUSED(int func))
-{
-    return 0;
-}
 
 // TODO: use ZLS_COLORS ?
 int compile_patterns(char* nam, char** list_colors)
@@ -137,12 +134,9 @@ static int bin_fzf_tab_colorize(char* nam, char** args, Options ops, UNUSED(int 
             array = getaparam(*args);
             return compile_patterns(nam, array);
         }
-    } else if (OPT_ISSET(ops, 'v')) {
-        printf("0.1.0");
-        return 0;
     }
 
-    if ((file = *args) == NULL) {
+    if ((file = unmeta(*args)) == NULL) {
         zwarnnam(nam, "please specify a file name");
         return 1;
     }
@@ -334,10 +328,19 @@ const char* colorize_from_mode(const char* file, const struct stat* sb)
 
 static struct builtin bintab[] = {
     BUILTIN("fzf-tab-colorize", 0, bin_fzf_tab_colorize, 0, -1, 0, "cvo", NULL),
-    BUILTIN("fzf-tab-compadd", BINF_HANDLES_OPTS, bin_fzf_tab_compadd, 0, -1, 0, NULL, NULL),
 };
 
-static struct features module_features = { bintab, sizeof(bintab) / sizeof(*bintab), 0 };
+static struct paramdef patab[] = {
+    STRPARAMDEF("FZF_TAB_MODULE_VERSION", &fzf_tab_module_version),
+};
+
+static struct features module_features = {
+    bintab, sizeof(bintab) / sizeof(*bintab),
+    NULL, 0,
+    NULL, 0,
+    patab, sizeof(patab) / sizeof(*patab),
+    0,
+};
 
 int setup_(UNUSED(Module m)) { return 0; }
 
@@ -349,7 +352,10 @@ int features_(Module m, char*** features)
 
 int enables_(Module m, int** enables) { return handlefeatures(m, &module_features, enables); }
 
-int boot_(UNUSED(Module m)) { return 0; }
+int boot_(UNUSED(Module m)) {
+    fzf_tab_module_version = ztrdup("0.1.0");
+    return 0;
+}
 
 int cleanup_(UNUSED(Module m)) { return setfeatureenables(m, &module_features, NULL); }
 

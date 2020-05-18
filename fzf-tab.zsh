@@ -419,6 +419,7 @@ fzf-tab-complete() {
             IN_FZF_TAB=0
         }
         if (( _fzf_tab_continue )); then
+          zle .split-undo
           zle .reset-prompt
           zle -R
         else

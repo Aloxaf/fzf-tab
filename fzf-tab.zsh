@@ -418,7 +418,12 @@ fzf-tab-complete() {
         } always {
             IN_FZF_TAB=0
         }
-        zle redisplay
+        if (( _fzf_tab_continue )); then
+          zle .reset-prompt
+          zle -R
+        else
+          zle redisplay
+        fi
     done
 }
 

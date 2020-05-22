@@ -216,7 +216,7 @@ command 的额外参数
 
 如果没有分组时的颜色。
 
-默认值：`zstyle ':fzf-tab:*' $'\033[37m'` （白色）
+默认值：`zstyle ':fzf-tab:*' no-group-color $'\033[37m'` （白色）
 
 ### single-group
 

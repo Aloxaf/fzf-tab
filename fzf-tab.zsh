@@ -543,17 +543,23 @@ fzf-tab-build-module() {
   popd
 }
 
-if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
-  module_path+=("$FZF_TAB_HOME/modules/Src")
-  zmodload aloxaf/fzftab
-
-  if [[ $FZF_TAB_MODULE_VERSION != "0.1.0" ]]; then
-    print -P "%F{yellow}fzftab module needs to be rebuild%f"
-    fzf-tab-build-module
-    zmodload -u aloxaf/fzftab
+() {
+  if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
+    module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
+
+    if [[ $FZF_TAB_MODULE_VERSION != "0.1.0" ]]; then
+      zmodload -u aloxaf/fzftab
+      local rebuild
+      print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"
+      read -q rebuild
+      if [[ $rebuild == y ]]; then
+        fzf-tab-build-module
+        zmodload aloxaf/fzftab
+      fi
+    fi
   fi
-fi
+}
 
 enable-fzf-tab
 zle -N toggle-fzf-tab

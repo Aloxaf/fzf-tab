@@ -429,13 +429,19 @@ fzf-tab-complete() {
     local -i _fzf_tab_continue=1
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
-        IN_FZF_TAB=1
+        local IN_FZF_TAB=1
         {
             zle .fzf-tab-orig-$_fzf_tab_orig_widget
         } always {
             IN_FZF_TAB=0
         }
-        zle redisplay
+        if (( _fzf_tab_continue )); then
+          zle .split-undo
+          zle .reset-prompt
+          zle -R
+        else
+          zle redisplay
+        fi
     done
 }
 

@@ -225,7 +225,7 @@ Default value: `zstyle ':fzf-tab:*:' prefix '·'`
 
 Color when there is no group.
 
-Default value: `zstyle ':fzf-tab:*' $'\033[37m'` (white)
+Default value: `zstyle ':fzf-tab:*' no-group-color $'\033[37m'` (white)
 
 ### single-group
 

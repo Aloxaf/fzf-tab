@@ -227,6 +227,8 @@ const char* get_suffix(const char* file, const struct stat* sb)
         return "/";
     case S_IFIFO:
         return "|";
+    case S_IFSOCK:
+        return "=";
     case S_IFLNK: {
         if (strpfx(mode_color[COL_LN], "target")) {
             if (stat(file, &sb2) == -1) {

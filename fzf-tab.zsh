@@ -536,7 +536,7 @@ toggle-fzf-tab() {
     fi
 }
 
-fzf-tab-build-module() {
+build-fzf-tab-module() {
   pushd $FZF_TAB_HOME/modules
   CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp
   make -j
@@ -554,7 +554,7 @@ fzf-tab-build-module() {
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"
       read -q rebuild
       if [[ $rebuild == y ]]; then
-        fzf-tab-build-module
+        build-fzf-tab-module
         zmodload aloxaf/fzftab
       fi
     fi

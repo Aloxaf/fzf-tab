@@ -279,7 +279,7 @@ printc() {
 
 默认情况下，当你使用了 `list-colors` tag 时，fzf-tab 会使用 [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) 来解析并应用 ZLS_COLORS。
 
-然而，这是一个纯 zsh 脚本所以在文件数目过多时非常缓慢。为了加速这个过程，fzf-tab 包含了一个二进制模块，你可以使用 `fzf-tab-build-module` 来构建它，然后它就会被自动启用。
+然而，这是一个纯 zsh 脚本所以在文件数目过多时非常缓慢。为了加速这个过程，fzf-tab 包含了一个二进制模块，你可以使用 `build-fzf-tab-module` 来构建它，然后它就会被自动启用。
 
 # 与其他插件的区别
 

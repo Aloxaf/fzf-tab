@@ -291,7 +291,7 @@ Default value: `zstyle ':fzf-tab:*' show-group full`
 By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have enable `list-colors` tag.
 
 However, this is a pure zsh script and is slow if you have too many files to colorize.
-fzf-tab is shipped with a binary module to speed up this process. You can build it with `fzf-tab-build-module`, then it will be enabled automatically.
+fzf-tab is shipped with a binary module to speed up this process. You can build it with `build-fzf-tab-module`, then it will be enabled automatically.
 
 # Difference from other plugins
 

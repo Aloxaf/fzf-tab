@@ -1,0 +1,74 @@
+%prep
+
+  if zmodload zsh/datetime 2>/dev/null; then
+    setopt multibyte
+    unset LC_ALL
+    LC_TIME=C
+    TZ=UTC+0
+    # It's not clear this skip_extensions is correct, but the
+    # format in question is causing problems on Solaris.
+    # We'll revist this after the release.
+    [[ "$(strftime %^_10B 0)" = "   JANUARY" ]] || skip_extensions=1
+    [[ "$(LC_TIME=ja_JP.UTF-8 strftime %OS 1)" = 一 ]] || skip_japanese=1
+  else
+    ZTST_unimplemented="can't load the zsh/datetime module for testing"
+  fi
+
+%test
+
+  strftime %y 0
+  strftime %Y 1000000000
+  strftime %x 1200000000
+  strftime %X 1200000001
+0:basic format specifiers
+>70
+>2001
+>01/10/08
+>21:20:01
+
+  strftime %-m_%f_%K_%L 1181100000
+  strftime %6. 0
+0:zsh extensions
+>6_6_3_3
+>000000
+
+  if [[ $skip_extensions = 1 ]]; then
+    ZTST_skip="strftime extensions not supported"
+  elif [[ $skip_japanese = 1 ]]; then
+    ZTST_skip="Japanese UTF-8 locale not supported"
+  else
+    (
+    LC_TIME=ja_JP.UTF-8
+    strftime %Ey 1000000000
+    strftime %Oy 1000000000
+    strftime %Ex 1000000000
+    strftime %OS 1000000000
+    strftime %03Ey 650000000
+    )
+  fi
+0:alternate format extensions
+>13
+>一
+>平成13年09月09日
+>四十
+>002
+
+  if [[ $skip_extensions = 1 ]]; then
+    ZTST_skip="strftime extensions not supported"
+  else
+    (
+      strftime '%#A' 0
+      strftime '%^_10B' 0
+      strftime %03Ey 650000000
+      strftime %-Oe 0
+    )
+  fi
+0:various extensions
+>THURSDAY
+>   JANUARY
+>090
+>1
+
+  print -r -- ${(V)"$(strftime $'%Y\0%m\0%d' 100000000)"}
+0:Embedded nulls
+>1973^@03^@03

@@ -30,6 +30,7 @@ Replace zsh's default completion selection menu with fzf!
         - [single-group](#single-group)
         - [group-colors](#group-colors)
         - [show-group](#show-group)
+    - [Binary module](#binary-module)
 - [Difference from other plugins](#difference-from-other-plugins)
 - [Compatibility with other plugins](#compatibility-with-other-plugins)
 - [Related projects](#related-projects)
@@ -284,6 +285,13 @@ When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display t
 Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
 
 Default value: `zstyle ':fzf-tab:*' show-group full`
+
+## Binary module
+
+By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have enable `list-colors` tag.
+
+However, this is a pure zsh script and is slow if you have too many files to colorize.
+fzf-tab is shipped with a binary module to speed up this process. You can build it with `build-fzf-tab-module`, then it will be enabled automatically.
 
 # Difference from other plugins
 

@@ -1,3 +1,2 @@
-*.c linguist-detectable=false
-*.h linguist-detectable=false
-*.m4 linguist-detectable=false
+modules/* linguist-vendored
+modules/Src/aloxaf/*.c -linguist-vendored

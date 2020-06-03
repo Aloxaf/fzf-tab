@@ -307,6 +307,9 @@ _fzf_tab_get_candidates() {
               elif [[ -L $filepath ]]; then
                 dsuf=@
               fi
+              if [[ $options[list_types] == off ]]; then
+                dsuf=''
+              fi
             fi
         fi
 
@@ -548,7 +551,7 @@ build-fzf-tab-module() {
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 
-    if [[ $FZF_TAB_MODULE_VERSION != "0.1.0" ]]; then
+    if [[ $FZF_TAB_MODULE_VERSION != "0.1.1" ]]; then
       zmodload -u aloxaf/fzftab
       local rebuild
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"

@@ -55,6 +55,7 @@ struct pattern {
     char color[50];
 };
 
+static int opt_list_type = OPT_INVALID;
 static int pat_cnt = 0;
 static struct pattern* name_color = NULL;
 static char mode_color[NUM_COLS][20];
@@ -147,7 +148,10 @@ static int bin_fzf_tab_colorize(char* nam, char** args, Options ops, UNUSED(int 
         return 1;
     }
 
-    const char* suffix = get_suffix(file, &sb);
+    const char* suffix = "";
+    if (isset(opt_list_type)) {
+        suffix = get_suffix(file, &sb);
+    }
     const char* color = get_color(file, &sb);
 
     char* symlink = "";
@@ -214,22 +218,21 @@ static int bin_fzf_tab_colorize(char* nam, char** args, Options ops, UNUSED(int 
     return 0;
 }
 
+// TODO: use zsh mod_export function `file_type` ?
 const char* get_suffix(const char* file, const struct stat* sb)
 {
     struct stat sb2;
+    mode_t filemode = sb->st_mode;
 
-    switch (sb->st_mode & S_IFMT) {
-    case S_IFBLK:
+    if(S_ISBLK(filemode))
         return "#";
-    case S_IFCHR:
+    else if(S_ISCHR(filemode))
         return "%";
-    case S_IFDIR:
+    else if(S_ISDIR(filemode))
         return "/";
-    case S_IFIFO:
+    else if(S_ISFIFO(filemode))
         return "|";
-    case S_IFSOCK:
-        return "=";
-    case S_IFLNK: {
+    else if(S_ISLNK(filemode))
         if (strpfx(mode_color[COL_LN], "target")) {
             if (stat(file, &sb2) == -1) {
                 return "@";
@@ -238,16 +241,12 @@ const char* get_suffix(const char* file, const struct stat* sb)
         } else {
             return "@";
         }
-    }
-    default:
-        break;
-    }
-
-    if (sb->st_mode & S_IXUSR) {
-        return "*";
-    }
-
-    return "";
+    else if(S_ISREG(filemode))
+        return (filemode & S_IXUGO) ? "*" : "";
+    else if(S_ISSOCK(filemode))
+        return "=";
+    else
+        return "?";
 }
 
 const char* get_color(const char* file, const struct stat* sb)
@@ -355,7 +354,10 @@ int features_(Module m, char*** features)
 int enables_(Module m, int** enables) { return handlefeatures(m, &module_features, enables); }
 
 int boot_(UNUSED(Module m)) {
-    fzf_tab_module_version = ztrdup("0.1.0");
+    fzf_tab_module_version = ztrdup("0.1.1");
+    // different zsh version may have different value of list_type's index
+    // so query it dynamically
+    opt_list_type = optlookup("list_types");
     return 0;
 }
 

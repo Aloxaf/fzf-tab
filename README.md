@@ -181,7 +181,8 @@ Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
 
 ### ignore
 
-Don't active fzf-tab in this context.
+Don't activate fzf-tab in this context.
+If it is a number, then fzf-tab won't be activated if the number of candidates is smaller than this number.
 
 Default value: `zstyle ':fzf-tab:*' ignore false`
 

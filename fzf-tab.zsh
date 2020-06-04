@@ -366,11 +366,23 @@ _fzf_tab_get_candidates() {
 _fzf_tab_complete() {
     local -a _fzf_tab_compcap
     local -Ua _fzf_tab_groups
-    local choice choices _fzf_tab_curcontext continuous_trigger bs=$'\2'
+    local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2'
 
     _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
 
     emulate -L zsh -o extended_glob
+
+    # check if we should fall back to zsh builtin completion system
+    if (( _fzf_tab_ignored )); then
+      return
+    fi
+    _fzf_tab_get -s ignore ignore
+    if [[ $ignore == <-> ]] && (( $ignore > 1 && $ignore >= $#_fzf_tab_compcap )); then
+      _fzf_tab_ignored=1
+      compstate[list]=''
+      compstate[insert]=''
+      return
+    fi
 
     local query candidates=() headers=() command opts
     _fzf_tab_get_candidates  # sets `candidates`
@@ -429,7 +441,7 @@ _fzf_tab_complete() {
 
 fzf-tab-complete() {
     # this name must be ugly to avoid clashes
-    local -i _fzf_tab_continue=1
+    local -i _fzf_tab_continue=1 _fzf_tab_ignored=0
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
         local IN_FZF_TAB=1
@@ -438,6 +450,10 @@ fzf-tab-complete() {
         } always {
             IN_FZF_TAB=0
         }
+        if (( _fzf_tab_ignored )); then
+          zle .fzf-tab-orig-$_fzf_tab_orig_widget
+          return
+        fi
         if (( _fzf_tab_continue )); then
           zle .split-undo
           zle .reset-prompt

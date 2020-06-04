@@ -174,7 +174,8 @@ command 的额外参数
 
 ### ignore
 
-当前 context 下不要使用 fzf-tab
+当前 context 下不要使用 fzf-tab。
+如果这个值是一个数字，那么当候选数目少于这个数字时，fzf-tab 也不会被启用。
 
 默认值：`zstyle ':fzf-tab:*' ignore false`
 

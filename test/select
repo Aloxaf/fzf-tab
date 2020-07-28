@@ -6,6 +6,8 @@ local -A headers range query
 
 zparseopts -E h:=headers n:=range q:=query
 
+print -r "EXPECT_KEY"
+print -r "PRINT_QUERY"
 print -r -- "<QUERY>${query//\"/}</QUERY>" >&2
 
 local -a lines=() 

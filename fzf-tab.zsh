@@ -374,9 +374,6 @@ _fzf_tab_complete() {
 
     emulate -L zsh -o extended_glob
 
-    compstate[list]=
-    compstate[insert]=
-
     # check if we should fall back to zsh builtin completion system
     if (( _fzf_tab_ignored )); then
       return
@@ -384,6 +381,8 @@ _fzf_tab_complete() {
     _fzf_tab_get -s ignore ignore
     if [[ $ignore == <-> ]] && (( $ignore > 1 && $ignore >= $#_fzf_tab_compcap )); then
       _fzf_tab_ignored=1
+      compstate[list]=''
+      compstate[insert]=''
       return
     fi
 
@@ -393,7 +392,7 @@ _fzf_tab_complete() {
     case $#candidates in
         0) return;;
         # NOTE: won't trigger continuous completion
-        1) choices=("${_fzf_tab_compcap[1]%$bs*}");;
+        1) choices=("EXPECT_KEY" "${_fzf_tab_compcap[1]%$bs*}");;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
@@ -412,6 +411,8 @@ _fzf_tab_complete() {
             choices=("${(@f)choices}")
 
             if [[ $choices[2] == $print_query ]] ; then
+              compstate[list]=
+              compstate[insert]=
               local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
               IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
               builtin compadd -Q -- $choices[1]
@@ -445,6 +446,8 @@ _fzf_tab_complete() {
         builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
     done
 
+    compstate[list]=
+    compstate[insert]=
     if (( $#choices == 1 )); then
         if _fzf_tab_get -t fake-compadd "fakeadd"; then
             compstate[insert]='1'

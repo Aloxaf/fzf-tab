@@ -16,6 +16,7 @@
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [print-query](#print-query)
         - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
@@ -149,13 +150,14 @@ tags in context :completion::files-enhance:::
 FZF_TAB_COMMAND=(
     fzf
     --ansi   # 启用 ANSI 颜色代码的支持，对于显示分组来说是必需的
-    --expect='$continuous_trigger' # 连续补全
+    --expect='$continuous_trigger,$print_query' # 连续补全
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # 不搜索前缀
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query 将在运行时扩展为查询字符串
     '--header-lines=$#headers' # $#headers 将在运行时扩展为组标题数目
+    --print-query
 )
 zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
@@ -171,6 +173,12 @@ command 的额外参数
 触发连续补全的按键。
 
 默认值：`zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### print-query
+
+按下这个按键以将当前输入作为最终补全结果上屏。
+
+默认值: `zstyle: ':fzf-tab:*' print-query alt-enter`
 
 ### ignore
 

@@ -91,12 +91,25 @@ _fzf_tab_remove_space() {
     [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
+_check_fzf_tab_opts() {
+  local ret=0
+  if (( $+FZF_TAB_OPTS )); then
+    if (( ${FZF_TAB_OPTS[(I)--print-query]} == 0 )); then
+      print -P '%F{red}[fzf-tab] `--print-query` is needed.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
+      ret=1
+    fi
+  else
+    ret=1
+  fi
+  return $ret
+}
+
 : ${(A)=FZF_TAB_GROUP_COLORS=\
     $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
-(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
+_check_fzf_tab_opts || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
@@ -411,11 +424,13 @@ _fzf_tab_complete() {
             choices=("${(@f)choices}")
 
             if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
-              compstate[list]=
-              compstate[insert]=
               local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
+              local -a args=("${(@ps:\1:)v[args]}")
+              [[ -z $args[1] ]] && args=()  # don't pass an empty string
               IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
-              builtin compadd -Q -- $choices[1]
+              builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+
+              compstate[list]= compstate[insert]=
               if _fzf_tab_get -t fake-compadd "fakeadd"; then
                 compstate[insert]='1'
               else

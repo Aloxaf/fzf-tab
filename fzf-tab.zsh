@@ -410,7 +410,7 @@ _fzf_tab_complete() {
             fi
             choices=("${(@f)choices}")
 
-            if [[ $choices[2] == $print_query || $#choices == 1 ]] ; then
+            if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
               compstate[list]=
               compstate[insert]=
               local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
@@ -425,7 +425,7 @@ _fzf_tab_complete() {
               (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
               return
             fi
-            choices[2]=()
+            choices[1]=()
 
             choices=("${(@)${(@)choices%$nul*}#*$nul}")
 

@@ -91,20 +91,34 @@ _fzf_tab_remove_space() {
     [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
+_check_fzf_tab_opts() {
+  local ret=0
+  if (( $+FZF_TAB_OPTS )); then
+    if (( ${FZF_TAB_OPTS[(I)--print-query]} == 0 )); then
+      print -P '%F{red}[fzf-tab] `--print-query` is needed.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
+      ret=1
+    fi
+  else
+    ret=1
+  fi
+  return $ret
+}
+
 : ${(A)=FZF_TAB_GROUP_COLORS=\
     $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
-(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
+_check_fzf_tab_opts || FZF_TAB_OPTS=(
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$continuous_trigger' # For continuous completion
+    --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
+    --print-query
 )
 
 _fzf_tab_get() {
@@ -131,6 +145,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
     _fzf_tab_add_default ignore false
+    _fzf_tab_add_default print-query alt-enter
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'
@@ -366,7 +381,7 @@ _fzf_tab_get_candidates() {
 _fzf_tab_complete() {
     local -a _fzf_tab_compcap
     local -Ua _fzf_tab_groups
-    local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2'
+    local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2' nul=$'\0'
 
     _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
 
@@ -390,12 +405,13 @@ _fzf_tab_complete() {
     case $#candidates in
         0) return;;
         # NOTE: won't trigger continuous completion
-        1) choices=("${_fzf_tab_compcap[1]%$bs*}");;
+        1) choices=("EXPECT_KEY" "${_fzf_tab_compcap[1]%$bs*}");;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
             _fzf_tab_get -s continuous-trigger continuous_trigger
             _fzf_tab_get -a command command
+            _fzf_tab_get -s print-query print_query
             _fzf_tab_get -a extra-opts opts
 
             export CTXT=${${_fzf_tab_compcap[1]#*$'\2'}//$'\0'/$'\2'}
@@ -405,7 +421,29 @@ _fzf_tab_complete() {
             else
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)candidates})
             fi
-            choices=(${${${(f)choices}%$'\0'*}#*$'\0'})
+            choices=("${(@f)choices}")
+
+            if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
+              local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
+              local -a args=("${(@ps:\1:)v[args]}")
+              [[ -z $args[1] ]] && args=()  # don't pass an empty string
+              IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+              # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
+              builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+
+              compstate[list]= compstate[insert]=
+              if _fzf_tab_get -t fake-compadd "fakeadd"; then
+                compstate[insert]='1'
+              else
+                compstate[insert]='2'
+              fi
+              _fzf_tab_get -t insert-space
+              (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+              return
+            fi
+            choices[1]=()
+
+            choices=("${(@)${(@)choices%$nul*}#*$nul}")
 
             unset CTXT
             ;;
@@ -413,8 +451,8 @@ _fzf_tab_complete() {
 
     if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
         typeset -gi _fzf_tab_continue=1
-        choices[1]=()
     fi
+    choices[1]=()
 
     for choice in "$choices[@]"; do
         local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")

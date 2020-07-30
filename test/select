@@ -4,10 +4,10 @@ zmodload zsh/zutil
 
 local -A headers range query
 
-zparseopts -E h:=headers n:=range q:=query
+zparseopts -E h:=headers n:=range q:=query e:=expect
 
-print -r "EXPECT_KEY"
-print -r "PRINT_QUERY"
+print -r "${query//\"/}"
+print -r "$expect"
 print -r -- "<QUERY>${query//\"/}</QUERY>" >&2
 
 local -a lines=() 
@@ -25,6 +25,8 @@ for i in {1..$#lines}; do
     print -r -- ${lines[i]//$'\0'}"<EC>" >&2
 done
 
-for i in ${(s:,:)range}; do
-    print -r -- $lines[i]
-done
+if [[ $range != QUERY ]]; then
+    for i in ${(s:,:)range}; do
+        print -r -- $lines[i]
+    done
+fi

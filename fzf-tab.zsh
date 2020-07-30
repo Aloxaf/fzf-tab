@@ -428,6 +428,7 @@ _fzf_tab_complete() {
               local -a args=("${(@ps:\1:)v[args]}")
               [[ -z $args[1] ]] && args=()  # don't pass an empty string
               IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+              # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
               builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
 
               compstate[list]= compstate[insert]=

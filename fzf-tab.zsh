@@ -93,9 +93,9 @@ _fzf_tab_remove_space() {
 
 _check_fzf_tab_opts() {
   local ret=0
-  if (( $+FZF_TAB_OPTS )); then
-    if (( ${FZF_TAB_OPTS[(I)--print-query]} == 0 )); then
-      print -P '%F{red}[fzf-tab] `--print-query` is needed.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
+  if (( $+FZF_TAB_COMMAND )); then
+    if (( ${FZF_TAB_COMMAND[(I)--print-query]} == 0 )); then
+      print -P '%F{red}[fzf-tab] `--print-query` is needed for fzf-tab command.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
       ret=1
     fi
   else
@@ -109,7 +109,7 @@ _check_fzf_tab_opts() {
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
-_check_fzf_tab_opts || FZF_TAB_OPTS=(
+_check_fzf_tab_opts || FZF_TAB_COMMAND=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'

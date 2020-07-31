@@ -146,7 +146,7 @@ tags in context :completion::files-enhance:::
     globbed-files  (_files _files_enhance)
 ```
 
-Here are avaiable tags in `fzf-tab` context:
+Here are available tags in `fzf-tab` context:
 
 ### command
 
@@ -185,7 +185,7 @@ Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
 
 Press this key to use current user input as final completion result.
 
-Default value: `zstyle: ':fzf-tab:*' print-query alt-enter`
+Default value: `zstyle ':fzf-tab:*' print-query alt-enter`
 
 ### ignore
 

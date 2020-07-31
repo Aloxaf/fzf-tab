@@ -110,6 +110,7 @@ _check_fzf_tab_opts() {
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
 _check_fzf_tab_opts || FZF_TAB_COMMAND=(
+    fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'

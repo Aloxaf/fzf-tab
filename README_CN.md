@@ -178,7 +178,7 @@ command 的额外参数
 
 按下这个按键以将当前输入作为最终补全结果上屏。
 
-默认值: `zstyle: ':fzf-tab:*' print-query alt-enter`
+默认值: `zstyle ':fzf-tab:*' print-query alt-enter`
 
 ### ignore
 

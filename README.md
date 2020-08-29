@@ -78,6 +78,14 @@ Clone this repository to your custom directory and then add `fzf-tab` to your pl
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 ```
 
+## Prezto
+
+Clone this repository to your contrib directory and then add `fzf-tab` to your module list in `.zpreztorc`.
+
+```zsh
+git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
+```
+
 # Usage
 
 Just press <kbd>Tab</kbd> as usual~

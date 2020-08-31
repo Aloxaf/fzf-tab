@@ -16,6 +16,7 @@ Replace zsh's default completion selection menu with fzf!
     - [Antigen](#antigen)
     - [Zinit](#zinit)
     - [Oh-My-Zsh](#oh-my-zsh)
+    - [Prezto](#prezto)
 - [Usage](#usage)
     - [Configure](#configure)
         - [command](#command)

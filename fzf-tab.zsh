@@ -595,8 +595,12 @@ toggle-fzf-tab() {
 }
 
 build-fzf-tab-module() {
+  local MACOS
+  if [[ ${OSTYPE} == darwin* ]]; then
+    MACOS=true
+  fi
   pushd $FZF_TAB_HOME/modules
-  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp
+  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
   make -j
   popd
 }

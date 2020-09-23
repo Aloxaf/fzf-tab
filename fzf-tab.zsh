@@ -384,7 +384,7 @@ _fzf_tab_complete() {
     local -Ua _fzf_tab_groups
     local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2' nul=$'\0'
 
-    _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
+    _fzf_tab__main_complete "$@" # must run with user options; don't move `emulate -L zsh` above this line
 
     emulate -L zsh -o extended_glob
 
@@ -570,7 +570,7 @@ enable-fzf-tab() {
 
     # hook _main_complete to trigger fzf-tab
     functions[_fzf_tab__main_complete]=$functions[_main_complete]
-    function _main_complete() { _fzf_tab_complete }
+    function _main_complete() { _fzf_tab_complete "$@" }
 
     # TODO: This is not a full support, see #47
     # _approximate will also hook compadd

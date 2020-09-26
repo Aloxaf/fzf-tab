@@ -262,6 +262,7 @@ _fzf_tab_get_candidates() {
     _fzf_tab_get -s no-group-color no_group_color
     _fzf_tab_get -s prefix prefix
 
+    zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
     zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
     local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
     local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})

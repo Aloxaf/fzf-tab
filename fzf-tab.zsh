@@ -370,7 +370,7 @@ _fzf_tab_get_candidates() {
     typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
 
     # hide needless group
-    if [[ $show_group == brief ]]; then
+    if [[ $show_group == brief && -n ${_fzf_tab_groups[@]} ]]; then
         local i indexs=({1..$#_fzf_tab_groups})
         for i in ${indexs:|duplicate_groups}; do
             # NOTE: _fzf_tab_groups is unique array

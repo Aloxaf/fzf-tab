@@ -14,6 +14,20 @@ FZF_TAB_HOME=${0:h}
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
+typeset -g fzf_tab_preview_init="
+# trim input
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+# get ctxt for current completion
+local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# get group
+local -a groups=(\"\${(@ps:\2:)GROUPS}\")
+local -i gid=\${\"\$(<{f})\"%%\$'\0'*}
+local group=\$groups[gid]
+# real path
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
+"
+
 _fzf_tab_debug() {
   echo -E $'\n'${(qqqq)1}$'\n'
 }

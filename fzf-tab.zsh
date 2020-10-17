@@ -247,7 +247,7 @@ _fzf_tab_get_headers() {
             len+=$mlen
         fi
     done
-    (( $#tmp )) && headers+=$tmp
+    (( $#tmp )) && headers+=0$'\0'$tmp
 }
 
 _fzf_tab_colorize() {

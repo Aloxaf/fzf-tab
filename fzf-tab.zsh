@@ -6,6 +6,13 @@
 'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
 
 zmodload zsh/zutil
+zmodload -F zsh/stat b:zstat
+
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+FZF_TAB_HOME=${0:h}
+
+source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 # thanks Valodim/zsh-capture-completion
 _fzf_tab_compadd() {
@@ -29,8 +36,9 @@ _fzf_tab_compadd() {
         __dscr=( "${(@P)${(v)dscrs}}" )
     fi
     builtin compadd -A __hits -D __dscr "$@"
+    local ret=$?
     if (( $#__hits == 0 )); then
-        return
+        return $ret
     fi
 
     # store $curcontext for furthur usage
@@ -57,23 +65,19 @@ _fzf_tab_compadd() {
 
     # dscr - the string to show to users
     # word - the string to be inserted
-    local dscr word i sort cnt=$#_fzf_tab_compcap
-    zstyle -s ":completion:$_fzf_tab_curcontext" sort sort
+    local dscr word i
     for i in {1..$#__hits}; do
-        word=$__hits[i] && dscr=$__dscr[i]
+        word=$__hits[i] dscr=$__dscr[i]
         if [[ -n $dscr ]]; then
             dscr=${dscr//$'\n'}
         elif [[ -n $word ]]; then
             dscr=$word
-        else
-            continue
         fi
-        [[ $sort != (no|false|0|off) ]] || dscr=$((i + cnt))$'\b'$dscr
-        _fzf_tab_compcap[$dscr]=$__tmp_value${word:+$'\0word\0'$word}
+        _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
     done
 
     # tell zsh that the match is successful
-    if _fzf_tab_get -t fake_compadd "fakeadd"; then
+    if _fzf_tab_get -t fake-compadd "fakeadd"; then
         nm=-1  # see _alternative:76
     else
         builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
@@ -87,20 +91,35 @@ _fzf_tab_remove_space() {
     [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
+_check_fzf_tab_opts() {
+  local ret=0
+  if (( $+FZF_TAB_COMMAND )); then
+    if (( ${FZF_TAB_COMMAND[(I)--print-query]} == 0 )); then
+      print -P '%F{red}[fzf-tab] `--print-query` is needed for fzf-tab command.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
+      ret=1
+    fi
+  else
+    ret=1
+  fi
+  return $ret
+}
+
 : ${(A)=FZF_TAB_GROUP_COLORS=\
     $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
     $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
     $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
 }
-(( $+FZF_TAB_OPTS )) || FZF_TAB_OPTS=(
+_check_fzf_tab_opts || FZF_TAB_COMMAND=(
+    fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$continuous_trigger' # For continuous completion
+    --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,btab:up,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
+    --print-query
 )
 
 _fzf_tab_get() {
@@ -127,6 +146,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
     _fzf_tab_add_default ignore false
+    _fzf_tab_add_default print-query alt-enter
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'
@@ -144,8 +164,8 @@ _fzf_tab_find_query_str() {
     _fzf_tab_get -a query-string query_string
     for qtype in $query_string; do
         if [[ $qtype == prefix ]]; then
-            # find the longest common prefix among ${(k)_fzf_tab_compcap}
-            local -a keys=(${(k)_fzf_tab_compcap})
+            # find the longest common prefix among descriptions
+            local -a keys=(${_fzf_tab_compcap%$'\2'*})
             tmp=$keys[1]
             local MATCH match mbegin mend prefix=(${(s::)tmp})
             for key in ${keys:1}; do
@@ -159,7 +179,7 @@ _fzf_tab_find_query_str() {
                 prefix[$#MATCH/2+1,-1]=()
             done
         elif [[ $qtype == input ]]; then
-            local fv=${${(v)_fzf_tab_compcap}[1]}
+            local fv=${_fzf_tab_compcap[1]#*$'\2'}
             local -A v=("${(@0)fv}")
             tmp=$v[PREFIX]
             if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
@@ -212,35 +232,100 @@ _fzf_tab_get_headers() {
     (( $#tmp )) && headers+=$tmp
 }
 
+_fzf_tab_colorize() {
+    emulate -L zsh -o cbases -o octalzeroes
+
+    local REPLY
+    local -a reply stat lstat
+
+    # fzf-tab-lscolors::match-by $1 lstat follow
+    zstat -A lstat -L -- $1
+    # follow symlink
+    (( lstat[3] & 0170000 )) && zstat -A stat -- $1 2>/dev/null
+
+    fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
+    # fall back to name
+    [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $1
+
+    # If this is a symlink
+    if [[ $lstat[14] ]]; then
+        local sym_color=$REPLY
+        local rsv_color=$REPLY
+        local rsv=$lstat[14]
+        # If this is not a broken symlink
+        if [[ -e $rsv ]]; then
+            # fzf-tab-lscolors::match-by $rsv stat
+            zstat -A stat -- $rsv
+            fzf-tab-lscolors::from-mode $rsv $stat[3]
+            # fall back to name
+            [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $rsv
+            rsv_color=$REPLY
+        fi
+        dpre=$'\033[0m\033['$sym_color'm'
+        dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+    else
+        dpre=$'\033[0m\033['$REPLY'm'
+    fi
+}
+
 # pupulates array `candidates` with completion candidates
 _fzf_tab_get_candidates() {
-    local dsuf k _v filepath first_word show_group group_colors no_group_color prefix bs=$'\b'
-    local -i same_word=1
+    local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
+    local -a list_colors group_colors tcandidates reply match mbegin mend
+    local -i  same_word=1 colorful=0
     local -Ua duplicate_groups=()
     local -A word_map=()
-    typeset -ga candidates=()
+
+    (( $#_fzf_tab_compcap == 0 )) && return
 
     _fzf_tab_get -s show-group show_group
     _fzf_tab_get -a group-colors group_colors
     _fzf_tab_get -s no-group-color no_group_color
+    _fzf_tab_get -s prefix prefix
+
+    zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
+    if (( $+builtins[fzf-tab-colorize] )); then
+        fzf-tab-colorize -c list_colors
+    else
+        local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+        local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+    fi
 
     if (( $#_fzf_tab_groups == 1 )); then
         _fzf_tab_get -m single-group prefix || prefix=''
         _fzf_tab_get -m single-group color || group_colors=($no_group_color)
     fi
 
-    for k _v in ${(kv)_fzf_tab_compcap}; do
+    for k _v in "${(@ps:\2:)_fzf_tab_compcap}"; do
         local -A v=("${(@0)_v}")
         [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
-        # add a character to describe the type of the files
-        # TODO: can be color?
-        dsuf=
+        # add character and color to describe the type of the files
+        dsuf='' dpre=''
         if (( $+v[isfile] )); then
-            filepath=${(Q)~${v[hpre]}}${(Q)k}
-            if [[ -L $filepath ]]; then
-                dsuf=@
-            elif [[ -d $filepath ]]; then
+            filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
+            filepath=${(Q)${(e)~filepath}}
+            if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
+              fzf-tab-colorize $filepath 2>/dev/null
+              dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
+              if [[ $reply[4] ]]; then
+                dsuf+=" -> $reply[4]"
+              fi
+              [[ $dpre ]] && colorful=1
+            else
+              if [[ -d $filepath ]]; then
                 dsuf=/
+              fi
+              # add color and resolve symlink if have list-colors
+              # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
+              if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
+                _fzf_tab_colorize $filepath
+                colorful=1
+              elif [[ -L $filepath ]]; then
+                dsuf=@
+              fi
+              if [[ $options[list_types] == off ]]; then
+                dsuf=''
+              fi
             fi
         fi
 
@@ -248,9 +333,10 @@ _fzf_tab_get_candidates() {
         if (( $+v[group] )); then
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
-            candidates+=$v[group]$'\b'$color$prefix$'\0'$k$'\0'$dsuf
+            # first group index is for builtin sort, sencond is for GNU sort
+            tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
         else
-            candidates+=$no_group_color$'\0'$k$'\0'$dsuf
+            tcandidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
 
         # check group with duplicate member
@@ -262,15 +348,29 @@ _fzf_tab_get_candidates() {
             word_map[$v[word]]=$v[group]
         fi
     done
-    (( $#candidates == 0 )) && return
+    (( same_word )) && tcandidates[2,-1]=()
 
-    (( same_word )) && candidates[2,-1]=()
     # sort and remove sort group or other index
-    candidates=("${(@on)candidates}")
-    candidates=("${(@)candidates//[0-9]#$bs}")
+    zstyle -T ":completion:$_fzf_tab_curcontext" sort
+    if (( $? != 1 )); then
+        if (( colorful )); then
+            # if enable list_colors, we should skip the first field
+            if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
+              # this is faster but doesn't work if `find` is from busybox
+              tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+            else
+              # slower but portable
+              tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
+              tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
+            fi
+        else
+            tcandidates=("${(@o)tcandidates}")
+        fi
+    fi
+    typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
 
     # hide needless group
-    if [[ $show_group == brief ]]; then
+    if [[ $show_group == brief && -n ${_fzf_tab_groups[@]} ]]; then
         local i indexs=({1..$#_fzf_tab_groups})
         for i in ${indexs:|duplicate_groups}; do
             # NOTE: _fzf_tab_groups is unique array
@@ -280,13 +380,25 @@ _fzf_tab_get_candidates() {
 }
 
 _fzf_tab_complete() {
-    local -A _fzf_tab_compcap
+    local -a _fzf_tab_compcap
     local -Ua _fzf_tab_groups
-    local choice choices _fzf_tab_curcontext continuous_trigger
+    local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2' nul=$'\0'
 
-    _fzf_tab__main_complete  # must run with user options; don't move `emulate -L zsh` above this line
+    _fzf_tab__main_complete "$@" # must run with user options; don't move `emulate -L zsh` above this line
 
     emulate -L zsh -o extended_glob
+
+    # check if we should fall back to zsh builtin completion system
+    if (( _fzf_tab_ignored )); then
+      return
+    fi
+    _fzf_tab_get -s ignore ignore
+    if [[ $ignore == <-> ]] && (( $ignore > 1 && $ignore >= $#_fzf_tab_compcap )); then
+      _fzf_tab_ignored=1
+      compstate[list]=''
+      compstate[insert]=''
+      return
+    fi
 
     local query candidates=() headers=() command opts
     _fzf_tab_get_candidates  # sets `candidates`
@@ -294,43 +406,61 @@ _fzf_tab_complete() {
     case $#candidates in
         0) return;;
         # NOTE: won't trigger continuous completion
-        1) choices=(${${(k)_fzf_tab_compcap}[1]});;
+        1) choices=("EXPECT_KEY" "${_fzf_tab_compcap[1]%$bs*}");;
         *)
             _fzf_tab_find_query_str  # sets `query`
             _fzf_tab_get_headers     # sets `headers`
             _fzf_tab_get -s continuous-trigger continuous_trigger
             _fzf_tab_get -a command command
+            _fzf_tab_get -s print-query print_query
             _fzf_tab_get -a extra-opts opts
 
-            export CTXT=${${${(v)_fzf_tab_compcap}[1]}//$'\0'/$'\2'}
+            export CTXT=${${_fzf_tab_compcap[1]#*$'\2'}//$'\0'/$'\2'}
 
             if (( $#headers )); then
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
             else
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)candidates})
             fi
-            choices=(${${${(f)choices}%$'\0'*}#*$'\0'})
+            choices=("${(@f)choices}")
+
+            if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
+              local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
+              local -a args=("${(@ps:\1:)v[args]}")
+              [[ -z $args[1] ]] && args=()  # don't pass an empty string
+              IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+              # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
+              builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+
+              compstate[list]= compstate[insert]=
+              if _fzf_tab_get -t fake-compadd "fakeadd"; then
+                compstate[insert]='1'
+              else
+                compstate[insert]='2'
+              fi
+              _fzf_tab_get -t insert-space
+              (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+              return
+            fi
+            choices[1]=()
+
+            choices=("${(@)${(@)choices%$nul*}#*$nul}")
 
             unset CTXT
             ;;
     esac
 
-    if [[ $choices[1] == $continuous_trigger ]]; then
+    if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
         typeset -gi _fzf_tab_continue=1
-        choices[1]=()
     fi
+    choices[1]=()
 
-    for choice in $choices; do
-        # if disale sort
-        for i in ${(k)_fzf_tab_compcap}; do
-            [[ $i != *$'\b'$choice ]] || { choice=$i; break }
-        done
-        local -A v=("${(@0)${_fzf_tab_compcap[$choice]}}")
+    for choice in "$choices[@]"; do
+        local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
-
-        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] \
-               builtin compadd "${args[@]:--Q}" -Q -- $v[word]
+        IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+        builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
     done
 
     compstate[list]=
@@ -343,23 +473,33 @@ _fzf_tab_complete() {
         fi
         _fzf_tab_get -t insert-space
         (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
-    elif (( $#choice > 1 )); then
+    elif (( $#choices > 1 )); then
         compstate[insert]='all'
     fi
 }
 
 fzf-tab-complete() {
     # this name must be ugly to avoid clashes
-    local -i _fzf_tab_continue=1
+    local -i _fzf_tab_continue=1 _fzf_tab_ignored=0
     while (( _fzf_tab_continue )); do
         _fzf_tab_continue=0
-        IN_FZF_TAB=1
+        local IN_FZF_TAB=1
         {
             zle .fzf-tab-orig-$_fzf_tab_orig_widget
         } always {
             IN_FZF_TAB=0
         }
-        zle redisplay
+        if (( _fzf_tab_ignored )); then
+          zle .fzf-tab-orig-$_fzf_tab_orig_widget
+          return
+        fi
+        if (( _fzf_tab_continue )); then
+          zle .split-undo
+          zle .reset-prompt
+          zle -R
+        else
+          zle redisplay
+        fi
     done
 }
 
@@ -430,7 +570,7 @@ enable-fzf-tab() {
 
     # hook _main_complete to trigger fzf-tab
     functions[_fzf_tab__main_complete]=$functions[_main_complete]
-    function _main_complete() { _fzf_tab_complete }
+    function _main_complete() { _fzf_tab_complete "$@" }
 
     # _approximate will also hook compadd
     # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
@@ -452,6 +592,35 @@ toggle-fzf-tab() {
     else
         enable-fzf-tab
     fi
+}
+
+build-fzf-tab-module() {
+  local MACOS
+  if [[ ${OSTYPE} == darwin* ]]; then
+    MACOS=true
+  fi
+  pushd $FZF_TAB_HOME/modules
+  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
+  make -j
+  popd
+}
+
+() {
+  if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
+    module_path+=("$FZF_TAB_HOME/modules/Src")
+    zmodload aloxaf/fzftab
+
+    if [[ $FZF_TAB_MODULE_VERSION != "0.1.1" ]]; then
+      zmodload -u aloxaf/fzftab
+      local rebuild
+      print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"
+      read -q rebuild
+      if [[ $rebuild == y ]]; then
+        build-fzf-tab-module
+        zmodload aloxaf/fzftab
+      fi
+    fi
+  fi
 }
 
 enable-fzf-tab

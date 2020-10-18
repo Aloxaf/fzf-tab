@@ -16,6 +16,7 @@
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [print-query](#print-query)
         - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
@@ -25,6 +26,7 @@
         - [single-group](#single-group)
         - [group-colors](#group-colors)
         - [show-group](#show-group)
+    - [二进制模块](#二进制模块)
 - [与其他插件的区别](#与其他插件的区别)
 - [与其他插件的兼容性](#与其他插件的兼容性)
 - [相关项目](#相关项目)
@@ -98,18 +100,26 @@ zstyle ':completion:complete:*:options' sort false
 # 当补全 _zlua 时，使用输入作为查询字符串
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
-# 补全 `kill` 命令时提供预览
-zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo $(<{f})' --preview-window=down:3:wrap
-
-# (实验性) 补全 cd 时预览其中的内容
+# （实验性功能，未来可能更改）
+# 一些定义 extract 变量的样板代码
+# 稍后需要使用这个变量，请记得复制这段代码
 local extract="
-# 提取输入
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-# 获取当前补全状态的上下文
+# 提取输入（当前选择的内容）
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+# 获取当前补全状态的上下文（待补全内容的前面或者后面的东西）
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# 真实路径
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
 "
-zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
+
+# 补全 `kill` 命令时提供命令行参数预览
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+
+# 补全 cd 时使用 exa 预览其中的内容
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
+
 ```
 
 你可以通过形如 `zstyle ':fzf-tab:{context}' tag value` 的命令来配置 fzf-tab。其中 `fzf-tab` 是顶层 context。
@@ -140,13 +150,14 @@ tags in context :completion::files-enhance:::
 FZF_TAB_COMMAND=(
     fzf
     --ansi   # 启用 ANSI 颜色代码的支持，对于显示分组来说是必需的
-    --expect='$continuous_trigger' # 连续补全
+    --expect='$continuous_trigger,$print_query' # 连续补全
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # 不搜索前缀
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query 将在运行时扩展为查询字符串
     '--header-lines=$#headers' # $#headers 将在运行时扩展为组标题数目
+    --print-query
 )
 zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
@@ -163,9 +174,16 @@ command 的额外参数
 
 默认值：`zstyle ':fzf-tab:*' continuous-trigger '/'`
 
+### print-query
+
+按下这个按键以将当前输入作为最终补全结果上屏。
+
+默认值: `zstyle ':fzf-tab:*' print-query alt-enter`
+
 ### ignore
 
-当前 context 下不要使用 fzf-tab
+当前 context 下不要使用 fzf-tab。
+如果这个值是一个数字，那么当候选数目少于这个数字时，fzf-tab 也不会被启用。
 
 默认值：`zstyle ':fzf-tab:*' ignore false`
 
@@ -208,7 +226,7 @@ command 的额外参数
 
 如果没有分组时的颜色。
 
-默认值：`zstyle ':fzf-tab:*' $'\033[37m'` （白色）
+默认值：`zstyle ':fzf-tab:*' no-group-color $'\033[37m'` （白色）
 
 ### single-group
 
@@ -265,6 +283,12 @@ printc() {
 设置为 `full` 会展示所有补全，设置为 `brief` 则仅仅展示拥有重复成员的组。
 
 默认值：`zstyle ':fzf-tab:*' show-group full`
+
+## 二进制模块
+
+默认情况下，当你使用了 `list-colors` tag 时，fzf-tab 会使用 [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) 来解析并应用 ZLS_COLORS。
+
+然而，这是一个纯 zsh 脚本所以在文件数目过多时非常缓慢。为了加速这个过程，fzf-tab 包含了一个二进制模块，你可以使用 `build-fzf-tab-module` 来构建它，然后它就会被自动启用。
 
 # 与其他插件的区别
 

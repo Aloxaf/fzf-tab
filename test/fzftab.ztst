@@ -24,6 +24,8 @@
       mkdir dir2 &&
       touch file1 &&
       touch file2
+      touch dir1/file1
+      git init
     }
   else
     ZTST_unimplemented="the zsh/zpty module is not available"
@@ -135,6 +137,7 @@
 
   comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
   comptest $': ./a/d/h\t'
+  comptesteval 'rm -rd abc'
 0:nested directory
 >line: {: ./abc/def/h}{}
 >QUERY:{d}
@@ -149,8 +152,68 @@
 >QUERY:{}
 >DESCRIPTION:{group1}
 >DESCRIPTION:{group2}
->C1:{a}
->C2:{b}
+>C1:{·a}
+>C2:{·b}
+
+  comptest $'git add dir1\t'
+0:add empty word
+>line: {git add dir1/}{}
+# FIXME：why two warnings？
+
+  comptesteval "zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'"
+  comptesteval "touch vim.coc"
+  comptest $': coc\t'
+  comptesteval "rm vim.coc; zstyle -d ':completion:*' matcher-list"
+0:matcher-list
+>line: {: vim.coc }{}
+
+  comptesteval $'cd dir1'
+  comptest $': ../d\t'
+  comptesteval $'cd ..'
+0:IPREFIX
+>line: {: ../dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
+  comptest $': $PWD/d\t'
+0:expansion
+>line: {: $PWD/dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
+  comptesteval 'echo no > called'
+  comptesteval "touch 'dir\`echo yes > called\`'"
+  comptest $': d\t'
+  echo called:$(<called)
+  comptesteval "rm 'dir\`echo yes > called\`' called"
+0:don''t expand file name
+>line: {: dir1/}{}
+>QUERY:{dir}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+>C1:{dir`echo yes > called`}
+>called:no
+
+  comptesteval "zstyle ':fzf-tab:*' command true"
+  comptest $': d\t'
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+0:cancel completion
+>line: {: d}{}
+
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n QUERY -h '\$#headers' -q '\"dragon\"'"
+  comptest $': ./d\t'
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+0:use query directly
+>line: {: ./dragon}{}
+>QUERY:{dragon}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
 
   comptesteval 'tst_a=1; tst_b=2'
   comptest $': $tst_\t'

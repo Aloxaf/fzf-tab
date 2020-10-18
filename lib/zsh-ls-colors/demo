@@ -1,0 +1,65 @@
+#!/usr/bin/env zsh
+# set $0 (ref: zdharma.org/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html#zero-handling)
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+
+# load library functions
+source ls-colors.zsh ''
+
+# to name the functions with a different namespace
+# call source with a different argument
+#source my-plugin::ls
+
+# init (sets modecolors and namecolors)
+# You have options. Either you can pollute global namespace:
+ls-color::init
+# Or you can have ::match-by re-parse colors on every call
+:     # (do nothing)
+# Or if you have multiple calls, you can parse colors once for a scope:
+(){
+	local -A modecolors namecolors
+	ls-color::init
+
+	for arg; do
+		ls-color::match-by $arg lstat
+		: do something else
+	done
+}
+
+
+# colors can also be added for other globs after init as well:
+namecolors[*.md]='01'                  # bold markdown files
+
+# EXTENDED_GLOB is enabled when matching, so things like this are possible:
+namecolors[(#i)(*/|)license(|.*)]='04'  # underline LICENSE, or license.txt, or similar
+
+local file reply
+# color each file in the argument list
+for file; do
+	ls-color::match-by $file all
+	# point to symlink resolution if it exists
+	print '\e['$reply[1]'m'$file'\e[0m'${reply[2]:+' → \e['$reply[3]'m'$reply[2]'\e[0m'}
+done
+
+# =======================
+# Alternate manual method:
+for file; do
+	ls-color::match-by $file lstat follow
+	if [[ $reply[2] ]]; then
+		# This is a symlink
+		symlink_color=$reply[1]
+		# If broken, use link color for destination
+		resolved_color=$reply[1]
+		resolved=$reply[2]
+		if [[ -e $file ]]; then
+			# Not broken, update destination color
+			ls-color::match-by $file stat
+			resolved_color=$reply[1]
+		fi
+		print '\e['$symlink_color'm'$file'\e[0m → \e['$resolved_color'm'$resolved'\e[0m'
+	else
+		# This is not a symlink
+		print '\e['$reply[1]'m'$file'\e[0m'
+	fi
+done
+

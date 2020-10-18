@@ -1,5 +1,8 @@
 # fzf-tab
 
+[![Test](https://github.com/Aloxaf/fzf-tab/workflows/Test/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions?query=workflow%3ATest)
+[![GitHub license](https://img.shields.io/github/license/Aloxaf/fzf-tab)](https://github.com/Aloxaf/fzf-tab/blob/master/LICENSE)
+
 Replace zsh's default completion selection menu with fzf!
 
 [![asciicast](https://asciinema.org/a/293849.svg)](https://asciinema.org/a/293849)
@@ -13,11 +16,13 @@ Replace zsh's default completion selection menu with fzf!
     - [Antigen](#antigen)
     - [Zinit](#zinit)
     - [Oh-My-Zsh](#oh-my-zsh)
+    - [Prezto](#prezto)
 - [Usage](#usage)
     - [Configure](#configure)
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [print-query](#print-query)
         - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
@@ -27,6 +32,7 @@ Replace zsh's default completion selection menu with fzf!
         - [single-group](#single-group)
         - [group-colors](#group-colors)
         - [show-group](#show-group)
+    - [Binary module](#binary-module)
 - [Difference from other plugins](#difference-from-other-plugins)
 - [Compatibility with other plugins](#compatibility-with-other-plugins)
 - [Related projects](#related-projects)
@@ -73,6 +79,14 @@ Clone this repository to your custom directory and then add `fzf-tab` to your pl
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 ```
 
+## Prezto
+
+Clone this repository to your contrib directory and then add `fzf-tab` to your module list in `.zpreztorc`.
+
+```zsh
+git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
+```
+
 # Usage
 
 Just press <kbd>Tab</kbd> as usual~
@@ -103,18 +117,25 @@ zstyle ':completion:complete:*:options' sort false
 # use input as query string when completing zlua
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
-# give a preview when completing `kill`
-zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts '--preview=echo $(<{f})' --preview-window=down:3:wrap
-
-# (experimental) give a preview of directory when completing cd
+# (experimental, may change in the future)
+# some boilerplate code to define the variable `extract` which will be used later
+# please remember to copy them
 local extract="
-# trim input
-in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-# get ctxt for current completion
+# trim input(what you select)
+local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+# get ctxt for current completion(some thing before or after the current word)
 local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+# real path
+local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
+realpath=\${(Qe)~realpath}
 "
-zstyle ':fzf-tab:complete:cd*' extra-opts --preview=$extract"exa -1 --color=always \${~ctxt[hpre]}\$in"
+
+# give a preview of commandline arguments when completing `kill`
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+
+# give a preview of directory by exa when completing cd
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
 ```
 
 fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.
@@ -134,7 +155,7 @@ tags in context :completion::files-enhance:::
     globbed-files  (_files _files_enhance)
 ```
 
-Here are avaiable tags in `fzf-tab` context:
+Here are available tags in `fzf-tab` context:
 
 ### command
 
@@ -145,13 +166,14 @@ Default value:
 FZF_TAB_COMMAND=(
     fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$continuous_trigger' # For continuous completion
+    --expect='$continuous_trigger,$print_query' # For continuous completion and print query
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,ctrl-j:accept,change:top,ctrl-space:toggle --cycle
+    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
+    --print-query
 )
 zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
@@ -168,9 +190,16 @@ The key to trigger a continuous completion. It's useful when complete a long pat
 
 Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
 
+### print-query
+
+Press this key to use current user input as final completion result.
+
+Default value: `zstyle ':fzf-tab:*' print-query alt-enter`
+
 ### ignore
 
-Don't active fzf-tab in this context.
+Don't activate fzf-tab in this context.
+If it is a number, then fzf-tab won't be activated if the number of candidates is smaller than this number.
 
 Default value: `zstyle ':fzf-tab:*' ignore false`
 
@@ -215,7 +244,7 @@ Default value: `zstyle ':fzf-tab:*:' prefix '·'`
 
 Color when there is no group.
 
-Default value: `zstyle ':fzf-tab:*' $'\033[37m'` (white)
+Default value: `zstyle ':fzf-tab:*' no-group-color $'\033[37m'` (white)
 
 ### single-group
 
@@ -274,6 +303,13 @@ When `zstyle ':completion:*:descriptions' format` is set, fzf-tab will display t
 Set to `full` to show all descriptions, set to `brief` to only show descriptions for groups with duplicate members.
 
 Default value: `zstyle ':fzf-tab:*' show-group full`
+
+## Binary module
+
+By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have enable `list-colors` tag.
+
+However, this is a pure zsh script and is slow if you have too many files to colorize.
+fzf-tab is shipped with a binary module to speed up this process. You can build it with `build-fzf-tab-module`, then it will be enabled automatically.
 
 # Difference from other plugins
 

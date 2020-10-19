@@ -14,7 +14,18 @@ FZF_TAB_HOME=${0:h}
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
+# TODO once the dscr changed with the icon the $in variable in fzf preview has the icon in front,
+#
+# > echo $in 
+#  copy_from_zsh_src.zsh
+#
+# how to get $word and $dscr in fzf preview
 typeset -g fzf_tab_preview_init="
+# TODO dscr
+local dscr=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+# TODO word
+local word=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+
 # trim input
 local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
 # get ctxt for current completion
@@ -81,8 +92,13 @@ _fzf_tab_compadd() {
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
     # dscr - the string to show to users
+    # example dscr:
+    # Folder/
     # word - the string to be inserted
+    # example word:
+    # Documents/Folder/
     local dscr word i
+    
     for i in {1..$#__hits}; do
         word=$__hits[i] dscr=$__dscr[i]
         if [[ -n $dscr ]]; then
@@ -90,7 +106,33 @@ _fzf_tab_compadd() {
         elif [[ -n $word ]]; then
             dscr=$word
         fi
+
+        # example __tmp_comcap:
+        # <>isfile-fgroup1args-Q-s-W-Mr:|/=* r:|=*-p-f
+        # <>isfile-fgroup1args-Q-s-W-Mr:|/=* r:|=*-p-f
+        local tmp_compcap=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
+
+
+        # TODO how to get groups?
+        # GROUPS seem unaccessible
+        groups=
+        # TODO how to get group id ?
+        # I dont think it is safe if there is numbers before group
+        local gid="${__tmp_value//[!0-9]/}"
+        # TODO how to get group name ?
+        local group=groups[gid]
+
+        # TODO do this the same way of fzf_tab_preview_init
+        # # Here will be the custom script injection for icons
+        # if [ "$fzf_tab_completion_description_init" ]
+        #   dscr=$(eval 'local $dscr'$fzf_tab_completion_description_init)
+
+        # TODO remove this and use custom fzf_tab_completion_description_init above
+        dscr=$(echo "$dscr" | devicon-lookup)
+
+
         _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
+        # echo $_fzf_tab_compcap
     done
 
     # tell zsh that the match is successful

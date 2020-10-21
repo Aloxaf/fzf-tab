@@ -18,11 +18,11 @@ local comp_length=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/fzf-tab-list-$$ | awk 'length
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  local popup_height=$(( comp_lines >= cursor_y ? cursor_y : comp_lines ))
+  local popup_height=$(( comp_lines >= cursor_y ? cursor_y : comp_lines + 4 ))
   local popup_y=$cursor_y
 else
   # show below the cursor
-  local popup_height=$(( comp_lines >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 3 ))
+  local popup_height=$(( comp_lines >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
   local popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi
@@ -34,7 +34,7 @@ local popup_width=$(( comp_length >= (window_width - cursor_x) ? window_width - 
 echo -E "fzf ${(qq)fzf_opts[@]} < /tmp/fzf-tab-list-$$ > /tmp/fzf-tab-$$"  > /tmp/fzf-tab-tmux.zsh
 {
   tmux popup -x $popup_x -y $popup_y \
-       -w $((popup_width * 100 / window_width))% -h $((popup_height * 100 / window_height))% \
+       -w $popup_width -h $popup_height \
        -KE -R "zsh /tmp/fzf-tab-tmux.zsh"
   cat /tmp/fzf-tab-$$
 } always {

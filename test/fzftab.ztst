@@ -199,6 +199,22 @@
 >C1:{dir`echo yes > called`}
 >called:no
 
+  comptesteval "zstyle ':fzf-tab:*' command true"
+  comptest $': d\t'
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+0:cancel completion
+>line: {: d}{}
+
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n QUERY -h '\$#headers' -q '\"dragon\"'"
+  comptest $': ./d\t'
+  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+0:use query directly
+>line: {: ./dragon}{}
+>QUERY:{dragon}
+>DESCRIPTION:{file}
+>C1:{dir1/}
+>C1:{dir2/}
+
 %clean
 
   zmodload -ui zsh/zpty

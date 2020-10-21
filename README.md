@@ -16,11 +16,13 @@ Replace zsh's default completion selection menu with fzf!
     - [Antigen](#antigen)
     - [Zinit](#zinit)
     - [Oh-My-Zsh](#oh-my-zsh)
+    - [Prezto](#prezto)
 - [Usage](#usage)
     - [Configure](#configure)
         - [command](#command)
         - [extra-opts](#extra-opts)
         - [continuous-trigger](#continuous-trigger)
+        - [print-query](#print-query)
         - [ignore](#ignore)
         - [fake-compadd](#fake-compadd)
         - [insert-space](#insert-space)
@@ -75,6 +77,14 @@ Clone this repository to your custom directory and then add `fzf-tab` to your pl
 
 ```zsh
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
+```
+
+## Prezto
+
+Clone this repository to your contrib directory and then add `fzf-tab` to your module list in `.zpreztorc`.
+
+```zsh
+git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
 ```
 
 # Usage
@@ -145,7 +155,7 @@ tags in context :completion::files-enhance:::
     globbed-files  (_files _files_enhance)
 ```
 
-Here are avaiable tags in `fzf-tab` context:
+Here are available tags in `fzf-tab` context:
 
 ### command
 
@@ -156,13 +166,14 @@ Default value:
 FZF_TAB_COMMAND=(
     fzf
     --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$continuous_trigger' # For continuous completion
+    --expect='$continuous_trigger,$print_query' # For continuous completion and print query
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
     --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
     '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
+    --print-query
 )
 zstyle ':fzf-tab:*' command $FZF_TAB_COMMAND
 ```
@@ -178,6 +189,12 @@ Default value: None
 The key to trigger a continuous completion. It's useful when complete a long path.
 
 Default value: `zstyle ':fzf-tab:*' continuous-trigger '/'`
+
+### print-query
+
+Press this key to use current user input as final completion result.
+
+Default value: `zstyle ':fzf-tab:*' print-query alt-enter`
 
 ### ignore
 

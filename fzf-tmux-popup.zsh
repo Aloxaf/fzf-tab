@@ -28,8 +28,8 @@ else
 fi
 
 # calculate the popup width and x position
-local popup_x=$cursor_x
-local popup_width=$(( comp_length >= (window_width - cursor_x) ? window_width - curosr_x : comp_length + 4 ))
+local popup_width=$(( comp_length + 4 > window_width ? window_width : comp_length + 4 ))
+local popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
 echo -E "fzf ${(qq)fzf_opts[@]} < /tmp/fzf-tab-list-$$ > /tmp/fzf-tab-$$"  > /tmp/fzf-tab-tmux.zsh
 {

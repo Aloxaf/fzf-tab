@@ -117,17 +117,18 @@ zstyle ':completion:complete:*:options' sort false
 # use input as query string when completing zlua
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
-# `$fzf_tab_preview_init` contains some boilerplate code to init some useful variables:
-# $in       - what you select
-# $group    - the group name of what you select
-# $realpath - use this if what you select is a file name or path
-
 # give a preview of commandline arguments when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$fzf_tab_preview_init'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$fzf_tab_preview_init'ps --pid=$word -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 # give a preview of directory by exa when completing cd
 zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$fzf_tab_preview_init'exa -1 --color=always $realpath'
+
+# NOTE: `$fzf_tab_preview_init` contains some boilerplate code to init some useful variables:
+# $word     - the actual word to insert
+# $desc     - the description of the word, this is what you see
+# $group    - the group name of what you select
+# $realpath - use this if what you select is a file name or path
 ```
 
 fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.

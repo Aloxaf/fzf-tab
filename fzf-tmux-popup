@@ -1,0 +1,60 @@
+#!/hint/zsh
+emulate -L zsh -o extended_glob
+
+local -a fzf_opts=($@)
+fzf_opts=(${${fzf_opts/--height*}/--layout*})
+
+# get position of cursor and size of window
+local -a tmp=($(tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
+local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
+
+# write completion list to file
+[[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
+touch /tmp/fzf-tab/result-$$
+cat > /tmp/fzf-tab/list-$$
+
+local text REPLY comp_lines comp_length length popup_pad
+
+zstyle -a ":fzf-tab:$_fzf_tab_curcontext" popup-pad popup_pad
+
+# get the size of content, note we should remove all ANSI color code
+comp_lines=$(( ${#${(f)"$(</tmp/fzf-tab/list-$$)"}} + ${popup_pad[(w)2]:-0} ))
+# FIXME: can't get the correct width of CJK characters.
+if (( comp_lines <= 500 )); then
+  comp_length=0
+  for line in ${(f)"$(</tmp/fzf-tab/list-$$)"}; do
+    length=${#${(S)line//$'\x1b['[0-9]#*m}}
+    (( length >= comp_length )) && comp_length=$length
+  done
+else
+  comp_length=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/fzf-tab/list-$$ | awk 'length > max_length { max_length = length; } END { print max_length }')
+fi
+comp_length=$(( comp_length + ${popup_pad[(w)1]:-0} ))
+
+local popup_height popup_y popup_width popup_x
+
+# calculate the popup height and y position
+if (( cursor_y * 2 > window_height )); then
+  # show above the cursor
+  popup_height=$(( comp_lines >= cursor_y ? cursor_y : comp_lines + 4 ))
+  popup_y=$cursor_y
+else
+  # show below the cursor
+  popup_height=$(( comp_lines >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
+  popup_y=$(( cursor_y + popup_height + 1 ))
+  fzf_opts+=(--layout=reverse)
+fi
+
+# calculate the popup width and x position
+popup_width=$(( comp_length + 5 > window_width ? window_width : comp_length + 5 ))
+popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
+
+echo -E "cd '$PWD'; fzf ${(qq)fzf_opts[@]} < /tmp/fzf-tab/list-$$ > /tmp/fzf-tab/result-$$" > /tmp/fzf-tab/fzf-$$
+{
+  tmux popup -x $popup_x -y $popup_y \
+       -w $popup_width -h $popup_height \
+       -KE -R "source /tmp/fzf-tab/fzf-$$"
+  cat /tmp/fzf-tab/result-$$
+} always {
+  rm /tmp/fzf-tab/*-$$
+}

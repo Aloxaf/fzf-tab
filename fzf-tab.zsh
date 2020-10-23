@@ -19,7 +19,7 @@ local -a _fzf_tab_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
 local -a _fzf_tab_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
 local bs=\$'\2'
 # get descriptoin
-local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_fzf_tab_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
@@ -137,7 +137,7 @@ _check_fzf_tab_opts || FZF_TAB_COMMAND=(
     --ansi   # Enable ANSI color support, necessary for showing groups
     --expect='$continuous_trigger,$print_query' # For continuous completion
     '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --with-nth=2,3,4 --nth=2,3 --delimiter='\x00'  # Don't search prefix
+    --nth=2,3 --delimiter='\x00'  # Don't search prefix
     --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
     --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
     '--query=$query'   # $query will be expanded to query string at runtime.
@@ -240,19 +240,19 @@ _fzf_tab_get_headers() {
         [[ $_fzf_tab_groups[i] == "__hide__"* ]] && continue
 
         if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
-            headers+=0$'\0'$tmp
+            headers+=$tmp
             tmp='' && len=0
         fi
         if (( len + mlen > COLUMNS - 5 )); then
             # the last column doesn't need padding
-            headers+=0$'\0'$tmp$group_colors[i]$_fzf_tab_groups[i]$'\033[00m'
+            headers+=$tmp$group_colors[i]$_fzf_tab_groups[i]$'\033[00m'
             tmp='' && len=0
         else
             tmp+=$group_colors[i]${(r:$mlen:)_fzf_tab_groups[i]}$'\033[00m'
             len+=$mlen
         fi
     done
-    (( $#tmp )) && headers+=0$'\0'$tmp
+    (( $#tmp )) && headers+=$tmp
 }
 
 _fzf_tab_colorize() {
@@ -357,9 +357,9 @@ _fzf_tab_get_candidates() {
             local color=$group_colors[$v[group]]
             # add a hidden group index at start of string to keep group order when sorting
             # first group index is for builtin sort, sencond is for GNU sort
-            tcandidates+=$v[group]$'\0'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
+            tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
         else
-            tcandidates+=0$'\0'$no_group_color$dpre$'\0'$k$'\0'$dsuf
+            tcandidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
         fi
 
         # check group with duplicate member
@@ -474,7 +474,7 @@ _fzf_tab_complete() {
             fi
             choices[1]=()
 
-            choices=("${(@)${(@)choices%$nul*}#[0-9]#$nul*$nul}")
+            choices=("${(@)${(@)choices%$nul*}#*$nul}")
 
             unset CTXT
             ;;
@@ -486,7 +486,7 @@ _fzf_tab_complete() {
     choices[1]=()
 
     for choice in "$choices[@]"; do
-        local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice#[0-9]#$nul}$bs*]#*$bs}}")
+        local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]

@@ -91,6 +91,12 @@ _fzf_tab_compadd() {
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
+
+    group=$expl
+    groupid=$_fzf_tab_groups[(ie)$expl]
+
+    fzf_tab_compadd_hook
+
     # dscr - the string to show to users
     # example dscr:
     # Folder/

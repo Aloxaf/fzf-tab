@@ -14,35 +14,18 @@ FZF_TAB_HOME=${0:h}
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
-# This is an attenmpt at escaping fully fzf_tab_preview_init
-# typeset -g fzf_tab_preview_init='
-# # TODO once the dscr changed with the icon the $in variable in fzf preview has the icon in front,
-# # we need to provide hit, description, group to fzf_tab_preview_init
-# # trim input
-# local in=${${"$(<{f})\\"%$\\"\\0\\"*}#*$\\"\\0\\"*$\\"\\0\\"}
-# # get ctxt for current completion
-# local -A ctxt=("${(@ps:2:)CTXT}")
-# # get group
-# local -a groups=("${(@ps:2:)GROUPS}")
-# local -i gid=${"$(<{f})"%%$\\"\\0\\"*}
-# local group=$groups[gid]
-# # real path
-# local realpath=${ctxt[IPREFIX]}${ctxt[hpre]}$word
-# realpath=${(Qe)~realpath}
-# '
-
-typeset -g fzf_tab_preview_init="
+typeset -g fzf_tab_preview_init=$'
 # trim input
-local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+local in=${${"$(<{f})"%$\'\\0\'*}#*$\'\\0\'*$\'\\0\'}
 # get ctxt for current completion
-local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
+local -A ctxt=("${(@ps:\\2:)CTXT}")
 # get group
-local -a groups=(\"\${(@ps:\2:)GROUPS}\")
-local -i gid=\${\"\$(<{f})\"%%\$'\0'*}
-local group=\$groups[gid]
+local -a groups=("${(@ps:\\2:)GROUPS}")
+local -i gid=${"$(<{f})"%%$\'\\0\'*}
+local group=$groups[gid]
 # real path
-local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)in}
-"
+local realpath=${(Qe)~${:-${ctxt[IPREFIX]}${ctxt[hpre]}}}${(Q)in}
+'
 
 _fzf_tab_debug() {
   echo -E $'\n'${(qqqq)1}$'\n'

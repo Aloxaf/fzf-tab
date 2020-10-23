@@ -80,6 +80,8 @@ _fzf_tab_compadd() {
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
+    # Hook defined by user to alter the description of the completion
+    fzf_tab_compadd_hook
 
     # dscr - the string to show to users
     # example dscr:
@@ -98,9 +100,6 @@ _fzf_tab_compadd() {
         elif [[ -n $word ]]; then
             dscr=$word
         fi
-
-        # Hook defined by user to alter the description of the completion
-        fzf_tab_compadd_hook
 
         _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
     done

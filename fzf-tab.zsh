@@ -24,8 +24,7 @@ local -a groups=(\"\${(@ps:\2:)GROUPS}\")
 local -i gid=\${\"\$(<{f})\"%%\$'\0'*}
 local group=\$groups[gid]
 # real path
-local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
-realpath=\${(Qe)~realpath}
+local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)in}
 "
 
 _fzf_tab_debug() {

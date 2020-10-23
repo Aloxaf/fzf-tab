@@ -14,18 +14,24 @@ FZF_TAB_HOME=${0:h}
 
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
-# TODO once the dscr changed with the icon the $in variable in fzf preview has the icon in front,
-#
-# > echo $in 
-#  copy_from_zsh_src.zsh
-#
-# how to get $word and $dscr in fzf preview
-typeset -g fzf_tab_preview_init="
-# TODO dscr
-local dscr=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
-# TODO word
-local word=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
+# This is an attenmpt at escaping fully fzf_tab_preview_init
+# typeset -g fzf_tab_preview_init='
+# # TODO once the dscr changed with the icon the $in variable in fzf preview has the icon in front,
+# # we need to provide hit, description, group to fzf_tab_preview_init
+# # trim input
+# local in=${${"$(<{f})\\"%$\\"\\0\\"*}#*$\\"\\0\\"*$\\"\\0\\"}
+# # get ctxt for current completion
+# local -A ctxt=("${(@ps:2:)CTXT}")
+# # get group
+# local -a groups=("${(@ps:2:)GROUPS}")
+# local -i gid=${"$(<{f})"%%$\\"\\0\\"*}
+# local group=$groups[gid]
+# # real path
+# local realpath=${ctxt[IPREFIX]}${ctxt[hpre]}$word
+# realpath=${(Qe)~realpath}
+# '
 
+typeset -g fzf_tab_preview_init="
 # trim input
 local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'*\$'\0'}
 # get ctxt for current completion
@@ -92,17 +98,14 @@ _fzf_tab_compadd() {
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
 
-    group=$expl
-    groupid=$_fzf_tab_groups[(ie)$expl]
-
-    fzf_tab_compadd_hook
-
     # dscr - the string to show to users
     # example dscr:
     # Folder/
+    # 653fab6  -- [HEAD]    feat: add compadd hook (4 hours ago)
     # word - the string to be inserted
     # example word:
     # Documents/Folder/
+    # 653fab6
     local dscr word i
     
     for i in {1..$#__hits}; do
@@ -113,33 +116,13 @@ _fzf_tab_compadd() {
             dscr=$word
         fi
 
-        # example __tmp_comcap:
-        # <>isfile-fgroup1args-Q-s-W-Mr:|/=* r:|=*-p-f
-        # <>isfile-fgroup1args-Q-s-W-Mr:|/=* r:|=*-p-f
-        local tmp_compcap=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
-
-
-        # TODO how to get groups?
-        # GROUPS seem unaccessible
-        groups=
-        # TODO how to get group id ?
-        # I dont think it is safe if there is numbers before group
-        local gid="${__tmp_value//[!0-9]/}"
-        # TODO how to get group name ?
-        local group=groups[gid]
-
-        # TODO do this the same way of fzf_tab_preview_init
-        # # Here will be the custom script injection for icons
-        # if [ "$fzf_tab_completion_description_init" ]
-        #   dscr=$(eval 'local $dscr'$fzf_tab_completion_description_init)
-
-        # TODO remove this and use custom fzf_tab_completion_description_init above
-        dscr=$(echo "$dscr" | devicon-lookup)
-
+        # Hook defined by user to alter the description of the completion
+        fzf_tab_compadd_hook
 
         _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
-        # echo $_fzf_tab_compcap
     done
+
+
 
     # tell zsh that the match is successful
     if _fzf_tab_get -t fake-compadd "fakeadd"; then
@@ -367,7 +350,7 @@ _fzf_tab_get_candidates() {
         # add character and color to describe the type of the files
         dsuf='' dpre=''
         if (( $+v[isfile] )); then
-            filepath=${v[IPREFIX]}${v[hpre]}$v[word]
+            filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
             filepath=${(Q)${(e)~filepath}}
             if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
               fzf-tab-colorize $filepath 2>/dev/null

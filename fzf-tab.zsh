@@ -17,9 +17,9 @@ source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 # thanks Valodim/zsh-capture-completion
 _fzf_tab_compadd() {
     # parse all options
-    local -A apre hpre dscrs _oad expl
-    local -a isfile _opts __
-    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X:=expl O:=_oad A:=_oad D:=_oad f=isfile \
+    local -A apre hpre dscrs _oad
+    local -a isfile _opts __ expl
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile \
                i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
@@ -43,6 +43,9 @@ _fzf_tab_compadd() {
 
     # store $curcontext for furthur usage
     _fzf_tab_curcontext=${curcontext#:}
+
+    # only store the fist `-X`
+    expl=$expl[2]
 
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl

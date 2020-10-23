@@ -12,6 +12,7 @@ zmodload -F zsh/stat b:zstat
 0="${${(M)0:#/*}:-$PWD/$0}"
 FZF_TAB_HOME=${0:h}
 
+autoload -Uz $FZF_TAB_HOME/fzf-tmux-popup
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 # thanks Valodim/zsh-capture-completion
@@ -150,6 +151,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
     _fzf_tab_add_default ignore false
     _fzf_tab_add_default print-query alt-enter
+    _fzf_tab_add_default popup-pad 0 0
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'

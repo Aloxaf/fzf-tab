@@ -442,6 +442,8 @@ _fzf_tab_complete() {
             [[ -d /tmp/fzf-tab ]] || mkdir -p /tmp/fzf-tab
             echo -E ${(pj:\n:)_fzf_tab_compcap} > /tmp/fzf-tab/compcap.$$
             echo -E ${(pj:\n:)_fzf_tab_groups} > /tmp/fzf-tab/groups.$$
+            # TODO: this is deprecated and should be removed in the future
+            export CTXT=${${_fzf_tab_compcap[1]#*$'\2'}//$'\0'/$'\2'}
 
             if (( $#headers )); then
                 choices=$(${(eX)command} $opts <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})

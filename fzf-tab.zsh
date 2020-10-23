@@ -12,6 +12,7 @@ zmodload -F zsh/stat b:zstat
 0="${${(M)0:#/*}:-$PWD/$0}"
 FZF_TAB_HOME=${0:h}
 
+autoload -Uz $FZF_TAB_HOME/fzf-tmux-popup
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 typeset -g fzf_tab_preview_init="
@@ -40,9 +41,9 @@ _fzf_tab_debug() {
 # thanks Valodim/zsh-capture-completion
 _fzf_tab_compadd() {
     # parse all options
-    local -A apre hpre dscrs _oad expl
-    local -a isfile _opts __
-    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X:=expl O:=_oad A:=_oad D:=_oad f=isfile \
+    local -A apre hpre dscrs _oad
+    local -a isfile _opts __ expl
+    zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile \
                i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
                J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
@@ -66,6 +67,9 @@ _fzf_tab_compadd() {
 
     # store $curcontext for furthur usage
     _fzf_tab_curcontext=${curcontext#:}
+
+    # only store the fist `-X`
+    expl=$expl[2]
 
     # keep order of group description
     [[ -n $expl ]] && _fzf_tab_groups+=$expl
@@ -170,6 +174,7 @@ _fzf_tab_get() {
     _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
     _fzf_tab_add_default ignore false
     _fzf_tab_add_default print-query alt-enter
+    _fzf_tab_add_default popup-pad 0 0
 
     if zstyle -m ':completion:*:descriptions' format '*'; then
         _fzf_tab_add_default prefix '·'
@@ -325,7 +330,7 @@ _fzf_tab_get_candidates() {
         # add character and color to describe the type of the files
         dsuf='' dpre=''
         if (( $+v[isfile] )); then
-            filepath=${v[IPREFIX]}${v[hpre]}${k#*$'\b'}
+            filepath=${v[IPREFIX]}${v[hpre]}$v[word]
             filepath=${(Q)${(e)~filepath}}
             if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
               fzf-tab-colorize $filepath 2>/dev/null

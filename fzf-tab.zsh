@@ -124,7 +124,7 @@ typeset -ga _ftb_group_colors=(
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
-  COLUMNS=9999 _ftb__main_complete "$@"
+  COLUMNS=500 _ftb__main_complete "$@"
 
   emulate -L zsh -o extended_glob
 

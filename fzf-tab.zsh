@@ -554,10 +554,10 @@ disable-fzf-tab() {
     unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
 
     # unhook compadd so that _approximate can work properply
-    unfunction compadd 2>/dev/null
+    unfunction compadd
 
     functions[_main_complete]=$functions[_fzf_tab__main_complete]
-    functions[_approximate]=$functions[_fzf_tab__approximate]
+    functions[_approximate]=${functions[_fzf_tab__approximate]//_fzf_tab_compadd/builtin compadd}
 
     # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
     # create it if enable-fzf-tab is called again.
@@ -608,11 +608,11 @@ enable-fzf-tab() {
     functions[_fzf_tab__main_complete]=$functions[_main_complete]
     function _main_complete() { _fzf_tab_complete "$@" }
 
-    # TODO: This is not a full support, see #47
     # _approximate will also hook compadd
     # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
     # make sure _approximate has been loaded.
-    functions[_fzf_tab__approximate]=$functions[_approximate]
+    autoload +XUz _approximate
+    functions[_fzf_tab__approximate]=${functions[_approximate]//builtin compadd/_fzf_tab_compadd}
     function _approximate() {
         # if not called by fzf-tab, don't do anything with compadd
         (( ! IN_FZF_TAB )) || unfunction compadd

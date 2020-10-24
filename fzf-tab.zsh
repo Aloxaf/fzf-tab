@@ -295,7 +295,9 @@ typeset -ga _ftb_group_colors=(
 () {
   emulate -L zsh -o extended_glob
 
-  autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
+  fpath+=($FZF_TAB_HOME/lib)
+
+  autoload -Uz -- $FZF_TAB_HOME/lib/-#ftb*(:t)
 
   if (( $+FZF_TAB_COMMAND || $+FZF_TAB_OPTS || $+FZF_TAB_QUERY || $+FZF_TAB_SINGLE_GROUP || $+fzf_tab_preview_init )) \
        || zstyle -m ":fzf-tab:*" command '*' \

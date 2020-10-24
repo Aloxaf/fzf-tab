@@ -24,8 +24,7 @@ local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_fzf_tab_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
-local -i gid=\${\"\$(<{f})\"%%\$'\0'*}
-local group=\$_fzf_tab_groups[gid]
+local group=\$_fzf_tab_groups[\$ctxt[group]]
 # get real path if it is file
 if (( \$+ctxt[isfile] )); then
   local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}

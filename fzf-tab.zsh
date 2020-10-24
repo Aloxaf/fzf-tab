@@ -297,18 +297,12 @@ typeset -ga _ftb_group_colors=(
 
   autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
 
-  -ftb-zstyle-add() {
-    zstyle -t ':fzf-tab:*' $1
-    (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
-  }
-
-  # Some users may still use variable
-  -ftb-zstyle-add continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
-  -ftb-zstyle-add query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
-  -ftb-zstyle-add single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
-  -ftb-zstyle-add popup-pad 0 0
-
-  unfunction -- -ftb-zstyle-add
+  if (( $+FZF_TAB_COMMAND || $+FZF_TAB_OPTS || $+FZF_TAB_QUERY || $+FZF_TAB_SINGLE_GROUP || $+fzf_tab_preview_init )) \
+       || zstyle -m ":fzf-tab:*" command '*' \
+       || zstyle -m ":fzf-tab:*" extra-opts '*'; then
+    print -P "%F{red}%B[fzf-tab] Sorry, your configuration is not supported anymore\n" \
+          "See https://github.com/Aloxaf/fzf-tab/pull/132 for more information%f%b"
+  fi
 
   if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
     module_path+=("$FZF_TAB_HOME/modules/Src")

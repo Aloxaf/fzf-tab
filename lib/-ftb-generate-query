@@ -2,7 +2,7 @@
 
 local key qtype tmp query_string
 typeset -g _ftb_query=
--ftb-zstyle -a query-string query_string
+-ftb-zstyle -a query-string query_string || query_string=(prefix input first)
 for qtype in $query_string; do
   if [[ $qtype == prefix ]]; then
     # find the longest common prefix among descriptions

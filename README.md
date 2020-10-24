@@ -77,7 +77,7 @@ git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
 Just press <kbd>Tab</kbd> as usual~
 
 You can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results,
-and <kbd>/</kbd> to trigger continuous completion (useful when complete a deep path).
+and <kbd>/</kbd> to trigger continuous completion (useful when completing a deep path).
 
 Available commands:
 
@@ -95,16 +95,16 @@ A common configuration is:
 zstyle ":completion:*:git-checkout:*" sort false
 zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-zstyle ':fzf-tab:complete:cd:*' fzf-flags --preview=$fzf_tab_preview_init'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 ```
 
 From more information, please see [Wiki#Configuration](https://github.com/Aloxaf/fzf-tab/wiki/Configuration)
 
 ## Binary module
 
-By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have enable `list-colors` tag.
+By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have set `list-colors` tag.
 
-However, this is a pure zsh script and is slow if you have too many files to colorize.
+However, it is a pure zsh script and is slow if you have too many files to colorize.
 fzf-tab is shipped with a binary module to speed up this process. You can build it with `build-fzf-tab-module`, then it will be enabled automatically.
 
 # Difference from other plugins

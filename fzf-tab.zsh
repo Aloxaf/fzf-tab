@@ -103,11 +103,7 @@ _fzf_tab_compadd() {
   done
 
   # tell zsh that the match is successful
-  if _fzf_tab_get -t fake-compadd "fakeadd"; then
-    nm=-1  # see _alternative:76
-  else
-    builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
-  fi
+  builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
 }
 
 # when insert multi results, a whitespace will be added to each result
@@ -162,7 +158,6 @@ _fzf_tab_get() {
 
   # Some users may still use variable
   _fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
-  _fzf_tab_add_default fake-compadd ${FZF_TAB_FAKE_COMPADD:-default}
   _fzf_tab_add_default insert-space ${FZF_TAB_INSERT_SPACE:-true}
   _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
   _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
@@ -468,12 +463,7 @@ _fzf_tab_complete() {
         # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
         builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
 
-        compstate[list]= compstate[insert]=
-        if _fzf_tab_get -t fake-compadd "fakeadd"; then
-          compstate[insert]='1'
-        else
-          compstate[insert]='2'
-        fi
+        compstate[list]= compstate[insert]='2'
         _fzf_tab_get -t insert-space
         (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         return
@@ -502,11 +492,7 @@ _fzf_tab_complete() {
   compstate[list]=
   compstate[insert]=
   if (( $#choices == 1 )); then
-    if _fzf_tab_get -t fake-compadd "fakeadd"; then
-      compstate[insert]='1'
-    else
-      compstate[insert]='2'
-    fi
+    compstate[insert]='2'
     _fzf_tab_get -t insert-space
     (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
   elif (( $#choices > 1 )); then

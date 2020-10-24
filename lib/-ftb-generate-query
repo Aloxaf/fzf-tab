@@ -1,0 +1,36 @@
+#!/hint/zsh
+
+local key qtype tmp query_string
+typeset -g _ftb_query=
+-ftb-zstyle -a query-string query_string || query_string=(prefix input first)
+for qtype in $query_string; do
+  if [[ $qtype == prefix ]]; then
+    # find the longest common prefix among descriptions
+    local -a keys=(${_ftb_compcap%$'\2'*})
+    tmp=$keys[1]
+    local MATCH match mbegin mend prefix=(${(s::)tmp})
+    for key in ${keys:1}; do
+      (( $#tmp )) || break
+      [[ $key == $tmp* ]] && continue
+      # interpose characters from the current common prefix and $key and see how
+      # many pairs of equal characters we get at the start of the resulting string
+      [[ ${(j::)${${(s::)key[1,$#tmp]}:^prefix}} =~ '^(((.)\3)*)' ]]
+      # truncate common prefix and maintain loop invariant: ${(s::)tmp} == $prefix
+      tmp[$#MATCH/2+1,-1]=""
+      prefix[$#MATCH/2+1,-1]=()
+    done
+  elif [[ $qtype == input ]]; then
+    local fv=${_ftb_compcap[1]#*$'\2'}
+    local -A v=("${(@0)fv}")
+    tmp=$v[PREFIX]
+    if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
+      tmp=${tmp/%$v[SUFFIX]}
+    fi
+    tmp=${${tmp#$v[hpre]}#$v[apre]}
+  fi
+  if (( $query_string[(I)longest] )); then
+    (( $#tmp > $#_ftb_query )) && _ftb_query=$tmp
+  elif [[ -n $tmp ]]; then
+    _ftb_query=$tmp && break
+  fi
+done

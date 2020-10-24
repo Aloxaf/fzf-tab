@@ -32,9 +32,10 @@
   fi
 
   comptesteval ". $ZTST_srcdir/../fzf-tab.zsh"
-  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+  comptesteval "zstyle ':fzf-tab:*' debug-command $ZTST_srcdir/select -n 1 -h '\$#_ftb_headers' -q '\"\$_ftb_query\"'"
   comptesteval '
-  zstyle ":fzf-tab:*" no-group-color "<LC><C0><RC>"
+  zstyle ":fzf-tab:*" default-color "<LC><C0><RC>"
+  zstyle ":fzf-tab:*" single-group color header
   zstyle ":fzf-tab:*" group-colors "<LC><C1><RC>" "<LC><C2><RC>" "<LC><C3><RC>" "<LC><C4><RC>"
   fzf-tab-complete-with-report() {
     print -lr "<WIDGET><fzf-tab-complete>"
@@ -87,20 +88,9 @@
 >C0:{b}
 >C0:{a}
 
-  comptesteval 'zstyle ":fzf-tab:*:tst:*" insert-space false'
+  comptesteval 'zstyle ":fzf-tab:*:tst:*" fzf-flags -n 1,2'
   comptest $'tst \t'
-  comptesteval 'zstyle ":fzf-tab:*:tst:*" insert-space true'
-0:no space
->line: {tst d}{}
->QUERY:{}
->C0:{d}
->C0:{c}
->C0:{b}
->C0:{a}
-
-  comptesteval 'zstyle ":fzf-tab:*:tst:*" extra-opts -n 1,2'
-  comptest $'tst \t'
-  comptesteval 'zstyle ":fzf-tab:*:tst:*" extra-opts ""'
+  comptesteval 'zstyle -d ":fzf-tab:*:tst:*" fzf-flags'
 0:multi select
 >line: {tst c d }{}
 >QUERY:{}
@@ -199,15 +189,15 @@
 >C1:{dir`echo yes > called`}
 >called:no
 
-  comptesteval "zstyle ':fzf-tab:*' command true"
+  comptesteval "zstyle ':fzf-tab:*' debug-command true"
   comptest $': d\t'
-  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+  comptesteval "zstyle ':fzf-tab:*' debug-command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
 0:cancel completion
 >line: {: d}{}
 
-  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n QUERY -h '\$#headers' -q '\"dragon\"'"
+  comptesteval "zstyle ':fzf-tab:*' debug-command $ZTST_srcdir/select -n QUERY -h '\$#headers' -q '\"dragon\"'"
   comptest $': ./d\t'
-  comptesteval "zstyle ':fzf-tab:*' command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
+  comptesteval "zstyle ':fzf-tab:*' debug-command $ZTST_srcdir/select -n 1 -h '\$#headers' -q '\"\$query\"'"
 0:use query directly
 >line: {: ./dragon}{}
 >QUERY:{dragon}

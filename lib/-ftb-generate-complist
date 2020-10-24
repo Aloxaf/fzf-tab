@@ -1,0 +1,113 @@
+#!/hint/zsh
+
+local dsuf dpre k _v filepath first_word show_group default_color prefix bs=$'\b'
+local -a list_colors group_colors tcandidates reply match mbegin mend
+local -i  same_word=1 colorful=0
+local -Ua duplicate_groups=()
+local -A word_map=()
+
+(( $#_ftb_compcap == 0 )) && return
+
+-ftb-zstyle -s show-group show_group || show_group=full
+-ftb-zstyle -s default-color default_color || default_color=$'\x1b[37m'
+-ftb-zstyle -s prefix prefix || {
+  zstyle -m ':completion:*:descriptions' format '*' && prefix='·'
+}
+-ftb-zstyle -a group-colors group_colors || group_colors=($_ftb_group_colors)
+zstyle -a ":completion:$_ftb_curcontext" list-colors list_colors
+
+# init colorize
+if (( $+builtins[fzf-tab-colorize] )); then
+  fzf-tab-colorize -c list_colors
+else
+  local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+  local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+fi
+
+if (( $#_ftb_groups == 1 )); then
+  -ftb-zstyle -m single-group prefix || prefix=''
+  -ftb-zstyle -m single-group color || group_colors=($default_color)
+fi
+
+for k _v in "${(@ps:\2:)_ftb_compcap}"; do
+  local -A v=("${(@0)_v}")
+  [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
+
+  # add character and color to describe the type of the files
+  dsuf='' dpre=''
+  if (( $+v[isfile] )); then
+    filepath=${v[IPREFIX]}${v[hpre]}$v[word]
+    filepath=${(Q)${(e)~filepath}}
+    if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
+      fzf-tab-colorize $filepath 2>/dev/null
+      dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
+      if [[ $reply[4] ]]; then
+        dsuf+=" -> $reply[4]"
+      fi
+      [[ $dpre ]] && colorful=1
+    else
+      if [[ -d $filepath ]]; then
+        dsuf=/
+      fi
+      # add color and resolve symlink if have list-colors
+      # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
+      if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
+        -ftb-colorize $filepath
+        colorful=1
+      elif [[ -L $filepath ]]; then
+        dsuf=@
+      fi
+      if [[ $options[list_types] == off ]]; then
+        dsuf=''
+      fi
+    fi
+  fi
+
+  # add color to description if they have group index
+  if (( $+v[group] )); then
+    local color=$group_colors[$v[group]]
+    # add a hidden group index at start of string to keep group order when sorting
+    # first group index is for builtin sort, sencond is for GNU sort
+    tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
+  else
+    tcandidates+=$default_color$dpre$'\0'$k$'\0'$dsuf
+  fi
+
+  # check group with duplicate member
+  if [[ $show_group == brief ]]; then
+    if (( $+word_map[$v[word]] && $+v[group] )); then
+      duplicate_groups+=$v[group]            # add this group
+      duplicate_groups+=$word_map[$v[word]]  # add previous group
+    fi
+    word_map[$v[word]]=$v[group]
+  fi
+done
+(( same_word )) && tcandidates[2,-1]=()
+
+# sort and remove sort group or other index
+zstyle -T ":completion:$_ftb_curcontext" sort
+if (( $? != 1 )); then
+  if (( colorful )); then
+    # if enable list_colors, we should skip the first field
+    if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
+      # this is faster but doesn't work if `find` is from busybox
+      tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+    else
+      # slower but portable
+      tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
+      tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
+    fi
+  else
+    tcandidates=("${(@o)tcandidates}")
+  fi
+fi
+typeset -gUa _ftb_complist=("${(@)tcandidates//[0-9]#$bs}")
+
+# hide needless group
+if [[ $show_group == brief && -n ${_ftb_groups[@]} ]]; then
+  local i indexs=({1..$#_ftb_groups})
+  for i in ${indexs:|duplicate_groups}; do
+    # NOTE: _ftb_groups is unique array
+    _ftb_groups[i]="__hide__$i"
+  done
+fi

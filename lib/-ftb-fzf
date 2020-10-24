@@ -3,13 +3,15 @@
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
 local fzf_command fzf_flags tmp
 
-zstyle -s ":fzf-tab:$_ftb_curcontext" fzf-command fzf_command || fzf_command=fzf
-zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-bindings tmp && binds+=:${(j|:|)tmp}
-zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-flags fzf_flags
+-ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
+-ftb-zstyle -a fzf-bindings tmp && binds+=:${(j|:|)tmp}
+-ftb-zstyle -a fzf-flags fzf_flags
 
 [[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
 print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$
 print -rl -- $_ftb_groups  > /tmp/fzf-tab/groups.$$
+
+local -i lines=$#_ftb_compcap
 
 typeset -g choices
 choices="$($fzf_command \
@@ -20,7 +22,7 @@ choices="$($fzf_command \
   --delimiter='\x00' \
   --expect=$continuous_trigger,$print_query \
   --header-lines=$#headers \
-  --height=${FZF_TMUX_HEIGHT:=57%} \
+  --height=${FZF_TMUX_HEIGHT:=$(( lines > LINES / 2 ? LINES / 2 : lines ))} \
   --layout=reverse \
   --multi \
   --nth=2,3 \

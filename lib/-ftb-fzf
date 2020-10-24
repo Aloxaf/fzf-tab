@@ -11,17 +11,17 @@ local fzf_command fzf_flags tmp
 print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$
 print -rl -- $_ftb_groups  > /tmp/fzf-tab/groups.$$
 
-local -i lines=$#_ftb_compcap
+local -i lines=$#_ftb_compcap header_lines=$#_ftb_headers
 
 typeset -g choices
 choices="$($fzf_command \
   --ansi \
   --bind=$binds \
-  --color=hl:$(( $#headers == 0 ? 188 : 255 )) \
+  --color=hl:$(( $#_ftb_headers == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \
   --expect=$continuous_trigger,$print_query \
-  --header-lines=$#headers \
+  --header-lines=$#_ftb_headers \
   --height=${FZF_TMUX_HEIGHT:=$(( lines > LINES / 2 ? LINES / 2 : lines ))} \
   --layout=reverse \
   --multi \

@@ -173,43 +173,6 @@ _fzf_tab_find_query_str() {
   done
 }
 
-# pupulates array `headers` with group descriptions
-_fzf_tab_get_headers() {
-  typeset -ga headers=()
-  local i tmp group_colors
-  local -i mlen=0 len=0
-
-  if (( $#_ftb_groups == 1 )) && { ! -ftb-zstyle -m single-group "header" }; then
-    return
-  fi
-
-  # calculate the max column width
-  for i in $_ftb_groups; do
-    (( $#i > mlen )) && mlen=$#i
-  done
-  mlen+=1
-
-  -ftb-zstyle -a group-colors group_colors || group_colors=($_ftb_group_colors)
-
-  for (( i=1; i<=$#_ftb_groups; i++ )); do
-    [[ $_ftb_groups[i] == "__hide__"* ]] && continue
-
-    if (( len + $#_ftb_groups[i] > COLUMNS - 5 )); then
-      headers+=$tmp
-      tmp='' && len=0
-    fi
-    if (( len + mlen > COLUMNS - 5 )); then
-      # the last column doesn't need padding
-      headers+=$tmp$group_colors[i]$_ftb_groups[i]$'\033[00m'
-      tmp='' && len=0
-    else
-      tmp+=$group_colors[i]${(r:$mlen:)_ftb_groups[i]}$'\033[00m'
-      len+=$mlen
-    fi
-  done
-  (( $#tmp )) && headers+=$tmp
-}
-
 _fzf_tab_colorize() {
   emulate -L zsh -o cbases -o octalzeroes
 
@@ -264,11 +227,11 @@ _fzf_tab_complete() {
     1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
     *)
       _fzf_tab_find_query_str  # sets `query`
-      _fzf_tab_get_headers     # sets `headers`
+      -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
 
-      print -rl -- $headers $_ftb_complist | -ftb-fzf
+      print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then

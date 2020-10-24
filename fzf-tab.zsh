@@ -1,8 +1,8 @@
 # temporarily change options
-'builtin' 'local' '-a' '_fzf_tab_opts'
-[[ ! -o 'aliases'         ]] || _fzf_tab_opts+=('aliases')
-[[ ! -o 'sh_glob'         ]] || _fzf_tab_opts+=('sh_glob')
-[[ ! -o 'no_brace_expand' ]] || _fzf_tab_opts+=('no_brace_expand')
+'builtin' 'local' '-a' '_ftb_opts'
+[[ ! -o 'aliases'         ]] || _ftb_opts+=('aliases')
+[[ ! -o 'sh_glob'         ]] || _ftb_opts+=('sh_glob')
+[[ ! -o 'no_brace_expand' ]] || _ftb_opts+=('no_brace_expand')
 'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
 
 zmodload zsh/zutil
@@ -124,7 +124,7 @@ typeset -ga _ftb_group_colors=(
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
-  COLUMNS=9999 _fzf_tab__main_complete "$@"
+  COLUMNS=9999 _ftb__main_complete "$@"
 
   emulate -L zsh -o extended_glob
 
@@ -165,7 +165,7 @@ typeset -ga _ftb_group_colors=(
   esac
 
   if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
-    typeset -gi _fzf_tab_continue=1
+    typeset -gi _ftb_continue=1
   fi
   choices[1]=()
 
@@ -189,16 +189,16 @@ typeset -ga _ftb_group_colors=(
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _fzf_tab_continue=1
-  while (( _fzf_tab_continue )); do
-    _fzf_tab_continue=0
+  local -i _ftb_continue=1
+  while (( _ftb_continue )); do
+    _ftb_continue=0
     local IN_FZF_TAB=1
     {
-      zle .fzf-tab-orig-$_fzf_tab_orig_widget
+      zle .fzf-tab-orig-$_ftb_orig_widget
     } always {
       IN_FZF_TAB=0
     }
-    if (( _fzf_tab_continue )); then
+    if (( _ftb_continue )); then
       zle .split-undo
       zle .reset-prompt
       zle -R
@@ -212,32 +212,32 @@ zle -N fzf-tab-complete
 
 disable-fzf-tab() {
   emulate -L zsh -o extended_glob
-  (( $+_fzf_tab_orig_widget )) || return 0
+  (( $+_ftb_orig_widget )) || return 0
 
-  bindkey '^I' $_fzf_tab_orig_widget
-  case $_fzf_tab_orig_list_grouped in
+  bindkey '^I' $_ftb_orig_widget
+  case $_ftb_orig_list_grouped in
     0) zstyle ':completion:*' list-grouped false ;;
     1) zstyle ':completion:*' list-grouped true ;;
     2) zstyle -d ':completion:*' list-grouped ;;
   esac
-  unset _fzf_tab_orig_widget _fzf_tab_orig_list_groupded
+  unset _ftb_orig_widget _ftb_orig_list_groupded
 
   # unhook compadd so that _approximate can work properply
   unfunction compadd 2>/dev/null
 
-  functions[_main_complete]=$functions[_fzf_tab__main_complete]
-  functions[_approximate]=$functions[_fzf_tab__approximate]
+  functions[_main_complete]=$functions[_ftb__main_complete]
+  functions[_approximate]=$functions[_ftb__approximate]
 
-  # Don't remove .fzf-tab-orig-$_fzf_tab_orig_widget as we won't be able to reliably
+  # Don't remove .fzf-tab-orig-$_ftb_orig_widget as we won't be able to reliably
   # create it if enable-fzf-tab is called again.
 }
 
 enable-fzf-tab() {
   emulate -L zsh -o extended_glob
-  (( ! $+_fzf_tab_orig_widget )) || disable-fzf-tab
+  (( ! $+_ftb_orig_widget )) || disable-fzf-tab
 
-  typeset -g _fzf_tab_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
-  if (( ! $+widgets[.fzf-tab-orig-$_fzf_tab_orig_widget] )); then
+  typeset -g _ftb_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
+  if (( ! $+widgets[.fzf-tab-orig-$_ftb_orig_widget] )); then
     # Widgets that get replaced by compinit.
     local compinit_widgets=(
       complete-word
@@ -250,19 +250,19 @@ enable-fzf-tab() {
       reverse-menu-complete
     )
     # Note: We prefix the name of the widget with '.' so that it doesn't get wrapped.
-    if [[ $widgets[$_fzf_tab_orig_widget] == builtin &&
-            $compinit_widgets[(Ie)$_fzf_tab_orig_widget] != 0 ]]; then
+    if [[ $widgets[$_ftb_orig_widget] == builtin &&
+            $compinit_widgets[(Ie)$_ftb_orig_widget] != 0 ]]; then
       # We are initializing before compinit and being asked to fall back to a completion
       # widget that isn't defined yet. Create our own copy of the widget ahead of time.
-      zle -C .fzf-tab-orig-$_fzf_tab_orig_widget .$_fzf_tab_orig_widget _main_complete
+      zle -C .fzf-tab-orig-$_ftb_orig_widget .$_ftb_orig_widget _main_complete
     else
       # Copy the widget before it's wrapped by zsh-autosuggestions and zsh-syntax-highlighting.
-      zle -A $_fzf_tab_orig_widget .fzf-tab-orig-$_fzf_tab_orig_widget
+      zle -A $_ftb_orig_widget .fzf-tab-orig-$_ftb_orig_widget
     fi
   fi
 
   zstyle -t ':completion:*' list-grouped false
-  typeset -g _fzf_tab_orig_list_grouped=$?
+  typeset -g _ftb_orig_list_grouped=$?
 
   zstyle ':completion:*' list-grouped false
   bindkey '^I' fzf-tab-complete
@@ -274,25 +274,25 @@ enable-fzf-tab() {
   functions[compadd]=$functions[-ftb-compadd]
 
   # hook _main_complete to trigger fzf-tab
-  functions[_fzf_tab__main_complete]=$functions[_main_complete]
+  functions[_ftb__main_complete]=$functions[_main_complete]
   function _main_complete() { -ftb-complete "$@" }
 
   # TODO: This is not a full support, see #47
   # _approximate will also hook compadd
   # let it call -ftb-compadd instead of builtin compadd so that fzf-tab can capture result
   # make sure _approximate has been loaded.
-  functions[_fzf_tab__approximate]=$functions[_approximate]
+  functions[_ftb__approximate]=$functions[_approximate]
   function _approximate() {
     # if not called by fzf-tab, don't do anything with compadd
     (( ! IN_FZF_TAB )) || unfunction compadd
-    _fzf_tab__approximate
+    _ftb__approximate
     (( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
   }
 }
 
 toggle-fzf-tab() {
   emulate -L zsh -o extended_glob
-  if (( $+_fzf_tab_orig_widget )); then
+  if (( $+_ftb_orig_widget )); then
     disable-fzf-tab
   else
     enable-fzf-tab
@@ -348,5 +348,5 @@ enable-fzf-tab
 zle -N toggle-fzf-tab
 
 # restore options
-(( ${#_fzf_tab_opts} )) && setopt ${_fzf_tab_opts[@]}
-'builtin' 'unset' '_fzf_tab_opts'
+(( ${#_ftb_opts} )) && setopt ${_ftb_opts[@]}
+'builtin' 'unset' '_ftb_opts'

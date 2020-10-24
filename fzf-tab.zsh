@@ -15,6 +15,29 @@ FZF_TAB_HOME=${0:h}
 autoload -Uz $FZF_TAB_HOME/fzf-tmux-popup
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
+typeset -g fzf_tab_preview_init="
+local -a _fzf_tab_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
+local -a _fzf_tab_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
+local bs=\$'\2'
+# get descriptoin
+local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+# get ctxt for current completion
+local -A ctxt=(\"\${(@0)\${_fzf_tab_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
+# get group
+local gid=\$ctxt[group]
+local group=\$_fzf_tab_groups[gid]
+# get original word
+local word=\$ctxt[word]
+# get real path if it is file
+if (( \$+ctxt[isfile] )); then
+  local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\$word
+fi
+"
+
+_fzf_tab_debug() {
+  echo -E $'\n'${(qqqq)1}$'\n'
+}
+
 # thanks Valodim/zsh-capture-completion
 _fzf_tab_compadd() {
     # parse all options
@@ -67,6 +90,11 @@ _fzf_tab_compadd() {
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
+    # Hook defined by user to alter the description of the completion
+    if typeset -f fzf_tab_compadd_hook > /dev/null; then
+      fzf_tab_compadd_hook
+    fi
+
     # dscr - the string to show to users
     # word - the string to be inserted
     local dscr word i
@@ -77,7 +105,7 @@ _fzf_tab_compadd() {
         elif [[ -n $word ]]; then
             dscr=$word
         fi
-        _fzf_tab_compcap+=$dscr$'\2'$__tmp_value${word:+$'\0word\0'$word}
+        _fzf_tab_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
     done
 
     # tell zsh that the match is successful
@@ -420,6 +448,11 @@ _fzf_tab_complete() {
             _fzf_tab_get -s print-query print_query
             _fzf_tab_get -a extra-opts opts
 
+            # export some variables for previewing
+            [[ -d /tmp/fzf-tab ]] || mkdir -p /tmp/fzf-tab
+            echo -E ${(pj:\n:)_fzf_tab_compcap} > /tmp/fzf-tab/compcap.$$
+            echo -E ${(pj:\n:)_fzf_tab_groups} > /tmp/fzf-tab/groups.$$
+            # TODO: this is deprecated and should be removed in the future
             export CTXT=${${_fzf_tab_compcap[1]#*$'\2'}//$'\0'/$'\2'}
 
             if (( $#headers )); then
@@ -429,6 +462,10 @@ _fzf_tab_complete() {
             fi
             choices=("${(@f)choices}")
 
+            # remember to clean
+            command rm /tmp/fzf-tab/{compcap,groups}.$$
+
+            # insert query string directly
             if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
               local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
               local -a args=("${(@ps:\1:)v[args]}")

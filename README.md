@@ -117,25 +117,18 @@ zstyle ':completion:complete:*:options' sort false
 # use input as query string when completing zlua
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 
-# (experimental, may change in the future)
-# some boilerplate code to define the variable `extract` which will be used later
-# please remember to copy them
-local extract="
-# trim input(what you select)
-local in=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-# get ctxt for current completion(some thing before or after the current word)
-local -A ctxt=(\"\${(@ps:\2:)CTXT}\")
-# real path
-local realpath=\${ctxt[IPREFIX]}\${ctxt[hpre]}\$in
-realpath=\${(Qe)~realpath}
-"
-
 # give a preview of commandline arguments when completing `kill`
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$fzf_tab_preview_init'ps --pid=$word -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 
 # give a preview of directory by exa when completing cd
-zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$extract'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' extra-opts --preview=$fzf_tab_preview_init'exa -1 --color=always $realpath'
+
+# NOTE: `$fzf_tab_preview_init` contains some boilerplate code to init some useful variables:
+# $word     - the actual word to insert
+# $desc     - the description of the word, this is what you see
+# $group    - the group name of what you select
+# $realpath - use this if what you select is a file name or path
 ```
 
 fzf-tab is configured via command like this: `zstyle ':fzf-tab:{context}' tag value`. `fzf-tab` is the top context.
@@ -202,6 +195,74 @@ Don't activate fzf-tab in this context.
 If it is a number, then fzf-tab won't be activated if the number of candidates is smaller than this number.
 
 Default value: `zstyle ':fzf-tab:*' ignore false`
+
+### compadd-hook
+
+You can hook on completion value and improve it using `fzf_tab_compadd_hook` 
+
+For example to add a lot of icons on many completions (Nerd icons patched fonts)
+
+```zsh
+fzf_tab_compadd_hook() {
+  # $expl - explicit group name
+  # $__hits - list of orginal completions
+  # $__dscr - list of transformed and described completions
+  # $PREFIX - text that already got completed before
+  case $_fzf_tab_curcontext in
+    # (systemctl-*)
+    # All context
+    (*)
+    # Line by line icon assignements
+    for i in {1..$#__hits}; do
+      word=$__hits[i] dscr=$__dscr[i]
+      if [[ -n $dscr ]]; then
+        dscr=${dscr//$'\n'}
+      elif [[ -n $word ]]; then
+        dscr=$word
+      fi
+
+      # absolute expanded path of a file
+      realpath="$(eval echo "${PREFIX}$word")"
+
+      case "$expl" in
+        (parameter) icon="$" ;;
+        (function) icon="ƒ" ;;
+        (alias) icon="Ą" ;;
+        (*branch*) icon="" ;;
+        (*command*) icon="" ;;
+        (*target*) icon="" ;;
+        (commit tag) icon="" ;;
+        (*commit*) icon="" ;;
+        (*file*) 
+          if [ -d $realpath ]; then
+            icon=""
+          else
+            icon="${$(echo "$word" | devicon-lookup):0:1}"
+          fi
+          # Only work inside a git directory
+          # [ -d .git ] && echo .git || git rev-parse --git-dir > /dev/null 2>&1
+          # icon="$icon ${$( git status --short "$realpath"):0:2}"
+          ;;
+        (*local*) icon="" ;;
+        (*remote*) icon="" ;;
+        (*head*) icon="ﰛ" ;;
+        (*option*)
+          case $word in
+            (*rm*|*delete**remove*)
+              icon=" " ;;
+            (*help) icon="" ;; # icon=" " icon=" " icon=""
+            (*) icon="" ;; # icon=" "
+          esac
+          ;;
+        (*) icon="" ;;
+      esac
+      icon="$icon "
+      __dscr[i]="$icon $dscr"
+    done
+    ;;
+esac
+}
+```
 
 ### fake-compadd
 

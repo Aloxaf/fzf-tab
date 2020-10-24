@@ -15,24 +15,6 @@ FZF_TAB_HOME=${0:h}
 autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
-typeset -g fzf_tab_preview_init="
-local -a _ftb_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
-local -a _ftb_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
-local bs=\$'\2'
-# get descriptoin
-local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
-# get ctxt for current completion
-local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
-# get group
-local group=\$_ftb_groups[\$ctxt[group]]
-# get real path if it is file
-if (( \$+ctxt[isfile] )); then
-  local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
-fi
-# get original word
-local word=\$ctxt[word]
-"
-
 typeset -ga _ftb_group_colors=(
   $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
   $'\x1b[38;5;100m' $'\x1b[38;5;98m' $'\x1b[91m' $'\x1b[38;5;80m' $'\x1b[92m'

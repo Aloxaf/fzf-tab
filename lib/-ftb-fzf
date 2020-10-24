@@ -1,11 +1,29 @@
 #!/hint/zsh
 
+local ftb_preview_init="
+local -a _ftb_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
+local -a _ftb_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
+local bs=\$'\2'
+# get descriptoin
+export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
+# get ctxt for current completion
+local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
+# get group
+export group=\$_ftb_groups[\$ctxt[group]]
+# get real path if it is file
+if (( \$+ctxt[isfile] )); then
+  export realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
+fi
+# get original word
+export word=\$ctxt[word]
+"
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags tmp
+local fzf_command fzf_flags fzf_preview tmp
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
 -ftb-zstyle -a fzf-bindings tmp && binds+=:${(j|:|)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
+-ftb-zstyle -s fzf-preview fzf_preview
 
 [[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
 print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$
@@ -29,6 +47,7 @@ choices="$($fzf_command \
   --print-query \
   --query=$_ftb_query \
   --tiebreak=begin \
+  ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
   $fzf_flags
 )"
 choices=("${(@f)choices}")

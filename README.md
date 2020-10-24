@@ -196,6 +196,74 @@ If it is a number, then fzf-tab won't be activated if the number of candidates i
 
 Default value: `zstyle ':fzf-tab:*' ignore false`
 
+### compadd-hook
+
+You can hook on completion value and improve it using `fzf_tab_compadd_hook` 
+
+For example to add a lot of icons on many completions (Nerd icons patched fonts)
+
+```zsh
+fzf_tab_compadd_hook() {
+  # $expl - explicit group name
+  # $__hits - list of orginal completions
+  # $__dscr - list of transformed and described completions
+  # $PREFIX - text that already got completed before
+  case $_fzf_tab_curcontext in
+    # (systemctl-*)
+    # All context
+    (*)
+    # Line by line icon assignements
+    for i in {1..$#__hits}; do
+      word=$__hits[i] dscr=$__dscr[i]
+      if [[ -n $dscr ]]; then
+        dscr=${dscr//$'\n'}
+      elif [[ -n $word ]]; then
+        dscr=$word
+      fi
+
+      # absolute expanded path of a file
+      realpath="$(eval echo "${PREFIX}$word")"
+
+      case "$expl" in
+        (parameter) icon="$" ;;
+        (function) icon="ƒ" ;;
+        (alias) icon="Ą" ;;
+        (*branch*) icon="" ;;
+        (*command*) icon="" ;;
+        (*target*) icon="" ;;
+        (commit tag) icon="" ;;
+        (*commit*) icon="" ;;
+        (*file*) 
+          if [ -d $realpath ]; then
+            icon=""
+          else
+            icon="${$(echo "$word" | devicon-lookup):0:1}"
+          fi
+          # Only work inside a git directory
+          # [ -d .git ] && echo .git || git rev-parse --git-dir > /dev/null 2>&1
+          # icon="$icon ${$( git status --short "$realpath"):0:2}"
+          ;;
+        (*local*) icon="" ;;
+        (*remote*) icon="" ;;
+        (*head*) icon="ﰛ" ;;
+        (*option*)
+          case $word in
+            (*rm*|*delete**remove*)
+              icon=" " ;;
+            (*help) icon="" ;; # icon=" " icon=" " icon=""
+            (*) icon="" ;; # icon=" "
+          esac
+          ;;
+        (*) icon="" ;;
+      esac
+      icon="$icon "
+      __dscr[i]="$icon $dscr"
+    done
+    ;;
+esac
+}
+```
+
 ### fake-compadd
 
 How to do a fake compadd. This only affects the result of multiple selections.

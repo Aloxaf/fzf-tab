@@ -52,7 +52,7 @@ for k _v in "${(@ps:\2:)_ftb_compcap}"; do
       # add color and resolve symlink if have list-colors
       # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
       if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
-        _fzf_tab_colorize $filepath
+        -ftb-colorize $filepath
         colorful=1
       elif [[ -L $filepath ]]; then
         dsuf=@

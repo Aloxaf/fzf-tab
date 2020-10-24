@@ -40,7 +40,7 @@ typeset -ga _ftb_group_colors=(
 )
 
 # thanks Valodim/zsh-capture-completion
-_fzf_tab_compadd() {
+-ftb-compadd() {
   # parse all options
   local -A apre hpre dscrs _oad
   local -a isfile _opts __ expl
@@ -104,13 +104,13 @@ _fzf_tab_compadd() {
   done
 
   # tell zsh that the match is successful
-  builtin compadd -U -qS '' -R _fzf_tab_remove_space ''
+  builtin compadd -U -qS '' -R -ftb-remove-space ''
 }
 
 # when insert multi results, a whitespace will be added to each result
 # remove left space of our fake result because I can't remove right space
 # FIXME: what if the left char is not whitespace: `echo $widgets[\t`
-_fzf_tab_remove_space() {
+-ftb-remove-space() {
   [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
@@ -118,98 +118,7 @@ _fzf_tab_remove_space() {
   zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
 }
 
-() {
-  emulate -L zsh -o extended_glob
-
-  _fzf_tab_add_default() {
-    zstyle -t ':fzf-tab:*' $1
-    (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
-  }
-
-  # Some users may still use variable
-  _fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
-  _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
-  _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
-  _fzf_tab_add_default popup-pad 0 0
-
-  unfunction _fzf_tab_add_default
-}
-
-# sets `query` to the valid query string
-_fzf_tab_find_query_str() {
-  local key qtype tmp query_string
-  typeset -g query=
-  -ftb-zstyle -a query-string query_string
-  for qtype in $query_string; do
-    if [[ $qtype == prefix ]]; then
-      # find the longest common prefix among descriptions
-      local -a keys=(${_ftb_compcap%$'\2'*})
-      tmp=$keys[1]
-      local MATCH match mbegin mend prefix=(${(s::)tmp})
-      for key in ${keys:1}; do
-        (( $#tmp )) || break
-        [[ $key == $tmp* ]] && continue
-        # interpose characters from the current common prefix and $key and see how
-        # many pairs of equal characters we get at the start of the resulting string
-        [[ ${(j::)${${(s::)key[1,$#tmp]}:^prefix}} =~ '^(((.)\3)*)' ]]
-        # truncate common prefix and maintain loop invariant: ${(s::)tmp} == $prefix
-        tmp[$#MATCH/2+1,-1]=""
-        prefix[$#MATCH/2+1,-1]=()
-      done
-    elif [[ $qtype == input ]]; then
-      local fv=${_ftb_compcap[1]#*$'\2'}
-      local -A v=("${(@0)fv}")
-      tmp=$v[PREFIX]
-      if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
-        tmp=${tmp/%$v[SUFFIX]}
-      fi
-      tmp=${${tmp#$v[hpre]}#$v[apre]}
-    fi
-    if (( $query_string[(I)longest] )); then
-      (( $#tmp > $#query )) && query=$tmp
-    elif [[ -n $tmp ]]; then
-      query=$tmp && break
-    fi
-  done
-}
-
-_fzf_tab_colorize() {
-  emulate -L zsh -o cbases -o octalzeroes
-
-  local REPLY
-  local -a reply stat lstat
-
-  # fzf-tab-lscolors::match-by $1 lstat follow
-  zstat -A lstat -L -- $1
-  # follow symlink
-  (( lstat[3] & 0170000 )) && zstat -A stat -- $1 2>/dev/null
-
-  fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
-  # fall back to name
-  [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $1
-
-  # If this is a symlink
-  if [[ $lstat[14] ]]; then
-    local sym_color=$REPLY
-    local rsv_color=$REPLY
-    local rsv=$lstat[14]
-    # If this is not a broken symlink
-    if [[ -e $rsv ]]; then
-      # fzf-tab-lscolors::match-by $rsv stat
-      zstat -A stat -- $rsv
-      fzf-tab-lscolors::from-mode $rsv $stat[3]
-      # fall back to name
-      [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $rsv
-      rsv_color=$REPLY
-    fi
-    dpre=$'\033[0m\033['$sym_color'm'
-    dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
-  else
-    dpre=$'\033[0m\033['$REPLY'm'
-  fi
-}
-
-_fzf_tab_complete() {
+-ftb-complete() {
   local -a _ftb_compcap
   local -Ua _ftb_groups
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
@@ -219,7 +128,7 @@ _fzf_tab_complete() {
 
   emulate -L zsh -o extended_glob
 
-  local query _ftb_complist=() headers=() command opts
+  local _ftb_query _ftb_complist=() _ftb_headers=() command opts
   -ftb-generate-complist # sets `_ftb_complist`
 
   case $#_ftb_complist in
@@ -227,7 +136,7 @@ _fzf_tab_complete() {
     # NOTE: won't trigger continuous completion
     1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
     *)
-      _fzf_tab_find_query_str  # sets `query`
+      -ftb-generate-query      # sets `_ftb_query`
       -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
@@ -362,22 +271,22 @@ enable-fzf-tab() {
   autoload +X -Uz _main_complete _approximate
 
   # hook compadd
-  functions[compadd]=$functions[_fzf_tab_compadd]
+  functions[compadd]=$functions[-ftb-compadd]
 
   # hook _main_complete to trigger fzf-tab
   functions[_fzf_tab__main_complete]=$functions[_main_complete]
-  function _main_complete() { _fzf_tab_complete "$@" }
+  function _main_complete() { -ftb-complete "$@" }
 
   # TODO: This is not a full support, see #47
   # _approximate will also hook compadd
-  # let it call _fzf_tab_compadd instead of builtin compadd so that fzf-tab can capture result
+  # let it call -ftb-compadd instead of builtin compadd so that fzf-tab can capture result
   # make sure _approximate has been loaded.
   functions[_fzf_tab__approximate]=$functions[_approximate]
   function _approximate() {
     # if not called by fzf-tab, don't do anything with compadd
     (( ! IN_FZF_TAB )) || unfunction compadd
     _fzf_tab__approximate
-    (( ! IN_FZF_TAB )) || functions[compadd]=$functions[_fzf_tab_compadd]
+    (( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
   }
 }
 
@@ -396,12 +305,28 @@ build-fzf-tab-module() {
     MACOS=true
   fi
   pushd $FZF_TAB_HOME/modules
-  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O3" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
+  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
   make -j
   popd
 }
 
+# init
 () {
+  emulate -L zsh -o extended_glob
+
+  -ftb-zstyle-add() {
+    zstyle -t ':fzf-tab:*' $1
+    (( $? != 2 )) || zstyle ':fzf-tab:*' $1 ${@:2}
+  }
+
+  # Some users may still use variable
+  -ftb-zstyle-add continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
+  -ftb-zstyle-add query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
+  -ftb-zstyle-add single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
+  -ftb-zstyle-add popup-pad 0 0
+
+  unfunction -- -ftb-zstyle-add
+
   if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab

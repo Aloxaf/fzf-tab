@@ -1,0 +1,34 @@
+#!/hint/zsh
+emulate -L zsh -o cbases -o octalzeroes
+
+local REPLY
+local -a reply stat lstat
+
+# fzf-tab-lscolors::match-by $1 lstat follow
+zstat -A lstat -L -- $1
+# follow symlink
+(( lstat[3] & 0170000 )) && zstat -A stat -- $1 2>/dev/null
+
+fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
+# fall back to name
+[[ -z $REPLY ]] && fzf-tab-lscolors::from-name $1
+
+# If this is a symlink
+if [[ $lstat[14] ]]; then
+  local sym_color=$REPLY
+  local rsv_color=$REPLY
+  local rsv=$lstat[14]
+  # If this is not a broken symlink
+  if [[ -e $rsv ]]; then
+    # fzf-tab-lscolors::match-by $rsv stat
+    zstat -A stat -- $rsv
+    fzf-tab-lscolors::from-mode $rsv $stat[3]
+    # fall back to name
+    [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $rsv
+    rsv_color=$REPLY
+  fi
+  dpre=$'\033[0m\033['$sym_color'm'
+  dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+else
+  dpre=$'\033[0m\033['$REPLY'm'
+fi

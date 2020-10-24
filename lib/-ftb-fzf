@@ -27,7 +27,7 @@ choices="$($fzf_command \
   --multi \
   --nth=2,3 \
   --print-query \
-  --query=$query \
+  --query=$_ftb_query \
   --tiebreak=begin \
   $fzf_flags
 )"

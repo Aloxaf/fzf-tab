@@ -214,7 +214,8 @@ _fzf_tab_complete() {
   local -Ua _ftb_groups
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
-  _fzf_tab__main_complete "$@" # must run with user options; don't move `emulate -L zsh` above this line
+  # must run with user options; don't move `emulate -L zsh` above this line
+  COLUMNS=9999 _fzf_tab__main_complete "$@"
 
   emulate -L zsh -o extended_glob
 

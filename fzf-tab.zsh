@@ -24,13 +24,14 @@ local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_fzf_tab_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
-local group=\$_fzf_tab_groups[\$ctxt[group]]
-# get real path if it is file
-if (( \$+ctxt[isfile] )); then
-  local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
-fi
+local gid=\$ctxt[group]
+local group=\$_fzf_tab_groups[gid]
 # get original word
 local word=\$ctxt[word]
+# get real path if it is file
+if (( \$+ctxt[isfile] )); then
+  local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\$word
+fi
 "
 
 _fzf_tab_debug() {
@@ -88,6 +89,9 @@ _fzf_tab_compadd() {
     fi
     _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
+
+    # Hook defined by user to alter the description of the completion
+    fzf_tab_compadd_hook
 
     # dscr - the string to show to users
     # word - the string to be inserted

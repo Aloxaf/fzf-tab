@@ -35,6 +35,7 @@
   comptesteval "zstyle ':fzf-tab:*' debug-command $ZTST_srcdir/select -n 1 -h '\$#_ftb_headers' -q '\"\$_ftb_query\"'"
   comptesteval '
   zstyle ":fzf-tab:*" default-color "<LC><C0><RC>"
+  zstyle ":fzf-tab:*" single-group color header
   zstyle ":fzf-tab:*" group-colors "<LC><C1><RC>" "<LC><C2><RC>" "<LC><C3><RC>" "<LC><C4><RC>"
   fzf-tab-complete-with-report() {
     print -lr "<WIDGET><fzf-tab-complete>"

@@ -12,7 +12,7 @@ zmodload -F zsh/stat b:zstat
 0="${${(M)0:#/*}:-$PWD/$0}"
 FZF_TAB_HOME=${0:h}
 
-autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-ftb*
+autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 typeset -g fzf_tab_preview_init="
@@ -33,9 +33,11 @@ fi
 local word=\$ctxt[word]
 "
 
-_fzf_tab_debug() {
-  echo -E $'\n'${(qqqq)1}$'\n'
-}
+typeset -ga _ftb_group_colors=(
+  $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
+  $'\x1b[38;5;100m' $'\x1b[38;5;98m' $'\x1b[91m' $'\x1b[38;5;80m' $'\x1b[92m'
+  $'\x1b[38;5;214m' $'\x1b[38;5;165m' $'\x1b[38;5;124m' $'\x1b[38;5;120m'
+)
 
 # thanks Valodim/zsh-capture-completion
 _fzf_tab_compadd() {
@@ -112,13 +114,7 @@ _fzf_tab_remove_space() {
   [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
-: ${(A)=FZF_TAB_GROUP_COLORS=\
-       $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
-       $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
-       $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
-  }
-
-_fzf_tab_get() {
+-ftb-zstyle() {
   zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
 }
 
@@ -134,17 +130,7 @@ _fzf_tab_get() {
   _fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
   _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
   _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
-  _fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
-  _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
-  _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
-  _fzf_tab_add_default print-query alt-enter
   _fzf_tab_add_default popup-pad 0 0
-
-  if zstyle -m ':completion:*:descriptions' format '*'; then
-    _fzf_tab_add_default prefix '·'
-  else
-    _fzf_tab_add_default prefix ''
-  fi
 
   unfunction _fzf_tab_add_default
 }
@@ -153,7 +139,7 @@ _fzf_tab_get() {
 _fzf_tab_find_query_str() {
   local key qtype tmp query_string
   typeset -g query=
-  _fzf_tab_get -a query-string query_string
+  -ftb-zstyle -a query-string query_string
   for qtype in $query_string; do
     if [[ $qtype == prefix ]]; then
       # find the longest common prefix among descriptions
@@ -193,7 +179,7 @@ _fzf_tab_get_headers() {
   local i tmp group_colors
   local -i mlen=0 len=0
 
-  if (( $#_ftb_groups == 1 )) && { ! _fzf_tab_get -m single-group "header" }; then
+  if (( $#_ftb_groups == 1 )) && { ! -ftb-zstyle -m single-group "header" }; then
     return
   fi
 
@@ -203,7 +189,7 @@ _fzf_tab_get_headers() {
   done
   mlen+=1
 
-  _fzf_tab_get -a group-colors group_colors
+  -ftb-zstyle -a group-colors group_colors || group_colors=($_ftb_group_colors)
 
   for (( i=1; i<=$#_ftb_groups; i++ )); do
     [[ $_ftb_groups[i] == "__hide__"* ]] && continue
@@ -260,117 +246,6 @@ _fzf_tab_colorize() {
   fi
 }
 
-# pupulates array `candidates` with completion candidates
-_fzf_tab_get_candidates() {
-  local dsuf dpre k _v filepath first_word show_group no_group_color prefix bs=$'\b'
-  local -a list_colors group_colors tcandidates reply match mbegin mend
-  local -i  same_word=1 colorful=0
-  local -Ua duplicate_groups=()
-  local -A word_map=()
-
-  (( $#_ftb_compcap == 0 )) && return
-
-  _fzf_tab_get -s show-group show_group
-  _fzf_tab_get -a group-colors group_colors
-  _fzf_tab_get -s no-group-color no_group_color
-  _fzf_tab_get -s prefix prefix
-
-  zstyle -a ":completion:$_ftb_curcontext" list-colors list_colors
-  if (( $+builtins[fzf-tab-colorize] )); then
-    fzf-tab-colorize -c list_colors
-  else
-    local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
-    local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
-  fi
-
-  if (( $#_ftb_groups == 1 )); then
-    _fzf_tab_get -m single-group prefix || prefix=''
-    _fzf_tab_get -m single-group color || group_colors=($no_group_color)
-  fi
-
-  for k _v in "${(@ps:\2:)_ftb_compcap}"; do
-    local -A v=("${(@0)_v}")
-    [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
-    # add character and color to describe the type of the files
-    dsuf='' dpre=''
-    if (( $+v[isfile] )); then
-      filepath=${v[IPREFIX]}${v[hpre]}$v[word]
-      filepath=${(Q)${(e)~filepath}}
-      if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
-        fzf-tab-colorize $filepath 2>/dev/null
-        dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
-        if [[ $reply[4] ]]; then
-          dsuf+=" -> $reply[4]"
-        fi
-        [[ $dpre ]] && colorful=1
-      else
-        if [[ -d $filepath ]]; then
-          dsuf=/
-        fi
-        # add color and resolve symlink if have list-colors
-        # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-        if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
-          _fzf_tab_colorize $filepath
-          colorful=1
-        elif [[ -L $filepath ]]; then
-          dsuf=@
-        fi
-        if [[ $options[list_types] == off ]]; then
-          dsuf=''
-        fi
-      fi
-    fi
-
-    # add color to description if they have group index
-    if (( $+v[group] )); then
-      local color=$group_colors[$v[group]]
-      # add a hidden group index at start of string to keep group order when sorting
-      # first group index is for builtin sort, sencond is for GNU sort
-      tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
-    else
-      tcandidates+=$no_group_color$dpre$'\0'$k$'\0'$dsuf
-    fi
-
-    # check group with duplicate member
-    if [[ $show_group == brief ]]; then
-      if (( $+word_map[$v[word]] && $+v[group] )); then
-        duplicate_groups+=$v[group]            # add this group
-        duplicate_groups+=$word_map[$v[word]]  # add previous group
-      fi
-      word_map[$v[word]]=$v[group]
-    fi
-  done
-  (( same_word )) && tcandidates[2,-1]=()
-
-  # sort and remove sort group or other index
-  zstyle -T ":completion:$_ftb_curcontext" sort
-  if (( $? != 1 )); then
-    if (( colorful )); then
-      # if enable list_colors, we should skip the first field
-      if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
-        # this is faster but doesn't work if `find` is from busybox
-        tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
-      else
-        # slower but portable
-        tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
-        tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
-      fi
-    else
-      tcandidates=("${(@o)tcandidates}")
-    fi
-  fi
-  typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
-
-  # hide needless group
-  if [[ $show_group == brief && -n ${_ftb_groups[@]} ]]; then
-    local i indexs=({1..$#_ftb_groups})
-    for i in ${indexs:|duplicate_groups}; do
-      # NOTE: _ftb_groups is unique array
-      _ftb_groups[i]="__hide__$i"
-    done
-  fi
-}
-
 _fzf_tab_complete() {
   local -a _ftb_compcap
   local -Ua _ftb_groups
@@ -380,20 +255,20 @@ _fzf_tab_complete() {
 
   emulate -L zsh -o extended_glob
 
-  local query candidates=() headers=() command opts
-  _fzf_tab_get_candidates  # sets `candidates`
+  local query _ftb_complist=() headers=() command opts
+  -ftb-generate-complist # sets `_ftb_complist`
 
-  case $#candidates in
+  case $#_ftb_complist in
     0) return;;
     # NOTE: won't trigger continuous completion
     1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
     *)
       _fzf_tab_find_query_str  # sets `query`
       _fzf_tab_get_headers     # sets `headers`
-      zstyle -s ":fzf-tab:$_ftb_curcontext" continuous-trigger continus_trigger || continous_trigger=/
-      zstyle -s ":fzf-tab:$_ftb_curcontext" print-query print_query || print_query=alt-enter
+      -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
+      -ftb-zstyle -s print-query print_query || print_query=alt-enter
 
-      print -l $headers $candidates | -ftb-fzf
+      print -rl -- $headers $_ftb_complist | -ftb-fzf
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then

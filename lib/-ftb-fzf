@@ -8,8 +8,8 @@ zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-bindings tmp && binds+=:${(j|:|)tmp}
 zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-flags fzf_flags
 
 [[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
-print -l $_ftb_compcap > /tmp/fzf-tab/compcap.$$
-print -l $_ftb_groups  > /tmp/fzf-tab/groups.$$
+print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$
+print -rl -- $_ftb_groups  > /tmp/fzf-tab/groups.$$
 
 typeset -g choices
 choices="$($fzf_command \
@@ -18,7 +18,7 @@ choices="$($fzf_command \
   --color=hl:$(( $#headers == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \
-  --expect=$continous_trigger,$print_query \
+  --expect=$continuous_trigger,$print_query \
   --header-lines=$#headers \
   --height=${FZF_TMUX_HEIGHT:=57%} \
   --layout=reverse \

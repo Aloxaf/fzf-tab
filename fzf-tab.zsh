@@ -47,8 +47,7 @@ _fzf_tab_compadd() {
              J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
   # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-  zstyle -t ":fzf-tab:${curcontext#:}" ignore
-  if (( $#_oad != 0 || ! IN_FZF_TAB || ! $? )); then
+  if (( $#_oad != 0 || ! IN_FZF_TAB )); then
     builtin compadd "$@"
     return
   fi
@@ -158,7 +157,6 @@ _fzf_tab_get() {
 
   # Some users may still use variable
   _fzf_tab_add_default continuous-trigger ${FZF_TAB_CONTINUOUS_TRIGGER:-'/'}
-  _fzf_tab_add_default insert-space ${FZF_TAB_INSERT_SPACE:-true}
   _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
   _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
   _fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
@@ -166,7 +164,6 @@ _fzf_tab_get() {
   _fzf_tab_add_default extra-opts ''
   _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
   _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
-  _fzf_tab_add_default ignore false
   _fzf_tab_add_default print-query alt-enter
   _fzf_tab_add_default popup-pad 0 0
 
@@ -404,23 +401,11 @@ _fzf_tab_get_candidates() {
 _fzf_tab_complete() {
   local -a _fzf_tab_compcap
   local -Ua _fzf_tab_groups
-  local choice choices _fzf_tab_curcontext continuous_trigger ignore bs=$'\2' nul=$'\0'
+  local choice choices _fzf_tab_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   _fzf_tab__main_complete "$@" # must run with user options; don't move `emulate -L zsh` above this line
 
   emulate -L zsh -o extended_glob
-
-  # check if we should fall back to zsh builtin completion system
-  if (( _fzf_tab_ignored )); then
-    return
-  fi
-  _fzf_tab_get -s ignore ignore
-  if [[ $ignore == <-> ]] && (( $ignore > 1 && $ignore >= $#_fzf_tab_compcap )); then
-    _fzf_tab_ignored=1
-    compstate[list]=''
-    compstate[insert]=''
-    return
-  fi
 
   local query candidates=() headers=() command opts
   _fzf_tab_get_candidates  # sets `candidates`
@@ -464,8 +449,7 @@ _fzf_tab_complete() {
         builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
 
         compstate[list]= compstate[insert]='2'
-        _fzf_tab_get -t insert-space
-        (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+        [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         return
       fi
       choices[1]=()
@@ -493,8 +477,7 @@ _fzf_tab_complete() {
   compstate[insert]=
   if (( $#choices == 1 )); then
     compstate[insert]='2'
-    _fzf_tab_get -t insert-space
-    (( $? )) || [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+    [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
   elif (( $#choices > 1 )); then
     compstate[insert]='all'
   fi
@@ -502,7 +485,7 @@ _fzf_tab_complete() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _fzf_tab_continue=1 _fzf_tab_ignored=0
+  local -i _fzf_tab_continue=1
   while (( _fzf_tab_continue )); do
     _fzf_tab_continue=0
     local IN_FZF_TAB=1
@@ -511,10 +494,6 @@ fzf-tab-complete() {
     } always {
       IN_FZF_TAB=0
     }
-    if (( _fzf_tab_ignored )); then
-      zle .fzf-tab-orig-$_fzf_tab_orig_widget
-      return
-    fi
     if (( _fzf_tab_continue )); then
       zle .split-undo
       zle .reset-prompt

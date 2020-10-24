@@ -91,7 +91,9 @@ _fzf_tab_compadd() {
     __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
     # Hook defined by user to alter the description of the completion
-    fzf_tab_compadd_hook
+    if typeset -f fzf_tab_compadd_hook > /dev/null; then
+      fzf_tab_compadd_hook
+    fi
 
     # dscr - the string to show to users
     # word - the string to be inserted

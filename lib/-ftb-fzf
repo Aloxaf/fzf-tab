@@ -1,0 +1,34 @@
+#!/hint/zsh
+
+local binds=tab:down,btab:up,change:top,ctrl-space:toggle
+local fzf_command fzf_flags tmp
+
+zstyle -s ":fzf-tab:$_ftb_curcontext" fzf-command fzf_command || fzf_command=fzf
+zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-bindings tmp && binds+=:${(j|:|)tmp}
+zstyle -a ":fzf-tab:$_ftb_curcontext" fzf-flags fzf_flags
+
+[[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
+print -l $_ftb_compcap > /tmp/fzf-tab/compcap.$$
+print -l $_ftb_groups  > /tmp/fzf-tab/groups.$$
+
+typeset -g choices
+choices="$($fzf_command \
+  --ansi \
+  --bind=$binds \
+  --color=hl:$(( $#headers == 0 ? 188 : 255 )) \
+  --cycle \
+  --delimiter='\x00' \
+  --expect=$continous_trigger,$print_query \
+  --header-lines=$#headers \
+  --height=${FZF_TMUX_HEIGHT:=57%} \
+  --layout=reverse \
+  --multi \
+  --nth=2,3 \
+  --print-query \
+  --query=$query \
+  --tiebreak=begin \
+  $fzf_flags
+)"
+choices=("${(@f)choices}")
+
+command rm /tmp/fzf-tab/{compcap,groups}.$$ 2>/dev/null

@@ -12,19 +12,19 @@ zmodload -F zsh/stat b:zstat
 0="${${(M)0:#/*}:-$PWD/$0}"
 FZF_TAB_HOME=${0:h}
 
-autoload -Uz $FZF_TAB_HOME/fzf-tmux-popup
+autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-ftb*
 source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 typeset -g fzf_tab_preview_init="
-local -a _fzf_tab_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
-local -a _fzf_tab_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
+local -a _ftb_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
+local -a _ftb_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
 local bs=\$'\2'
 # get descriptoin
 local desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
-local -A ctxt=(\"\${(@0)\${_fzf_tab_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
+local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
-local group=\$_fzf_tab_groups[\$ctxt[group]]
+local group=\$_ftb_groups[\$ctxt[group]]
 # get real path if it is file
 if (( \$+ctxt[isfile] )); then
   local realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
@@ -64,15 +64,15 @@ _fzf_tab_compadd() {
   fi
 
   # store $curcontext for furthur usage
-  _fzf_tab_curcontext=${curcontext#:}
+  _ftb_curcontext=${curcontext#:}
 
   # only store the fist `-X`
   expl=$expl[2]
 
   # keep order of group description
-  [[ -n $expl ]] && _fzf_tab_groups+=$expl
+  [[ -n $expl ]] && _ftb_groups+=$expl
 
-  # store these values in _fzf_tab_compcap
+  # store these values in _ftb_compcap
   local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
   for key in $keys; do
@@ -83,7 +83,7 @@ _fzf_tab_compadd() {
   done
   if [[ $expl ]]; then
     # store group index
-    __tmp_value+=$'\0group\0'$_fzf_tab_groups[(ie)$expl]
+    __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
   fi
   _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
   __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
@@ -98,7 +98,7 @@ _fzf_tab_compadd() {
     elif [[ -n $word ]]; then
       dscr=$word
     fi
-    _fzf_tab_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
+    _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
   done
 
   # tell zsh that the match is successful
@@ -112,39 +112,14 @@ _fzf_tab_remove_space() {
   [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
 }
 
-_check_fzf_tab_opts() {
-  local ret=0
-  if (( $+FZF_TAB_COMMAND )); then
-    if (( ${FZF_TAB_COMMAND[(I)--print-query]} == 0 )); then
-      print -P '%F{red}[fzf-tab] `--print-query` is needed for fzf-tab command.\nSee https://github.com/Aloxaf/fzf-tab/pull/106.%f'
-      ret=1
-    fi
-  else
-    ret=1
-  fi
-  return $ret
-}
-
 : ${(A)=FZF_TAB_GROUP_COLORS=\
        $'\033[94m' $'\033[32m' $'\033[33m' $'\033[35m' $'\033[31m' $'\033[38;5;27m' $'\033[36m' \
        $'\033[38;5;100m' $'\033[38;5;98m' $'\033[91m' $'\033[38;5;80m' $'\033[92m' \
        $'\033[38;5;214m' $'\033[38;5;165m' $'\033[38;5;124m' $'\033[38;5;120m'
   }
-_check_fzf_tab_opts || FZF_TAB_COMMAND=(
-    fzf
-    --ansi   # Enable ANSI color support, necessary for showing groups
-    --expect='$continuous_trigger,$print_query' # For continuous completion
-    '--color=hl:$(( $#headers == 0 ? 108 : 255 ))'
-    --nth=2,3 --delimiter='\x00'  # Don't search prefix
-    --layout=reverse --height='${FZF_TMUX_HEIGHT:=75%}'
-    --tiebreak=begin -m --bind=tab:down,btab:up,change:top,ctrl-space:toggle --cycle
-    '--query=$query'   # $query will be expanded to query string at runtime.
-    '--header-lines=$#headers' # $#headers will be expanded to lines of headers at runtime
-    --print-query
-  )
 
 _fzf_tab_get() {
-  zstyle $1 ":fzf-tab:$_fzf_tab_curcontext" ${@:2}
+  zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
 }
 
 () {
@@ -160,8 +135,6 @@ _fzf_tab_get() {
   _fzf_tab_add_default query-string ${(A)=FZF_TAB_QUERY:-prefix input first}
   _fzf_tab_add_default single-group ${(A)=FZF_TAB_SINGLE_GROUP:-color header}
   _fzf_tab_add_default show-group ${FZF_TAB_SHOW_GROUP:-full}
-  _fzf_tab_add_default command ${FZF_TAB_COMMAND:-fzf} $FZF_TAB_OPTS
-  _fzf_tab_add_default extra-opts ''
   _fzf_tab_add_default no-group-color ${FZF_TAB_NO_GROUP_COLOR:-$'\033[37m'}
   _fzf_tab_add_default group-colors $FZF_TAB_GROUP_COLORS
   _fzf_tab_add_default print-query alt-enter
@@ -184,7 +157,7 @@ _fzf_tab_find_query_str() {
   for qtype in $query_string; do
     if [[ $qtype == prefix ]]; then
       # find the longest common prefix among descriptions
-      local -a keys=(${_fzf_tab_compcap%$'\2'*})
+      local -a keys=(${_ftb_compcap%$'\2'*})
       tmp=$keys[1]
       local MATCH match mbegin mend prefix=(${(s::)tmp})
       for key in ${keys:1}; do
@@ -198,7 +171,7 @@ _fzf_tab_find_query_str() {
         prefix[$#MATCH/2+1,-1]=()
       done
     elif [[ $qtype == input ]]; then
-      local fv=${_fzf_tab_compcap[1]#*$'\2'}
+      local fv=${_ftb_compcap[1]#*$'\2'}
       local -A v=("${(@0)fv}")
       tmp=$v[PREFIX]
       if (( $RBUFFER[(i)$v[SUFFIX]] != 1 )); then
@@ -220,31 +193,31 @@ _fzf_tab_get_headers() {
   local i tmp group_colors
   local -i mlen=0 len=0
 
-  if (( $#_fzf_tab_groups == 1 )) && { ! _fzf_tab_get -m single-group "header" }; then
+  if (( $#_ftb_groups == 1 )) && { ! _fzf_tab_get -m single-group "header" }; then
     return
   fi
 
   # calculate the max column width
-  for i in $_fzf_tab_groups; do
+  for i in $_ftb_groups; do
     (( $#i > mlen )) && mlen=$#i
   done
   mlen+=1
 
   _fzf_tab_get -a group-colors group_colors
 
-  for (( i=1; i<=$#_fzf_tab_groups; i++ )); do
-    [[ $_fzf_tab_groups[i] == "__hide__"* ]] && continue
+  for (( i=1; i<=$#_ftb_groups; i++ )); do
+    [[ $_ftb_groups[i] == "__hide__"* ]] && continue
 
-    if (( len + $#_fzf_tab_groups[i] > COLUMNS - 5 )); then
+    if (( len + $#_ftb_groups[i] > COLUMNS - 5 )); then
       headers+=$tmp
       tmp='' && len=0
     fi
     if (( len + mlen > COLUMNS - 5 )); then
       # the last column doesn't need padding
-      headers+=$tmp$group_colors[i]$_fzf_tab_groups[i]$'\033[00m'
+      headers+=$tmp$group_colors[i]$_ftb_groups[i]$'\033[00m'
       tmp='' && len=0
     else
-      tmp+=$group_colors[i]${(r:$mlen:)_fzf_tab_groups[i]}$'\033[00m'
+      tmp+=$group_colors[i]${(r:$mlen:)_ftb_groups[i]}$'\033[00m'
       len+=$mlen
     fi
   done
@@ -295,14 +268,14 @@ _fzf_tab_get_candidates() {
   local -Ua duplicate_groups=()
   local -A word_map=()
 
-  (( $#_fzf_tab_compcap == 0 )) && return
+  (( $#_ftb_compcap == 0 )) && return
 
   _fzf_tab_get -s show-group show_group
   _fzf_tab_get -a group-colors group_colors
   _fzf_tab_get -s no-group-color no_group_color
   _fzf_tab_get -s prefix prefix
 
-  zstyle -a ":completion:$_fzf_tab_curcontext" list-colors list_colors
+  zstyle -a ":completion:$_ftb_curcontext" list-colors list_colors
   if (( $+builtins[fzf-tab-colorize] )); then
     fzf-tab-colorize -c list_colors
   else
@@ -310,12 +283,12 @@ _fzf_tab_get_candidates() {
     local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
   fi
 
-  if (( $#_fzf_tab_groups == 1 )); then
+  if (( $#_ftb_groups == 1 )); then
     _fzf_tab_get -m single-group prefix || prefix=''
     _fzf_tab_get -m single-group color || group_colors=($no_group_color)
   fi
 
-  for k _v in "${(@ps:\2:)_fzf_tab_compcap}"; do
+  for k _v in "${(@ps:\2:)_ftb_compcap}"; do
     local -A v=("${(@0)_v}")
     [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
     # add character and color to describe the type of the files
@@ -370,7 +343,7 @@ _fzf_tab_get_candidates() {
   (( same_word )) && tcandidates[2,-1]=()
 
   # sort and remove sort group or other index
-  zstyle -T ":completion:$_fzf_tab_curcontext" sort
+  zstyle -T ":completion:$_ftb_curcontext" sort
   if (( $? != 1 )); then
     if (( colorful )); then
       # if enable list_colors, we should skip the first field
@@ -389,19 +362,19 @@ _fzf_tab_get_candidates() {
   typeset -gUa candidates=("${(@)tcandidates//[0-9]#$bs}")
 
   # hide needless group
-  if [[ $show_group == brief && -n ${_fzf_tab_groups[@]} ]]; then
-    local i indexs=({1..$#_fzf_tab_groups})
+  if [[ $show_group == brief && -n ${_ftb_groups[@]} ]]; then
+    local i indexs=({1..$#_ftb_groups})
     for i in ${indexs:|duplicate_groups}; do
-      # NOTE: _fzf_tab_groups is unique array
-      _fzf_tab_groups[i]="__hide__$i"
+      # NOTE: _ftb_groups is unique array
+      _ftb_groups[i]="__hide__$i"
     done
   fi
 }
 
 _fzf_tab_complete() {
-  local -a _fzf_tab_compcap
-  local -Ua _fzf_tab_groups
-  local choice choices _fzf_tab_curcontext continuous_trigger bs=$'\2' nul=$'\0'
+  local -a _ftb_compcap
+  local -Ua _ftb_groups
+  local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   _fzf_tab__main_complete "$@" # must run with user options; don't move `emulate -L zsh` above this line
 
@@ -413,35 +386,18 @@ _fzf_tab_complete() {
   case $#candidates in
     0) return;;
     # NOTE: won't trigger continuous completion
-    1) choices=("EXPECT_KEY" "${_fzf_tab_compcap[1]%$bs*}");;
+    1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
     *)
       _fzf_tab_find_query_str  # sets `query`
       _fzf_tab_get_headers     # sets `headers`
-      _fzf_tab_get -s continuous-trigger continuous_trigger
-      _fzf_tab_get -a command command
-      _fzf_tab_get -s print-query print_query
-      _fzf_tab_get -a extra-opts opts
+      zstyle -s ":fzf-tab:$_ftb_curcontext" continuous-trigger continus_trigger || continous_trigger=/
+      zstyle -s ":fzf-tab:$_ftb_curcontext" print-query print_query || print_query=alt-enter
 
-      # export some variables for previewing
-      [[ -d /tmp/fzf-tab ]] || mkdir -p /tmp/fzf-tab
-      echo -E ${(pj:\n:)_fzf_tab_compcap} > /tmp/fzf-tab/compcap.$$
-      echo -E ${(pj:\n:)_fzf_tab_groups} > /tmp/fzf-tab/groups.$$
-      # TODO: this is deprecated and should be removed in the future
-      export CTXT=${${_fzf_tab_compcap[1]#*$'\2'}//$'\0'/$'\2'}
-
-      if (( $#headers )); then
-        choices=$(${(eX)command} $opts <<<${(pj:\n:)headers} <<<${(pj:\n:)candidates})
-      else
-        choices=$(${(eX)command} $opts <<<${(pj:\n:)candidates})
-      fi
-      choices=("${(@f)choices}")
-
-      # remember to clean
-      command rm /tmp/fzf-tab/{compcap,groups}.$$
+      print -l $headers $candidates | -ftb-fzf
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
-        local -A v=("${(@0)${_fzf_tab_compcap[1]}}")
+        local -A v=("${(@0)${_ftb_compcap[1]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
@@ -466,7 +422,7 @@ _fzf_tab_complete() {
   choices[1]=()
 
   for choice in "$choices[@]"; do
-    local -A v=("${(@0)${_fzf_tab_compcap[(r)${(b)choice}$bs*]#*$bs}}")
+    local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
     local -a args=("${(@ps:\1:)v[args]}")
     [[ -z $args[1] ]] && args=()  # don't pass an empty string
     IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]

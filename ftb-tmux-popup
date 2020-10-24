@@ -15,7 +15,7 @@ cat > /tmp/fzf-tab/list-$$
 
 local text REPLY comp_lines comp_length length popup_pad
 
-zstyle -a ":fzf-tab:$_fzf_tab_curcontext" popup-pad popup_pad
+zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)"$(</tmp/fzf-tab/list-$$)"}} + ${popup_pad[(w)2]:-0} ))

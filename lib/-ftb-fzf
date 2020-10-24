@@ -18,12 +18,18 @@ fi
 export word=\$ctxt[word]
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags fzf_preview tmp
+local fzf_command fzf_flags fzf_preview debug_command tmp
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
 -ftb-zstyle -a fzf-bindings tmp && binds+=:${(j|:|)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
+
+-ftb-zstyle -a debug-command debug_command && {
+  typeset -g choices=("$(${(eX)debug_command} $fzf_flags)")
+  choices=("${(@f)choices}")
+  return
+}
 
 [[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
 print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$

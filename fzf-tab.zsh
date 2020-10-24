@@ -5,22 +5,6 @@
 [[ ! -o 'no_brace_expand' ]] || _ftb_opts+=('no_brace_expand')
 'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
 
-zmodload zsh/zutil
-zmodload -F zsh/stat b:zstat
-
-0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
-0="${${(M)0:#/*}:-$PWD/$0}"
-FZF_TAB_HOME=${0:h}
-
-autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
-source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
-
-typeset -ga _ftb_group_colors=(
-  $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
-  $'\x1b[38;5;100m' $'\x1b[38;5;98m' $'\x1b[91m' $'\x1b[38;5;80m' $'\x1b[92m'
-  $'\x1b[38;5;214m' $'\x1b[38;5;165m' $'\x1b[38;5;124m' $'\x1b[38;5;120m'
-)
-
 # thanks Valodim/zsh-capture-completion
 -ftb-compadd() {
   # parse all options
@@ -292,9 +276,26 @@ build-fzf-tab-module() {
   popd
 }
 
+zmodload zsh/zutil
+zmodload -F zsh/stat b:zstat
+
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+FZF_TAB_HOME=${0:h}
+
+source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
+
+typeset -ga _ftb_group_colors=(
+  $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
+  $'\x1b[38;5;100m' $'\x1b[38;5;98m' $'\x1b[91m' $'\x1b[38;5;80m' $'\x1b[92m'
+  $'\x1b[38;5;214m' $'\x1b[38;5;165m' $'\x1b[38;5;124m' $'\x1b[38;5;120m'
+)
+
 # init
 () {
   emulate -L zsh -o extended_glob
+
+  autoload -Uz $FZF_TAB_HOME/ftb-tmux-popup $FZF_TAB_HOME/lib/-#ftb*
 
   -ftb-zstyle-add() {
     zstyle -t ':fzf-tab:*' $1

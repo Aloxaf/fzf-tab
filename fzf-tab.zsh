@@ -56,18 +56,22 @@
   _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
   __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
-  # dscr - the string to show to users
-  # word - the string to be inserted
-  local dscr word i
-  for i in {1..$#__hits}; do
-    word=$__hits[i] dscr=$__dscr[i]
-    if [[ -n $dscr ]]; then
-      dscr=${dscr//$'\n'}
-    elif [[ -n $word ]]; then
-      dscr=$word
-    fi
-    _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
-  done
+  if (( $+builtins[fzf-tab-compcap-generate] )); then
+    fzf-tab-compcap-generate __hits __dscr __tmp_value
+  else
+    # dscr - the string to show to users
+    # word - the string to be inserted
+    local dscr word i
+    for i in {1..$#__hits}; do
+      word=$__hits[i] dscr=$__dscr[i]
+      if [[ -n $dscr ]]; then
+        dscr=${dscr//$'\n'}
+      elif [[ -n $word ]]; then
+        dscr=$word
+      fi
+      _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
+    done
+  fi
 
   # tell zsh that the match is successful
   builtin compadd -U -qS '' -R -ftb-remove-space ''
@@ -90,7 +94,9 @@
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
+  fzf-tab-compcap-generate -i
   COLUMNS=500 _ftb__main_complete "$@"
+  fzf-tab-compcap-generate -o
 
   emulate -L zsh -o extended_glob
 
@@ -310,7 +316,7 @@ typeset -ga _ftb_group_colors=(
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 
-    if [[ $FZF_TAB_MODULE_VERSION != "0.1.1" ]]; then
+    if [[ $FZF_TAB_MODULE_VERSION != "0.2.1" ]]; then
       zmodload -u aloxaf/fzftab
       local rebuild
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"

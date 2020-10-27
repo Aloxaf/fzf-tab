@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: run test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: install zsh
+        run: sudo apt-get install zsh
+
+      - name: test completion
+        run: cd test && zsh runtests.zsh fzftab.ztst
+
+      - name: test binary module
+        run: |
+          zsh -ic 'source ./fzf-tab.zsh && build-fzf-tab-module'
+          cd test && zsh runtests.zsh fzftab.ztst
+

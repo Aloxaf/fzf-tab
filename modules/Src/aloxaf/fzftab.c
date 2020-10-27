@@ -397,39 +397,43 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         }
     }
 
-    char** _ftb_compcap = getaparam("_ftb_compcap");
-    size_t _ftb_compcap_len = arrlen(_ftb_compcap);
-    char** candidates = zshcalloc(sizeof(char*) * (_ftb_compcap_len + 1));
+    char **ftb_compcap = getaparam("_ftb_compcap"), **group_colors = getaparam("group_colors"),
+         *default_color = getsparam("default_color"), *prefix = getsparam("prefix");
 
-    char** group_colors = getaparam("group_colors");
-    char *default_color = getsparam("default_color"), *prefix = getsparam("prefix");
-    char *bs = metafy("\b", 1, META_DUP), *nul = metafy("\0", 1, META_DUP);
+    size_t ftb_compcap_len = arrlen(ftb_compcap);
+
+    char *bs = metafy("\b", 1, META_DUP), *nul = metafy("\0", 1, META_DUP),
+         *soh = metafy("\2", 1, META_DUP);
+
+    char **candidates = zshcalloc(sizeof(char*) * (ftb_compcap_len + 1)), *dpre = zshcalloc(128),
+         *dsuf = zshcalloc(128), *filepath = zshcalloc(PATH_MAX * sizeof(char));
+
     char* first_word = NULL;
-    char* filepath = zalloc(PATH_MAX * sizeof(char));
-
     int same_word = 1;
 
-    for (int i = 0; i < _ftb_compcap_len; i++) {
+    for (int i = 0; i < ftb_compcap_len; i++) {
         // TODO: is 512 big enough?
         char* result = zshcalloc(512 * sizeof(char));
+        char *word = "", *iprefix = "", *hpre = "", *group = NULL, *isfile = NULL;
+        strcpy(dpre, "");
+        strcpy(dsuf, "");
 
         // extract all the variables what we need
-        char** tmp = sepsplit(_ftb_compcap[i], metafy("\2", 1, META_DUP), 1, 1);
-        char* desc = tmp[0];
-        tmp = sepsplit(tmp[1], metafy("\0", 1, META_DUP), 1, 1);
-        char *word = "", *iprefix = "", *hpre = "", *dpre = zshcalloc(128), *dsuf = zshcalloc(128),
-             *group = NULL, *isfile = NULL;
-        for (int j = 0; tmp[j]; j += 2) {
-            if (!strcmp(tmp[j], "word")) {
-                word = tmp[j + 1];
-            } else if (!strcmp(tmp[j], "IPREFIX")) {
-                iprefix = tmp[j + 1];
-            } else if (!strcmp(tmp[j], "hpre")) {
-                hpre = tmp[j + 1];
-            } else if (!strcmp(tmp[j], "group")) {
-                group = tmp[j + 1];
-            } else if (!strcmp(tmp[j], "isfile")) {
-                isfile = tmp[j + 1];
+        char** compcap = sepsplit(ftb_compcap[i], soh, 1, 0);
+        char* desc = compcap[0];
+        char** info = sepsplit(compcap[1], nul, 1, 0);
+
+        for (int j = 0; info[j]; j += 2) {
+            if (!strcmp(info[j], "word")) {
+                word = info[j + 1];
+            } else if (!strcmp(info[j], "IPREFIX")) {
+                iprefix = info[j + 1];
+            } else if (!strcmp(info[j], "hpre")) {
+                hpre = info[j + 1];
+            } else if (!strcmp(info[j], "group")) {
+                group = info[j + 1];
+            } else if (!strcmp(info[j], "isfile")) {
+                isfile = info[j + 1];
             }
         }
 
@@ -472,14 +476,15 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         // putchar('\n');
         candidates[i] = result;
 
-        zsfree(dpre);
-        zsfree(dsuf);
+        freearray(info);
+        freearray(compcap);
     }
 
     setaparam("tcandidates", candidates);
     setiparam("same_word", same_word);
-    zsfree(bs);
-    zsfree(nul);
+    zsfree(dpre);
+    zsfree(dsuf);
+    zsfree(filepath);
 
     return 0;
 }

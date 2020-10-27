@@ -113,7 +113,9 @@
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
 
-      print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf
+      # NOTE: Using pipe here causes an error "failed to read /dev/tty"
+      # when _ftb_complist is long
+      -ftb-fzf < <(print -rl -- $_ftb_headers $_ftb_complist)
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then

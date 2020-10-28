@@ -9,7 +9,9 @@ export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
-export group=\$_ftb_groups[\$ctxt[group]]
+if (( \$+ctxt[group] )); then
+  export group=\$_ftb_groups[\$ctxt[group]]
+fi
 # get real path if it is file
 if (( \$+ctxt[isfile] )); then
   export realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}

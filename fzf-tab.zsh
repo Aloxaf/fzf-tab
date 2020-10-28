@@ -41,7 +41,7 @@
   [[ -n $expl ]] && _ftb_groups+=$expl
 
   # store these values in _ftb_compcap
-  local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
+  local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
   for key in $keys; do
     expanded=${(P)key}
@@ -52,6 +52,10 @@
   if [[ $expl ]]; then
     # store group index
     __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
+  fi
+  if [[ $isfile ]]; then
+    # NOTE: need a extra ${} here or ~ expansion won't work
+    __tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
   fi
   _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
   __tmp_value+=$'\0args\0'${(pj:\1:)_opts}

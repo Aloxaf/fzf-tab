@@ -414,7 +414,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     for (int i = 0; i < ftb_compcap_len; i++) {
         // TODO: is 512 big enough?
         char* result = zshcalloc(512 * sizeof(char));
-        char *word = "", *iprefix = "", *hpre = "", *group = NULL, *isfile = NULL;
+        char *word = "", *group = NULL, *realdir = NULL;
         strcpy(dpre, "");
         strcpy(dsuf, "");
 
@@ -426,14 +426,14 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         for (int j = 0; info[j]; j += 2) {
             if (!strcmp(info[j], "word")) {
                 word = info[j + 1];
-            } else if (!strcmp(info[j], "IPREFIX")) {
-                iprefix = info[j + 1];
-            } else if (!strcmp(info[j], "hpre")) {
-                hpre = info[j + 1];
+                // unquote word
+                parse_subst_string(word);
+                remnulargs(word);
+                untokenize(word);
             } else if (!strcmp(info[j], "group")) {
                 group = info[j + 1];
-            } else if (!strcmp(info[j], "isfile")) {
-                isfile = info[j + 1];
+            } else if (!strcmp(info[j], "realdir")) {
+                realdir = info[j + 1];
             }
         }
 
@@ -445,9 +445,8 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         }
 
         // add character and color to describe the type of the files
-        if (isfile) {
-            ftb_strcat(filepath, 3, iprefix, hpre, word);
-            // TODO: filepath=${(Q)${(e)~filepath}}
+        if (realdir) {
+            ftb_strcat(filepath, 2, realdir, word);
             char** reply = fzf_tab_colorize(filepath);
             if (reply != NULL) {
                 ftb_strcat(dpre, 2, reply[1], reply[0]);

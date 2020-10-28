@@ -11,8 +11,8 @@ local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
 export group=\$_ftb_groups[\$ctxt[group]]
 # get real path if it is file
-if (( \$+ctxt[isfile] )); then
-  export realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
+if (( \$+ctxt[realdir] )); then
+  export realpath=\${ctxt[realdir]}\${(Q)desc}
 fi
 # get original word
 export word=\$ctxt[word]

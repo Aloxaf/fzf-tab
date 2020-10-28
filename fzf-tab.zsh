@@ -94,9 +94,9 @@
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
-  fzf-tab-compcap-generate -i
+  (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i
   COLUMNS=500 _ftb__main_complete "$@"
-  fzf-tab-compcap-generate -o
+  (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -o
 
   emulate -L zsh -o extended_glob
 

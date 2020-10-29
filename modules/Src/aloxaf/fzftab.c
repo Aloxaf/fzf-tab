@@ -1,14 +1,17 @@
 #include "fzftab.mdh"
 #include "fzftab.pro"
+#include <stdarg.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-const char* get_color(const char* file, const struct stat* sb);
-const char* get_suffix(const char* file, const struct stat* sb);
-const char* colorize_from_mode(const char* file, const struct stat* sb);
-const char* colorize_from_name(const char* file);
+const char* get_color(char* file, const struct stat* sb);
+const char* get_suffix(char* file, const struct stat* sb);
+const char* colorize_from_mode(char* file, const struct stat* sb);
+const char* colorize_from_name(char* file);
+char** fzf_tab_colorize(char* file);
 int compile_patterns(char* nam, char** list_colors);
+char* ftb_strcat(char* dst, int n, ...);
 
 /* Indixes into the terminal string arrays. */
 #define COL_NO 0
@@ -48,7 +51,7 @@ static char* defcols[]
     = { "0", "0", "1;31", "1;36", "33", "1;35", "1;33", "1;33", NULL, NULL, "37;41", "30;43",
           "30;42", "34;42", "37;44", "1;32", "\033[", "m", NULL, "0", "0", "7", NULL, NULL, "0" };
 
-static char *fzf_tab_module_version;
+static char* fzf_tab_module_version;
 
 struct pattern {
     Patprog pat;
@@ -118,121 +121,21 @@ int compile_patterns(char* nam, char** list_colors)
     return 0;
 }
 
-// local -a LIST_COLORS=(xxx)
-// colorize -c LIST_COLORS
-// colorize file
-// echo $reply
-static int bin_fzf_tab_colorize(char* nam, char** args, Options ops, UNUSED(int func))
-{
-    char **array, *file;
-
-    if (OPT_ISSET(ops, 'c')) {
-        // compile
-        if (*args == NULL) {
-            zwarnnam(nam, "please specify an array");
-            return 1;
-        } else {
-            array = getaparam(*args);
-            return compile_patterns(nam, array);
-        }
-    }
-
-    if ((file = unmeta(*args)) == NULL) {
-        zwarnnam(nam, "please specify a file name");
-        return 1;
-    }
-
-    struct stat sb;
-    if (lstat(file, &sb) == -1) {
-        zwarnnam(nam, "%s doesn't exists", file);
-        return 1;
-    }
-
-    const char* suffix = "";
-    if (isset(opt_list_type)) {
-        suffix = get_suffix(file, &sb);
-    }
-    const char* color = get_color(file, &sb);
-
-    char* symlink = "";
-    const char* symcolor = "";
-    if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-        symlink = zalloc(PATH_MAX);
-        int end = readlink(file, symlink, PATH_MAX);
-        symlink[end] = '\0';
-        if (stat(file, &sb) == -1) {
-            symcolor = mode_color[COL_OR];
-        } else {
-            char tmp[PATH_MAX];
-            realpath(file, tmp);
-            symcolor = get_color(file, &sb);
-        }
-    }
-
-    if (OPT_ISSET(ops, 'o')) {
-        printf("%s%s%s"
-               "%s"
-               "%s%s%s"
-               "%s",
-            mode_color[COL_LC], color, mode_color[COL_RC], file, mode_color[COL_LC], "0",
-            mode_color[COL_RC], suffix);
-        if (symlink[0] != '\0') {
-            printf(" -> "
-                   "%s%s%s"
-                   "%s"
-                   "%s%s%s\n",
-                mode_color[COL_LC], symcolor, mode_color[COL_RC], symlink, mode_color[COL_LC], "0",
-                mode_color[COL_RC]);
-            free(symlink);
-        }
-    } else {
-        char** reply = zalloc((4 + 1) * sizeof(char*));
-        reply[4] = NULL;
-
-        if (strlen(color) != 0) {
-            reply[0] = zalloc(128);
-            reply[1] = zalloc(128);
-            sprintf(reply[0], "%s%s%s", mode_color[COL_LC], color, mode_color[COL_RC]);
-            sprintf(reply[1], "%s%s%s", mode_color[COL_LC], "0", mode_color[COL_RC]);
-        } else {
-            reply[0] = ztrdup("");
-            reply[1] = ztrdup("");
-        }
-
-        reply[2] = ztrdup(suffix);
-
-        if (symlink[0] != '\0') {
-            reply[3] = zalloc(PATH_MAX);
-            sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor, mode_color[COL_RC],
-                symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
-            free(symlink);
-        } else {
-            reply[3] = ztrdup("");
-        }
-        for (int i = 0; i < 4; i++) {
-            reply[i] = metafy(reply[i], -1, META_REALLOC);
-        }
-        setaparam("reply", reply);
-    }
-
-    return 0;
-}
-
 // TODO: use zsh mod_export function `file_type` ?
-const char* get_suffix(const char* file, const struct stat* sb)
+const char* get_suffix(char* file, const struct stat* sb)
 {
     struct stat sb2;
     mode_t filemode = sb->st_mode;
 
-    if(S_ISBLK(filemode))
+    if (S_ISBLK(filemode))
         return "#";
-    else if(S_ISCHR(filemode))
+    else if (S_ISCHR(filemode))
         return "%";
-    else if(S_ISDIR(filemode))
+    else if (S_ISDIR(filemode))
         return "/";
-    else if(S_ISFIFO(filemode))
+    else if (S_ISFIFO(filemode))
         return "|";
-    else if(S_ISLNK(filemode))
+    else if (S_ISLNK(filemode))
         if (strpfx(mode_color[COL_LN], "target")) {
             if (stat(file, &sb2) == -1) {
                 return "@";
@@ -241,15 +144,15 @@ const char* get_suffix(const char* file, const struct stat* sb)
         } else {
             return "@";
         }
-    else if(S_ISREG(filemode))
+    else if (S_ISREG(filemode))
         return (filemode & S_IXUGO) ? "*" : "";
-    else if(S_ISSOCK(filemode))
+    else if (S_ISSOCK(filemode))
         return "=";
     else
         return "?";
 }
 
-const char* get_color(const char* file, const struct stat* sb)
+const char* get_color(char* file, const struct stat* sb)
 {
     // no list-colors, return empty color
     if (pat_cnt == 0) {
@@ -262,7 +165,7 @@ const char* get_color(const char* file, const struct stat* sb)
     return mode_color[COL_FI];
 }
 
-const char* colorize_from_name(const char* file)
+const char* colorize_from_name(char* file)
 {
     for (int i = 0; i < pat_cnt; i++) {
         if (name_color[i].pat && pattry(name_color[i].pat, file)) {
@@ -272,7 +175,7 @@ const char* colorize_from_name(const char* file)
     return NULL;
 }
 
-const char* colorize_from_mode(const char* file, const struct stat* sb)
+const char* colorize_from_mode(char* file, const struct stat* sb)
 {
     struct stat sb2;
 
@@ -327,14 +230,275 @@ const char* colorize_from_mode(const char* file, const struct stat* sb)
     return NULL;
 }
 
+struct {
+    char** array;
+    size_t len;
+    size_t size;
+} ftb_compcap, tcandidates;
+
+// Usage:
+// initialize               fzf-tab-generate-compcap -i
+// output to _ftb_compcap   fzf-tab-generate-compcap -o
+// add a entry              fzf-tab-generate-compcap word desc opts
+static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNUSED(int func))
+{
+    if (OPT_ISSET(ops, 'o')) {
+        // write final result to _ftb_compcap
+        setaparam("_ftb_compcap", ftb_compcap.array);
+        ftb_compcap.array = NULL;
+        return 0;
+    } else if (OPT_ISSET(ops, 'i')) {
+        // init
+        if (ftb_compcap.array)
+            freearray(ftb_compcap.array);
+        ftb_compcap.array = zshcalloc(1024 * sizeof(char*));
+        ftb_compcap.len = 0, ftb_compcap.size = 1024;
+        return 0;
+    }
+    if (ftb_compcap.array == NULL) {
+        zwarnnam(nam, "please initialize it first");
+        return 1;
+    }
+
+    // get paramaters
+    char **words = getaparam(args[0]), **dscrs = getaparam(args[1]), *opts = getsparam(args[2]);
+    if (!words || !dscrs || !opts) {
+        zwarnnam(nam, "wrong argument");
+        return 1;
+    }
+
+    char *bs = metafy("\2", 1, META_DUP), *nul = metafy("\0word\0", 6, META_DUP);
+    size_t opts_len = strlen(opts), dscrs_len = arrlen(dscrs), bs_len = strlen(bs),
+           nul_len = strlen(nul);
+
+    for (int i = 0; words[i]; i++) {
+        // TODO: replace '\n'
+        size_t word_len = strlen(words[i]);
+        size_t dscr_len = i < dscrs_len ? (int)strlen(dscrs[i]) : word_len;
+
+        size_t final_len
+            = dscrs_len + bs_len + opts_len + nul_len + word_len + getiparam("COLUMNS");
+        char* buffer = zshcalloc(final_len * sizeof(char));
+
+        if (i < dscrs_len) {
+            strcpy(buffer, dscrs[i]);
+        } else {
+            strcpy(buffer, words[i]);
+        }
+        strcpy(buffer + dscr_len, bs);
+        strcpy(buffer + dscr_len + bs_len, opts);
+        strcpy(buffer + dscr_len + bs_len + opts_len, nul);
+        strcpy(buffer + dscr_len + bs_len + opts_len + nul_len, words[i]);
+
+        ftb_compcap.array[ftb_compcap.len++] = buffer;
+
+        if (ftb_compcap.len == ftb_compcap.size) {
+            ftb_compcap.array
+                = zrealloc(ftb_compcap.array, (1024 + ftb_compcap.size) * sizeof(char*));
+            ftb_compcap.size += 1024;
+            memset(ftb_compcap.array + ftb_compcap.size - 1024, 0, 1024 * sizeof(char*));
+        }
+    }
+
+    zsfree(bs);
+    zsfree(nul);
+
+    return 0;
+}
+
+// cat n string, return the pointer to the end of string
+char* ftb_strcat(char* dst, int n, ...)
+{
+    va_list valist;
+    va_start(valist, n);
+
+    for (int i = 0; i < n; i++) {
+        char* src = va_arg(valist, char*);
+        for (; *src != '\0'; dst++, src++)
+            *dst = *src;
+    }
+    *dst = '\0';
+    va_end(valist);
+
+    return dst;
+}
+
+// accept an
+char** fzf_tab_colorize(char* file)
+{
+    // TODO: can avoid so many zalloc here?
+    file = unmeta(file);
+
+    struct stat sb;
+    if (lstat(file, &sb) == -1) {
+        return NULL;
+    }
+
+    const char* suffix = "";
+    if (isset(opt_list_type)) {
+        suffix = get_suffix(file, &sb);
+    }
+    const char* color = get_color(file, &sb);
+
+    char* symlink = "";
+    const char* symcolor = "";
+    if ((sb.st_mode & S_IFMT) == S_IFLNK) {
+        symlink = zalloc(PATH_MAX);
+        int end = readlink(file, symlink, PATH_MAX);
+        symlink[end] = '\0';
+        if (stat(file, &sb) == -1) {
+            symcolor = mode_color[COL_OR];
+        } else {
+            char tmp[PATH_MAX];
+            realpath(file, tmp);
+            symcolor = get_color(file, &sb);
+        }
+    }
+
+    char** reply = zshcalloc((4 + 1) * sizeof(char*));
+
+    if (strlen(color) != 0) {
+        reply[0] = zalloc(128);
+        reply[1] = zalloc(128);
+        sprintf(reply[0], "%s%s%s", mode_color[COL_LC], color, mode_color[COL_RC]);
+        sprintf(reply[1], "%s%s%s", mode_color[COL_LC], "0", mode_color[COL_RC]);
+    } else {
+        reply[0] = ztrdup("");
+        reply[1] = ztrdup("");
+    }
+
+    reply[2] = ztrdup(suffix);
+
+    if (symlink[0] != '\0') {
+        reply[3] = zalloc(PATH_MAX);
+        sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor, mode_color[COL_RC],
+            symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
+        free(symlink);
+    } else {
+        reply[3] = ztrdup("");
+    }
+    for (int i = 0; i < 4; i++) {
+        reply[i] = metafy(reply[i], -1, META_REALLOC);
+    }
+
+    return reply;
+}
+
+static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, UNUSED(int func))
+{
+    if (OPT_ISSET(ops, 'i')) {
+        // compile list_colors pattern
+        if (*args == NULL) {
+            zwarnnam(nam, "please specify an array");
+            return 1;
+        } else {
+            char** array = getaparam(*args);
+            return compile_patterns(nam, array);
+        }
+    }
+
+    char **ftb_compcap = getaparam("_ftb_compcap"), **group_colors = getaparam("group_colors"),
+         *default_color = getsparam("default_color"), *prefix = getsparam("prefix");
+
+    size_t ftb_compcap_len = arrlen(ftb_compcap);
+
+    char *bs = metafy("\b", 1, META_DUP), *nul = metafy("\0", 1, META_DUP),
+         *soh = metafy("\2", 1, META_DUP);
+
+    char **candidates = zshcalloc(sizeof(char*) * (ftb_compcap_len + 1)), *dpre = zshcalloc(128),
+         *dsuf = zshcalloc(128), *filepath = zshcalloc(PATH_MAX * sizeof(char));
+
+    char* first_word = zshcalloc(512 * sizeof(char));
+    int same_word = 1;
+
+    for (int i = 0; i < ftb_compcap_len; i++) {
+        // TODO: is 512 big enough?
+        char* result = zshcalloc(512 * sizeof(char));
+        char *word = "", *group = NULL, *realdir = NULL;
+        strcpy(dpre, "");
+        strcpy(dsuf, "");
+
+        // extract all the variables what we need
+        char** compcap = sepsplit(ftb_compcap[i], soh, 1, 0);
+        char* desc = compcap[0];
+        char** info = sepsplit(compcap[1], nul, 1, 0);
+
+        for (int j = 0; info[j]; j += 2) {
+            if (!strcmp(info[j], "word")) {
+                word = info[j + 1];
+                // unquote word
+                parse_subst_string(word);
+                remnulargs(word);
+                untokenize(word);
+            } else if (!strcmp(info[j], "group")) {
+                group = info[j + 1];
+            } else if (!strcmp(info[j], "realdir")) {
+                realdir = info[j + 1];
+            }
+        }
+
+        // check if all the words are the same
+        if (i == 0) {
+            strcpy(first_word, word);
+        } else if (same_word && strcmp(word, first_word) != 0) {
+            same_word = 0;
+        }
+
+        // add character and color to describe the type of the files
+        if (realdir) {
+            ftb_strcat(filepath, 2, realdir, word);
+            char** reply = fzf_tab_colorize(filepath);
+            if (reply != NULL) {
+                ftb_strcat(dpre, 2, reply[1], reply[0]);
+                if (reply[3][0] != '\0') {
+                    ftb_strcat(dsuf, 4, reply[1], reply[2], " -> ", reply[3]);
+                } else {
+                    ftb_strcat(dsuf, 2, reply[1], reply[2]);
+                }
+                if (dpre[0] != '\0') {
+                    setiparam("colorful", 1);
+                }
+                freearray(reply);
+            }
+        }
+
+        // add color to description if they have group index
+        if (group) {
+            // use strtol ?
+            char* color = group_colors[atoi(group) - 1];
+            // add prefix
+            ftb_strcat(result, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);
+        } else {
+            ftb_strcat(result, 6, default_color, dpre, nul, desc, nul, dsuf);
+        }
+        // quotedzputs(result, stdout);
+        // putchar('\n');
+        candidates[i] = result;
+
+        freearray(info);
+        freearray(compcap);
+    }
+
+    setaparam("tcandidates", candidates);
+    setiparam("same_word", same_word);
+    zsfree(dpre);
+    zsfree(dsuf);
+    zsfree(filepath);
+    zsfree(first_word);
+
+    return 0;
+}
+
 static struct builtin bintab[] = {
-    BUILTIN("fzf-tab-colorize", 0, bin_fzf_tab_colorize, 0, -1, 0, "cvo", NULL),
+    BUILTIN("fzf-tab-compcap-generate", 0, bin_fzf_tab_compcap_generate, 0, -1, 0, "io", NULL),
+    BUILTIN("fzf-tab-candidates-generate", 0, bin_fzf_tab_candidates_generate, 0, -1, 0, "i", NULL),
 };
 
 static struct paramdef patab[] = {
     STRPARAMDEF("FZF_TAB_MODULE_VERSION", &fzf_tab_module_version),
 };
 
+// clang-format off
 static struct features module_features = {
     bintab, sizeof(bintab) / sizeof(*bintab),
     NULL, 0,
@@ -342,6 +506,7 @@ static struct features module_features = {
     patab, sizeof(patab) / sizeof(*patab),
     0,
 };
+// clang-format on
 
 int setup_(UNUSED(Module m)) { return 0; }
 
@@ -353,8 +518,9 @@ int features_(Module m, char*** features)
 
 int enables_(Module m, int** enables) { return handlefeatures(m, &module_features, enables); }
 
-int boot_(UNUSED(Module m)) {
-    fzf_tab_module_version = ztrdup("0.1.1");
+int boot_(UNUSED(Module m))
+{
+    fzf_tab_module_version = ztrdup("0.2.1");
     // different zsh version may have different value of list_type's index
     // so query it dynamically
     opt_list_type = optlookup("list_types");

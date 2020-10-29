@@ -17,8 +17,8 @@ local -A word_map=()
 zstyle -a ":completion:$_ftb_curcontext" list-colors list_colors
 
 # init colorize
-if (( $+builtins[fzf-tab-colorize] )); then
-  fzf-tab-colorize -c list_colors
+if (( $+builtins[fzf-tab-candidates-generate] )); then
+  fzf-tab-candidates-generate -i list_colors
 else
   local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
   local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
@@ -29,59 +29,63 @@ if (( $#_ftb_groups == 1 )); then
   -ftb-zstyle -m single-group color || group_colors=($default_color)
 fi
 
-for k _v in "${(@ps:\2:)_ftb_compcap}"; do
-  local -A v=("${(@0)_v}")
-  [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
+if (( $+builtins[fzf-tab-candidates-generate] )); then
+  fzf-tab-candidates-generate
+else
+  for k _v in "${(@ps:\2:)_ftb_compcap}"; do
+    local -A v=("${(@0)_v}")
+    [[ $v[word] == ${first_word:=$v[word]} ]] || same_word=0
 
-  # add character and color to describe the type of the files
-  dsuf='' dpre=''
-  if (( $+v[isfile] )); then
-    filepath=${v[IPREFIX]}${v[hpre]}$v[word]
-    filepath=${(Q)${(e)~filepath}}
-    if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
-      fzf-tab-colorize $filepath 2>/dev/null
-      dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
-      if [[ $reply[4] ]]; then
-        dsuf+=" -> $reply[4]"
+    # add character and color to describe the type of the files
+    dsuf='' dpre=''
+    if (( $+v[realdir] )); then
+      filepath=$v[realdir]${(Q)v[word]}
+      if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
+        fzf-tab-colorize $filepath 2>/dev/null
+        dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
+        if [[ $reply[4] ]]; then
+          dsuf+=" -> $reply[4]"
+        fi
+        [[ $dpre ]] && colorful=1
+      else
+        if [[ -d $filepath ]]; then
+          dsuf=/
+        fi
+        # add color and resolve symlink if have list-colors
+        # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
+        if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
+          -ftb-colorize $filepath
+          colorful=1
+        elif [[ -L $filepath ]]; then
+          dsuf=@
+        fi
+        if [[ $options[list_types] == off ]]; then
+          dsuf=''
+        fi
       fi
-      [[ $dpre ]] && colorful=1
+    fi
+
+    # add color to description if they have group index
+    if (( $+v[group] )); then
+      local color=$group_colors[$v[group]]
+      # add a hidden group index at start of string to keep group order when sorting
+      # first group index is for builtin sort, sencond is for GNU sort
+      tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
     else
-      if [[ -d $filepath ]]; then
-        dsuf=/
-      fi
-      # add color and resolve symlink if have list-colors
-      # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-      if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
-        -ftb-colorize $filepath
-        colorful=1
-      elif [[ -L $filepath ]]; then
-        dsuf=@
-      fi
-      if [[ $options[list_types] == off ]]; then
-        dsuf=''
-      fi
+      tcandidates+=$default_color$dpre$'\0'$k$'\0'$dsuf
     fi
-  fi
 
-  # add color to description if they have group index
-  if (( $+v[group] )); then
-    local color=$group_colors[$v[group]]
-    # add a hidden group index at start of string to keep group order when sorting
-    # first group index is for builtin sort, sencond is for GNU sort
-    tcandidates+=$v[group]$'\b'$color$prefix$dpre$'\0'$v[group]$'\b'$k$'\0'$dsuf
-  else
-    tcandidates+=$default_color$dpre$'\0'$k$'\0'$dsuf
-  fi
-
-  # check group with duplicate member
-  if [[ $show_group == brief ]]; then
-    if (( $+word_map[$v[word]] && $+v[group] )); then
-      duplicate_groups+=$v[group]            # add this group
-      duplicate_groups+=$word_map[$v[word]]  # add previous group
+    # check group with duplicate member
+    if [[ $show_group == brief ]]; then
+      if (( $+word_map[$v[word]] && $+v[group] )); then
+        duplicate_groups+=$v[group]            # add this group
+        duplicate_groups+=$word_map[$v[word]]  # add previous group
+      fi
+      word_map[$v[word]]=$v[group]
     fi
-    word_map[$v[word]]=$v[group]
-  fi
-done
+  done
+fi
+
 (( same_word )) && tcandidates[2,-1]=()
 
 # sort and remove sort group or other index

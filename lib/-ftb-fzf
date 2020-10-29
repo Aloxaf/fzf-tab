@@ -13,8 +13,8 @@ if (( \$+ctxt[group] )); then
   export group=\$_ftb_groups[\$ctxt[group]]
 fi
 # get real path if it is file
-if (( \$+ctxt[isfile] )); then
-  export realpath=\${(Qe)~\${:-\${ctxt[IPREFIX]}\${ctxt[hpre]}}}\${(Q)desc}
+if (( \$+ctxt[realdir] )); then
+  export realpath=\${ctxt[realdir]}\${(Q)desc}
 fi
 # get original word
 export word=\$ctxt[word]

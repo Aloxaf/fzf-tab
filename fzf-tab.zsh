@@ -41,7 +41,7 @@
   [[ -n $expl ]] && _ftb_groups+=$expl
 
   # store these values in _ftb_compcap
-  local -a keys=(apre hpre isfile PREFIX SUFFIX IPREFIX ISUFFIX)
+  local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
   for key in $keys; do
     expanded=${(P)key}
@@ -53,21 +53,29 @@
     # store group index
     __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
   fi
+  if [[ $isfile ]]; then
+    # NOTE: need a extra ${} here or ~ expansion won't work
+    __tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
+  fi
   _opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
   __tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 
-  # dscr - the string to show to users
-  # word - the string to be inserted
-  local dscr word i
-  for i in {1..$#__hits}; do
-    word=$__hits[i] dscr=$__dscr[i]
-    if [[ -n $dscr ]]; then
-      dscr=${dscr//$'\n'}
-    elif [[ -n $word ]]; then
-      dscr=$word
-    fi
-    _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
-  done
+  if (( $+builtins[fzf-tab-compcap-generate] )); then
+    fzf-tab-compcap-generate __hits __dscr __tmp_value
+  else
+    # dscr - the string to show to users
+    # word - the string to be inserted
+    local dscr word i
+    for i in {1..$#__hits}; do
+      word=$__hits[i] dscr=$__dscr[i]
+      if [[ -n $dscr ]]; then
+        dscr=${dscr//$'\n'}
+      elif [[ -n $word ]]; then
+        dscr=$word
+      fi
+      _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
+    done
+  fi
 
   # tell zsh that the match is successful
   builtin compadd -U -qS '' -R -ftb-remove-space ''
@@ -90,7 +98,9 @@
   local choice choices _ftb_curcontext continuous_trigger bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
+  (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i
   COLUMNS=500 _ftb__main_complete "$@"
+  (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -o
 
   emulate -L zsh -o extended_glob
 
@@ -107,7 +117,9 @@
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
 
-      print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf
+      # NOTE: Using pipe here causes an error "failed to read /dev/tty"
+      # when _ftb_complist is long
+      -ftb-fzf < <(print -rl -- $_ftb_headers $_ftb_complist)
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
@@ -310,7 +322,7 @@ typeset -ga _ftb_group_colors=(
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 
-    if [[ $FZF_TAB_MODULE_VERSION != "0.1.1" ]]; then
+    if [[ $FZF_TAB_MODULE_VERSION != "0.2.1" ]]; then
       zmodload -u aloxaf/fzftab
       local rebuild
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"

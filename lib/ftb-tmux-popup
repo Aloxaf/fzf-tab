@@ -9,7 +9,7 @@ local -a tmp=($(tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
 # write completion list to file
-cat > $tmp_dir/list-$$
+<&0 > $tmp_dir/list-$$
 
 local text REPLY comp_lines comp_length length popup_pad
 
@@ -52,7 +52,7 @@ echo -E "cd '$PWD'; fzf ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \
        -KE -R "source $tmp_dir/fzf-$$"
-  cat $tmp_dir/result-$$
+  < $tmp_dir/result-$$
 } always {
   rm $tmp_dir/*-$$
 }

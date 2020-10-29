@@ -408,7 +408,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     char **candidates = zshcalloc(sizeof(char*) * (ftb_compcap_len + 1)), *dpre = zshcalloc(128),
          *dsuf = zshcalloc(128), *filepath = zshcalloc(PATH_MAX * sizeof(char));
 
-    char* first_word = NULL;
+    char* first_word = zshcalloc(512 * sizeof(char));
     int same_word = 1;
 
     for (int i = 0; i < ftb_compcap_len; i++) {
@@ -439,8 +439,8 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
 
         // check if all the words are the same
         if (i == 0) {
-            first_word = word;
-        } else if (same_word && strcmp(word, first_word)) {
+            strcpy(first_word, word);
+        } else if (same_word && strcmp(word, first_word) != 0) {
             same_word = 0;
         }
 
@@ -484,6 +484,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     zsfree(dpre);
     zsfree(dsuf);
     zsfree(filepath);
+    zsfree(first_word);
 
     return 0;
 }

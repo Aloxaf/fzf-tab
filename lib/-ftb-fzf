@@ -1,8 +1,11 @@
 #!/hint/zsh
 
+local tmp_dir=/tmp/fzf-tab-$USER
+[[ -d $tmp_dir ]] || mkdir $tmp_dir
+
 local ftb_preview_init="
-local -a _ftb_compcap=(\"\${(@f)\"\$(</tmp/fzf-tab/compcap.$$)\"}\")
-local -a _ftb_groups=(\"\${(@f)\"\$(</tmp/fzf-tab/groups.$$)\"}\")
+local -a _ftb_compcap=(\"\${(@f)\"\$(<$tmp_dir/compcap.$$)\"}\")
+local -a _ftb_groups=(\"\${(@f)\"\$(<$tmp_dir/groups.$$)\"}\")
 local bs=\$'\2'
 # get descriptoin
 export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
@@ -33,9 +36,8 @@ local fzf_command fzf_flags fzf_preview debug_command tmp
   return
 }
 
-[[ -d /tmp/fzf-tab ]] || mkdir /tmp/fzf-tab
-print -rl -- $_ftb_compcap > /tmp/fzf-tab/compcap.$$
-print -rl -- $_ftb_groups  > /tmp/fzf-tab/groups.$$
+print -rl -- $_ftb_compcap > $tmp_dir/compcap.$$
+print -rl -- $_ftb_groups  > $tmp_dir/groups.$$
 
 local -i lines=$#_ftb_compcap header_lines=$#_ftb_headers
 
@@ -60,4 +62,4 @@ choices="$($fzf_command \
 )"
 choices=("${(@f)choices}")
 
-command rm /tmp/fzf-tab/{compcap,groups}.$$ 2>/dev/null
+rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null

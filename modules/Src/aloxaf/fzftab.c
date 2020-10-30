@@ -268,27 +268,18 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
     }
 
     char *bs = metafy("\2", 1, META_DUP), *nul = metafy("\0word\0", 6, META_DUP);
-    size_t opts_len = strlen(opts), dscrs_len = arrlen(dscrs), bs_len = strlen(bs),
+    size_t opts_len = strlen(opts), dscrs_cnt = arrlen(dscrs), bs_len = strlen(bs),
            nul_len = strlen(nul);
 
     for (int i = 0; words[i]; i++) {
         // TODO: replace '\n'
         size_t word_len = strlen(words[i]);
-        size_t dscr_len = i < dscrs_len ? (int)strlen(dscrs[i]) : word_len;
+        size_t dscr_len = i < dscrs_cnt ? strlen(dscrs[i]) : word_len;
 
-        size_t final_len
-            = dscrs_len + bs_len + opts_len + nul_len + word_len + getiparam("COLUMNS");
-        char* buffer = zshcalloc(final_len * sizeof(char));
+        size_t final_len = dscr_len + bs_len + opts_len + nul_len + word_len;
+        char* buffer = zshcalloc((final_len + 1) * sizeof(char));
 
-        if (i < dscrs_len) {
-            strcpy(buffer, dscrs[i]);
-        } else {
-            strcpy(buffer, words[i]);
-        }
-        strcpy(buffer + dscr_len, bs);
-        strcpy(buffer + dscr_len + bs_len, opts);
-        strcpy(buffer + dscr_len + bs_len + opts_len, nul);
-        strcpy(buffer + dscr_len + bs_len + opts_len + nul_len, words[i]);
+        ftb_strcat(buffer, 5, i < dscrs_cnt ? dscrs[i] : words[i], bs, opts, nul, words[i]);
 
         ftb_compcap.array[ftb_compcap.len++] = buffer;
 

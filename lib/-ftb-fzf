@@ -62,4 +62,4 @@ choices="$($fzf_command \
 )"
 choices=("${(@f)choices}")
 
-rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null
+command rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null

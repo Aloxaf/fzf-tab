@@ -1,7 +1,7 @@
 #!/hint/zsh
 
-local tmp_dir=/tmp/fzf-tab-$USER
-[[ -d $tmp_dir ]] || mkdir $tmp_dir
+local tmp_dir=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER
+[[ -d $tmp_dir ]] || command mkdir $tmp_dir
 
 local ftb_preview_init="
 local -a _ftb_compcap=(\"\${(@f)\"\$(<$tmp_dir/compcap.$$)\"}\")

@@ -5,7 +5,7 @@ local -a fzf_opts=($@)
 fzf_opts=(${${fzf_opts/--height*}/--layout*})
 
 # get position of cursor and size of window
-local -a tmp=($(tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
+local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
 # write completion list to file
@@ -25,7 +25,7 @@ if (( comp_lines <= 500 )); then
     (( length >= comp_length )) && comp_length=$length
   done
 else
-  comp_length=$(sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/list-$$ | awk 'length > max_length { max_length = length; } END { print max_length }')
+  comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/list-$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
 

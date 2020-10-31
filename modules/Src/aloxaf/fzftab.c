@@ -88,11 +88,13 @@ int compile_patterns(char* nam, char** list_colors)
     while (list_colors[pat_cnt] != NULL) {
         pat_cnt++;
     }
-    name_color = zalloc(pat_cnt * sizeof(struct pattern));
+    name_color = zshcalloc(pat_cnt * sizeof(struct pattern));
 
     for (int i = 0; i < pat_cnt; i++) {
         char* pat = dupstring(list_colors[i]);
         char* color = strrchr(pat, '=');
+        if (color == NULL)
+            continue;
         *color = '\0';
         tokenize(pat);
         remnulargs(pat);
@@ -168,7 +170,7 @@ const char* get_color(char* file, const struct stat* sb)
 const char* colorize_from_name(char* file)
 {
     for (int i = 0; i < pat_cnt; i++) {
-        if (name_color[i].pat && pattry(name_color[i].pat, file)) {
+        if (name_color && name_color[i].pat && pattry(name_color[i].pat, file)) {
             return name_color[i].color;
         }
     }

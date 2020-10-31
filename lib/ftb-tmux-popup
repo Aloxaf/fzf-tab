@@ -54,5 +54,5 @@ echo -E "cd '$PWD'; fzf ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-
        -KE -R "source $tmp_dir/fzf-$$"
   < $tmp_dir/result-$$
 } always {
-  rm $tmp_dir/*-$$
+  command rm $tmp_dir/*-$$
 }

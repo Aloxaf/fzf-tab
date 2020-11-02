@@ -95,7 +95,7 @@
 -ftb-complete() {
   local -a _ftb_compcap
   local -Ua _ftb_groups
-  local choice choices _ftb_curcontext continuous_trigger print_query bs=$'\2' nul=$'\0'
+  local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0'
 
   # must run with user options; don't move `emulate -L zsh` above this line
   (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i

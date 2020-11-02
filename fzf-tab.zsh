@@ -116,7 +116,7 @@
       -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
-      -ftb-zstyle -s accept-line accept_line || accept_line=enter
+      -ftb-zstyle -s accept-line accept_line
 
       # NOTE: Using pipe here causes an error "failed to read /dev/tty"
       # when _ftb_complist is long

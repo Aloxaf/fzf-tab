@@ -175,7 +175,7 @@ fzf-tab-complete() {
   local -i _ftb_continue=1
   while (( _ftb_continue )); do
     _ftb_continue=0
-    _ftb_accept=0
+    local _ftb_accept=0
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget

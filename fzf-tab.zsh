@@ -116,6 +116,7 @@
       -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
+      -ftb-zstyle -s accept-line accept_line || accept_line=enter
 
       # NOTE: Using pipe here causes an error "failed to read /dev/tty"
       # when _ftb_complist is long
@@ -145,6 +146,10 @@
   if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
     typeset -gi _ftb_continue=1
   fi
+
+  if [[ $choices[1] && $choices[1] == $accept_line ]]; then
+    typeset -gi _ftb_accept=1
+  fi
   choices[1]=()
 
   for choice in "$choices[@]"; do
@@ -170,6 +175,7 @@ fzf-tab-complete() {
   local -i _ftb_continue=1
   while (( _ftb_continue )); do
     _ftb_continue=0
+    _ftb_accept=0
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget
@@ -181,7 +187,7 @@ fzf-tab-complete() {
       zle .reset-prompt
       zle -R
     else
-      zle redisplay
+      (( _ftb_accept )) && zle accept-line || zle redisplay
     fi
   done
 }

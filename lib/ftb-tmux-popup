@@ -34,11 +34,11 @@ local popup_height popup_y popup_width popup_x
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( comp_lines >= cursor_y ? cursor_y : comp_lines + 4 ))
+  popup_height=$(( comp_lines + 4 >= cursor_y ? cursor_y : comp_lines + 4 ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( comp_lines >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
+  popup_height=$(( comp_lines + 4 >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi

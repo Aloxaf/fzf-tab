@@ -1,6 +1,12 @@
 #!/hint/zsh
 emulate -L zsh -o extended_glob
 
+# fallback to fzf if it is not running in tmux
+if (( ! $+TMUX_PANE )); then
+  fzf $@
+  return
+fi
+
 local -a fzf_opts=($@)
 fzf_opts=(${${fzf_opts/--height*}/--layout*})
 

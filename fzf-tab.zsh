@@ -293,7 +293,7 @@ zmodload -F zsh/stat b:zstat
 
 0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
 0="${${(M)0:#/*}:-$PWD/$0}"
-FZF_TAB_HOME=${0:A:h}
+FZF_TAB_HOME="${0:A:h}"
 
 source "$FZF_TAB_HOME"/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 

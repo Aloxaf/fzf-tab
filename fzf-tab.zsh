@@ -293,9 +293,9 @@ zmodload -F zsh/stat b:zstat
 
 0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
 0="${${(M)0:#/*}:-$PWD/$0}"
-FZF_TAB_HOME=${0:h}
+FZF_TAB_HOME="${0:A:h}"
 
-source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
+source "$FZF_TAB_HOME"/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 typeset -ga _ftb_group_colors=(
   $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'

@@ -11,7 +11,7 @@ const char* colorize_from_mode(char* file, const struct stat* sb);
 const char* colorize_from_name(char* file);
 char** fzf_tab_colorize(char* file);
 int compile_patterns(char* nam, char** list_colors);
-char* ftb_strcat(char* dst, int n, ...);
+char* ftb_strcat(char* dst, int size, int n, ...);
 
 /* Indixes into the terminal string arrays. */
 #define COL_NO 0
@@ -91,7 +91,7 @@ int compile_patterns(char* nam, char** list_colors)
     name_color = zshcalloc(pat_cnt * sizeof(struct pattern));
 
     for (int i = 0; i < pat_cnt; i++) {
-        char* pat = dupstring(list_colors[i]);
+        char* pat = ztrdup(list_colors[i]);
         char* color = strrchr(pat, '=');
         if (color == NULL)
             continue;
@@ -119,6 +119,7 @@ int compile_patterns(char* nam, char** list_colors)
         }
 
         strcpy(name_color[i].color, color + 1);
+        free(pat);
     }
     return 0;
 }
@@ -236,7 +237,7 @@ struct {
     char** array;
     size_t len;
     size_t size;
-} ftb_compcap, tcandidates;
+} ftb_compcap;
 
 // Usage:
 // initialize               fzf-tab-generate-compcap -i
@@ -281,7 +282,7 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
         size_t final_len = dscr_len + bs_len + opts_len + nul_len + word_len;
         char* buffer = zshcalloc((final_len + 1) * sizeof(char));
 
-        ftb_strcat(buffer, 5, i < dscrs_cnt ? dscrs[i] : words[i], bs, opts, nul, words[i]);
+        buffer = ftb_strcat(buffer, final_len + 1, 5, i < dscrs_cnt ? dscrs[i] : words[i], bs, opts, nul, words[i]);
 
         ftb_compcap.array[ftb_compcap.len++] = buffer;
 
@@ -300,20 +301,30 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
 }
 
 // cat n string, return the pointer to the end of string
-char* ftb_strcat(char* dst, int n, ...)
+char* ftb_strcat(char* dst, int size, int n, ...)
 {
     va_list valist;
     va_start(valist, n);
 
-    for (int i = 0; i < n; i++) {
+    char *final = dst;
+
+    size -= 1; // for '\0'
+
+    for (int i = 0, idx = 0; i < n; i++) {
         char* src = va_arg(valist, char*);
-        for (; *src != '\0'; dst++, src++)
+        for (; *src != '\0'; dst++, src++, idx++) {
+            if (idx == size) {
+                final = zrealloc(final, size + 128);
+                size += 128;
+                dst = &final[idx];
+            }
             *dst = *src;
+        }
     }
     *dst = '\0';
     va_end(valist);
 
-    return dst;
+    return final;
 }
 
 // accept an
@@ -439,14 +450,14 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
 
         // add character and color to describe the type of the files
         if (realdir) {
-            ftb_strcat(filepath, 2, realdir, word);
+            filepath = ftb_strcat(filepath, PATH_MAX, 2, realdir, word);
             char** reply = fzf_tab_colorize(filepath);
             if (reply != NULL) {
-                ftb_strcat(dpre, 2, reply[1], reply[0]);
+                dpre = ftb_strcat(dpre, 128, 2, reply[1], reply[0]);
                 if (reply[3][0] != '\0') {
-                    ftb_strcat(dsuf, 4, reply[1], reply[2], " -> ", reply[3]);
+                    dsuf = ftb_strcat(dsuf, 128, 4, reply[1], reply[2], " -> ", reply[3]);
                 } else {
-                    ftb_strcat(dsuf, 2, reply[1], reply[2]);
+                    dsuf = ftb_strcat(dsuf, 128, 2, reply[1], reply[2]);
                 }
                 if (dpre[0] != '\0') {
                     setiparam("colorful", 1);
@@ -454,15 +465,14 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
                 freearray(reply);
             }
         }
-
         // add color to description if they have group index
         if (group) {
             // use strtol ?
             char* color = group_colors[atoi(group) - 1];
             // add prefix
-            ftb_strcat(result, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);
+            result = ftb_strcat(result, 512, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);
         } else {
-            ftb_strcat(result, 6, default_color, dpre, nul, desc, nul, dsuf);
+            result = ftb_strcat(result, 512, 6, default_color, dpre, nul, desc, nul, dsuf);
         }
         // quotedzputs(result, stdout);
         // putchar('\n');
@@ -513,7 +523,7 @@ int enables_(Module m, int** enables) { return handlefeatures(m, &module_feature
 
 int boot_(UNUSED(Module m))
 {
-    fzf_tab_module_version = ztrdup("0.2.1");
+    fzf_tab_module_version = ztrdup("0.2.2");
     // different zsh version may have different value of list_type's index
     // so query it dynamically
     opt_list_type = optlookup("list_types");

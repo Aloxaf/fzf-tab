@@ -120,6 +120,7 @@
       # NOTE: Using pipe here causes an error "failed to read /dev/tty"
       # when _ftb_complist is long
       -ftb-fzf < <(print -rl -- $_ftb_headers $_ftb_complist)
+      # choices=(query_string expect_key returned_word)
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
@@ -322,7 +323,7 @@ typeset -ga _ftb_group_colors=(
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 
-    if [[ $FZF_TAB_MODULE_VERSION != "0.2.1" ]]; then
+    if [[ $FZF_TAB_MODULE_VERSION != "0.2.2" ]]; then
       zmodload -u aloxaf/fzftab
       local rebuild
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"

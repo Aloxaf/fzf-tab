@@ -19,14 +19,18 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: install zsh
+      - name: install zsh (ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install zsh
 
-      - name: test completion
-        run: cd test && zsh runtests.zsh fzftab.ztst
+      - name: test completion (ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: cd test && zsh -f runtests.zsh fzftab.ztst
 
-      - name: test binary module
-        run: |
-          zsh -ic 'source ./fzf-tab.zsh && build-fzf-tab-module'
-          cd test && zsh runtests.zsh fzftab.ztst
+      - name: build binary module
+        run: zsh -fc 'source ./fzf-tab.zsh && build-fzf-tab-module'
+
+      - name: test binary module (ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: cd test && zsh -f runtests.zsh fzftab.ztst
 

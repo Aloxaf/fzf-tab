@@ -119,7 +119,7 @@
 
       # NOTE: Using pipe here causes an error "failed to read /dev/tty"
       # when _ftb_complist is long
-      -ftb-fzf < <(print -rl -- $_ftb_headers $_ftb_complist)
+      choices=("${(@f)"$(print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
       # choices=(query_string expect_key returned_word)
 
       # insert query string directly

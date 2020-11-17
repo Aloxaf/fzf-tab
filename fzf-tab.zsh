@@ -319,7 +319,7 @@ typeset -ga _ftb_group_colors=(
           "See https://github.com/Aloxaf/fzf-tab/pull/132 for more information%f%b"
   fi
 
-  if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.(so|bundle) ]]; then
+  if [[ -n $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.(so|bundle)(#qN) ]]; then
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 

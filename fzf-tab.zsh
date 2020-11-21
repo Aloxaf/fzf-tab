@@ -172,6 +172,8 @@ fzf-tab-debug() {
   local -i debug_fd=-1 IN_FZF_TAB=1
   {
     exec {debug_fd}>&2 2>| $tmp
+    local -a debug_indent; debug_indent=( '%'{3..20}'(e. .)' )
+    local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
     setopt xtrace
     : $ZSH_NAME $ZSH_VERSION
     zle .fzf-tab-orig-$_ftb_orig_widget

@@ -166,6 +166,24 @@
   fi
 }
 
+fzf-tab-debug() {
+  (( $+_ftb_debug_cnt )) || typeset -gi _ftb_debug_cnt
+  local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log
+  local -i debug_fd=-1 IN_FZF_TAB=1
+  {
+    exec {debug_fd}>&2 2>| $tmp
+    setopt xtrace
+    : $ZSH_NAME $ZSH_VERSION
+    zle .fzf-tab-orig-$_ftb_orig_widget
+    unsetopt xtrace
+    if (( debug_fd != -1 )); then
+      zle -M "fzf-tab-debug: Trace output left in $tmp"
+    fi
+  } always {
+    (( debug_fd != -1 )) && exec 2>&$debug_fd {debug_fd}>&-
+  }
+}
+
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
   local -i _ftb_continue=1
@@ -187,6 +205,7 @@ fzf-tab-complete() {
   done
 }
 
+zle -N fzf-tab-debug
 zle -N fzf-tab-complete
 
 disable-fzf-tab() {

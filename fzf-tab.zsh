@@ -117,9 +117,7 @@
       -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
 
-      # NOTE: Using pipe here causes an error "failed to read /dev/tty"
-      # when _ftb_complist is long
-      choices=("${(@f)"$(print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
+      choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
       # choices=(query_string expect_key returned_word)
 
       # insert query string directly
@@ -236,7 +234,7 @@ enable-fzf-tab() {
   emulate -L zsh -o extended_glob
   (( ! $+_ftb_orig_widget )) || disable-fzf-tab
 
-  typeset -g _ftb_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
+  typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}"
   if (( ! $+widgets[.fzf-tab-orig-$_ftb_orig_widget] )); then
     # Widgets that get replaced by compinit.
     local compinit_widgets=(

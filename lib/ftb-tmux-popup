@@ -58,7 +58,7 @@ fi
 popup_width=$(( comp_length + 5 > window_width ? window_width : comp_length + 5 ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
-echo -E "cd '$PWD'; fzf ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
+echo -E "cd '$PWD'; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \

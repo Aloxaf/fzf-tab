@@ -62,7 +62,7 @@ echo -E "cd '$PWD'; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \
-       -KE -R "source $tmp_dir/fzf-$$"
+       -KE -R "zsh $tmp_dir/fzf-$$"
   < $tmp_dir/result-$$
 } always {
   command rm $tmp_dir/*-$$

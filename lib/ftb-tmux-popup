@@ -1,10 +1,7 @@
 #!/hint/zsh
 emulate -L zsh -o extended_glob
 
-if (( ! IN_FZF_TAB )); then
-  print 'ftb-tmux-popup: can only be called from fzf-tab'
-  return 1
-fi
+: ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
 
 # fallback to fzf if it is not running in tmux
 if (( ! $+TMUX_PANE )); then

@@ -37,6 +37,9 @@ local fzf_command fzf_flags fzf_preview debug_command tmp
 
 print -rl -- $_ftb_compcap > $tmp_dir/compcap.$$
 print -rl -- $_ftb_groups  > $tmp_dir/groups.$$
+print -r -- ${ftb_preview_init/{f}/\$1} > $tmp_dir/ftb_preview_init.$$
+
+binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))

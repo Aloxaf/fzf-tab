@@ -198,7 +198,7 @@ fzf-tab-complete() {
     if (( _ftb_continue )); then
       zle .split-undo
       zle .reset-prompt
-      zle -R
+      zle redisplay
     else
       zle redisplay
     fi

@@ -198,15 +198,19 @@ fzf-tab-complete() {
     if (( _ftb_continue )); then
       zle .split-undo
       zle .reset-prompt
-      zle -R
-    else
-      zle redisplay
     fi
+    zle .redisplay
+    zle fzf-tab-dummy
   done
 }
 
+# this function does nothing, it is used to be wrapped by other plugins like f-sy-h.
+# this make it possible to call the wrapper function without causing any other side effects.
+fzf-tab-dummy() { }
+
 zle -N fzf-tab-debug
 zle -N fzf-tab-complete
+zle -N fzf-tab-dummy
 
 disable-fzf-tab() {
   emulate -L zsh -o extended_glob

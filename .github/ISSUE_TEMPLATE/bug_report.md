@@ -24,8 +24,10 @@ If applicable, add screenshots to help explain your problem.
 
 **Environment (please complete the following information):**
  - OS: [e.g. Arch Linux]
- - zsh version [e.g. 5.8.1]
- - fzf-tab version [e.g. https://github.com/Aloxaf/fzf-tab/commit/56adfa43b6cab964249c740302c8b57d129201f0]
+ - zsh version: [e.g. 5.8.1]
+ - fzf-tab version: [e.g. latest]
 
 **zshrc**
 If applicable, add a minimal zshrc to help us analyze.
+
+**NOTE: make sure you can reproduce the bug with your minimal zshrc.**

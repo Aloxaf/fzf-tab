@@ -1,6 +1,6 @@
 # fzf-tab
 
-[![Test](https://github.com/Aloxaf/fzf-tab/workflows/Test/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions?query=workflow%3ATest)
+[![CI](https://github.com/Aloxaf/fzf-tab/workflows/ci/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions?query=workflow%3Aci)
 [![GitHub license](https://img.shields.io/github/license/Aloxaf/fzf-tab)](https://github.com/Aloxaf/fzf-tab/blob/master/LICENSE)
 
 Replace zsh's default completion selection menu with fzf!
@@ -28,17 +28,17 @@ Replace zsh's default completion selection menu with fzf!
 
 # Install
 
-**NOTE:** fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets like [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting).
+**NOTE: fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting)!!**
 
 ## Manual
 
-First, clone this repository
+First, clone this repository.
 
 ```zsh
 git clone https://github.com/Aloxaf/fzf-tab ~/somewhere
 ```
 
-Then add the following line to your `~/.zshrc`
+Then add the following line to your `~/.zshrc`.
 
 ```zsh
 source ~/somewhere/fzf-tab.plugin.zsh
@@ -98,21 +98,21 @@ zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 ```
 
-From more information, please see [Wiki#Configuration](https://github.com/Aloxaf/fzf-tab/wiki/Configuration)
+For more information, please see [Wiki#Configuration](https://github.com/Aloxaf/fzf-tab/wiki/Configuration).
 
 ## Binary module
 
-By default, fzf-tab use [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have set `list-colors` tag.
+By default, fzf-tab uses [zsh-ls-colors](https://github.com/xPMo/zsh-ls-colors) to parse and apply ZLS_COLORS if you have set the `list-colors` tag.
 
 However, it is a pure zsh script and is slow if you have too many files to colorize.
 fzf-tab is shipped with a binary module to speed up this process. You can build it with `build-fzf-tab-module`, then it will be enabled automatically.
 
 # Difference from other plugins
 
-fzf-tab doesn't do "complete", it just shows your results of the default completion system.
+fzf-tab doesn't do "complete", it just shows you the results of the default completion system.
 
 So it works EVERYWHERE (variables, function names, directory stack, in-word completion, etc.).
-And most of your configure for default completion system is still valid.
+And most of your configuration for default completion system is still valid.
 
 # Compatibility with other plugins
 
@@ -120,7 +120,7 @@ Some plugins may also bind "^I" to their custom widget, like [fzf/shell/completi
 
 By default, fzf-tab will call the widget previously bound to "^I" to get the completion list. So there is no problem in most cases, unless fzf-tab is initialized before a plugin which doesn't handle the previous binding properly.
 
-So if you find your fzf-tab doesn't work properly, please make sure it is the last plugin to bind "^I" (If you don't know what I mean, just put it to the end of your plugin list).
+So if you find your fzf-tab doesn't work properly, **please make sure it is the last plugin to bind "^I"** (If you don't know what I mean, just put it to the end of your plugin list).
 
 # Related projects
 

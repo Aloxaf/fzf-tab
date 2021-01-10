@@ -1,5 +1,6 @@
 #include "fzftab.mdh"
 #include "fzftab.pro"
+#include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -91,7 +92,7 @@ int compile_patterns(char* nam, char** list_colors)
     name_color = zshcalloc(pat_cnt * sizeof(struct pattern));
 
     for (int i = 0; i < pat_cnt; i++) {
-        char* pat = dupstring(list_colors[i]);
+        char* pat = ztrdup(list_colors[i]);
         char* color = strrchr(pat, '=');
         if (color == NULL)
             continue;
@@ -119,6 +120,7 @@ int compile_patterns(char* nam, char** list_colors)
         }
 
         strcpy(name_color[i].color, color + 1);
+        free(pat);
     }
     return 0;
 }
@@ -236,7 +238,7 @@ struct {
     char** array;
     size_t len;
     size_t size;
-} ftb_compcap, tcandidates;
+} ftb_compcap;
 
 // Usage:
 // initialize               fzf-tab-generate-compcap -i
@@ -270,19 +272,14 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
     }
 
     char *bs = metafy("\2", 1, META_DUP), *nul = metafy("\0word\0", 6, META_DUP);
-    size_t opts_len = strlen(opts), dscrs_cnt = arrlen(dscrs), bs_len = strlen(bs),
-           nul_len = strlen(nul);
+    size_t dscrs_cnt = arrlen(dscrs);
 
     for (int i = 0; words[i]; i++) {
         // TODO: replace '\n'
-        size_t word_len = strlen(words[i]);
-        size_t dscr_len = i < dscrs_cnt ? strlen(dscrs[i]) : word_len;
+        char* buffer = zshcalloc(256 * sizeof(char));
+        char* dscr = i < dscrs_cnt ? dscrs[i] : words[i];
 
-        size_t final_len = dscr_len + bs_len + opts_len + nul_len + word_len;
-        char* buffer = zshcalloc((final_len + 1) * sizeof(char));
-
-        ftb_strcat(buffer, 5, i < dscrs_cnt ? dscrs[i] : words[i], bs, opts, nul, words[i]);
-
+        buffer = ftb_strcat(buffer, 5, dscr, bs, opts, nul, words[i]);
         ftb_compcap.array[ftb_compcap.len++] = buffer;
 
         if (ftb_compcap.len == ftb_compcap.size) {
@@ -299,21 +296,38 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
     return 0;
 }
 
-// cat n string, return the pointer to the end of string
+// cat n string, return the pointer to the new string
+// `size` is the size of dst
+// dst will be reallocated if is not big enough
 char* ftb_strcat(char* dst, int n, ...)
 {
     va_list valist;
     va_start(valist, n);
 
-    for (int i = 0; i < n; i++) {
+    char* final = dst;
+#ifdef __linux
+    size_t size = malloc_usable_size(dst);
+#elif __APPLE__
+    size_t size = malloc_size(dst);
+#endif
+    size_t max_len = size - 1;
+
+    for (int i = 0, idx = 0; i < n; i++) {
         char* src = va_arg(valist, char*);
-        for (; *src != '\0'; dst++, src++)
+        for (; *src != '\0'; dst++, src++, idx++) {
+            if (idx == max_len) {
+                size += size / 2;
+                final = zrealloc(final, size);
+                max_len = size - 1;
+                dst = &final[idx];
+            }
             *dst = *src;
+        }
     }
     *dst = '\0';
     va_end(valist);
 
-    return dst;
+    return final;
 }
 
 // accept an
@@ -398,15 +412,14 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     char *bs = metafy("\b", 1, META_DUP), *nul = metafy("\0", 1, META_DUP),
          *soh = metafy("\2", 1, META_DUP);
 
-    char **candidates = zshcalloc(sizeof(char*) * (ftb_compcap_len + 1)), *dpre = zshcalloc(128),
-         *dsuf = zshcalloc(128), *filepath = zshcalloc(PATH_MAX * sizeof(char));
+    char **candidates = zshcalloc(sizeof(char*) * (ftb_compcap_len + 1)),
+         *filepath = zshcalloc(PATH_MAX * sizeof(char)), *dpre = zshcalloc(128),
+         *dsuf = zshcalloc(128);
 
     char* first_word = zshcalloc(512 * sizeof(char));
     int same_word = 1;
 
     for (int i = 0; i < ftb_compcap_len; i++) {
-        // TODO: is 512 big enough?
-        char* result = zshcalloc(512 * sizeof(char));
         char *word = "", *group = NULL, *realdir = NULL;
         strcpy(dpre, "");
         strcpy(dsuf, "");
@@ -432,21 +445,21 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
 
         // check if all the words are the same
         if (i == 0) {
-            strcpy(first_word, word);
+            first_word = ftb_strcat(first_word, 1, word);
         } else if (same_word && strcmp(word, first_word) != 0) {
             same_word = 0;
         }
 
         // add character and color to describe the type of the files
         if (realdir) {
-            ftb_strcat(filepath, 2, realdir, word);
+            filepath = ftb_strcat(filepath, 2, realdir, word);
             char** reply = fzf_tab_colorize(filepath);
             if (reply != NULL) {
-                ftb_strcat(dpre, 2, reply[1], reply[0]);
+                dpre = ftb_strcat(dpre, 2, reply[1], reply[0]);
                 if (reply[3][0] != '\0') {
-                    ftb_strcat(dsuf, 4, reply[1], reply[2], " -> ", reply[3]);
+                    dsuf = ftb_strcat(dsuf, 4, reply[1], reply[2], " -> ", reply[3]);
                 } else {
-                    ftb_strcat(dsuf, 2, reply[1], reply[2]);
+                    dsuf = ftb_strcat(dsuf, 2, reply[1], reply[2]);
                 }
                 if (dpre[0] != '\0') {
                     setiparam("colorful", 1);
@@ -455,14 +468,17 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
             }
         }
 
+        char* result = zshcalloc(256 * sizeof(char));
+
         // add color to description if they have group index
         if (group) {
             // use strtol ?
             char* color = group_colors[atoi(group) - 1];
             // add prefix
-            ftb_strcat(result, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);
+            result = ftb_strcat(
+                result, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);
         } else {
-            ftb_strcat(result, 6, default_color, dpre, nul, desc, nul, dsuf);
+            result = ftb_strcat(result, 6, default_color, dpre, nul, desc, nul, dsuf);
         }
         // quotedzputs(result, stdout);
         // putchar('\n');
@@ -513,7 +529,7 @@ int enables_(Module m, int** enables) { return handlefeatures(m, &module_feature
 
 int boot_(UNUSED(Module m))
 {
-    fzf_tab_module_version = ztrdup("0.2.1");
+    fzf_tab_module_version = ztrdup("0.2.2");
     // different zsh version may have different value of list_type's index
     // so query it dynamically
     opt_list_type = optlookup("list_types");

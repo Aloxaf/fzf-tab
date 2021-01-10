@@ -118,9 +118,8 @@
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
       -ftb-zstyle -s accept-line accept_line
 
-      # NOTE: Using pipe here causes an error "failed to read /dev/tty"
-      # when _ftb_complist is long
-      -ftb-fzf < <(print -rl -- $_ftb_headers $_ftb_complist)
+      choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
+      # choices=(query_string expect_key returned_word)
 
       # insert query string directly
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
@@ -170,6 +169,26 @@
   fi
 }
 
+fzf-tab-debug() {
+  (( $+_ftb_debug_cnt )) || typeset -gi _ftb_debug_cnt
+  local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log
+  local -i debug_fd=-1 IN_FZF_TAB=1
+  {
+    exec {debug_fd}>&2 2>| $tmp
+    local -a debug_indent; debug_indent=( '%'{3..20}'(e. .)' )
+    local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
+    setopt xtrace
+    : $ZSH_NAME $ZSH_VERSION
+    zle .fzf-tab-orig-$_ftb_orig_widget
+    unsetopt xtrace
+    if (( debug_fd != -1 )); then
+      zle -M "fzf-tab-debug: Trace output left in $tmp"
+    fi
+  } always {
+    (( debug_fd != -1 )) && exec 2>&$debug_fd {debug_fd}>&-
+  }
+}
+
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
   local -i _ftb_continue=1
@@ -185,14 +204,19 @@ fzf-tab-complete() {
     if (( _ftb_continue )); then
       zle .split-undo
       zle .reset-prompt
-      zle -R
-    else
-      (( _ftb_accept )) && zle accept-line || zle redisplay
     fi
+    (( _ftb_accept )) && zle accept-line || zle .redisplay
+    zle fzf-tab-dummy
   done
 }
 
+# this function does nothing, it is used to be wrapped by other plugins like f-sy-h.
+# this make it possible to call the wrapper function without causing any other side effects.
+fzf-tab-dummy() { }
+
+zle -N fzf-tab-debug
 zle -N fzf-tab-complete
+zle -N fzf-tab-dummy
 
 disable-fzf-tab() {
   emulate -L zsh -o extended_glob
@@ -220,7 +244,7 @@ enable-fzf-tab() {
   emulate -L zsh -o extended_glob
   (( ! $+_ftb_orig_widget )) || disable-fzf-tab
 
-  typeset -g _ftb_orig_widget="${${$(bindkey '^I')##* }:-expand-or-complete}"
+  typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}"
   if (( ! $+widgets[.fzf-tab-orig-$_ftb_orig_widget] )); then
     # Widgets that get replaced by compinit.
     local compinit_widgets=(
@@ -299,9 +323,9 @@ zmodload -F zsh/stat b:zstat
 
 0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
 0="${${(M)0:#/*}:-$PWD/$0}"
-FZF_TAB_HOME=${0:h}
+FZF_TAB_HOME="${0:A:h}"
 
-source ${0:h}/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
+source "$FZF_TAB_HOME"/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 
 typeset -ga _ftb_group_colors=(
   $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
@@ -324,11 +348,11 @@ typeset -ga _ftb_group_colors=(
           "See https://github.com/Aloxaf/fzf-tab/pull/132 for more information%f%b"
   fi
 
-  if [[ -e $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.so ]]; then
+  if [[ -n $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.(so|bundle)(#qN) ]]; then
     module_path+=("$FZF_TAB_HOME/modules/Src")
     zmodload aloxaf/fzftab
 
-    if [[ $FZF_TAB_MODULE_VERSION != "0.2.1" ]]; then
+    if [[ $FZF_TAB_MODULE_VERSION != "0.2.2" ]]; then
       zmodload -u aloxaf/fzftab
       local rebuild
       print -Pn "%F{yellow}fzftab module needs to be rebuild, rebuild now?[Y/n]:%f"

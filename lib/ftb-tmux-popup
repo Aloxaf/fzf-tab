@@ -1,6 +1,14 @@
 #!/hint/zsh
 emulate -L zsh -o extended_glob
 
+: ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
+
+# fallback to fzf if it is not running in tmux
+if (( ! $+TMUX_PANE )); then
+  fzf $@
+  return
+fi
+
 local -a fzf_opts=($@)
 fzf_opts=(${${fzf_opts/--height*}/--layout*})
 
@@ -9,7 +17,7 @@ local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
 # write completion list to file
-<&0 > $tmp_dir/list-$$
+cat > $tmp_dir/list-$$
 
 local text REPLY comp_lines comp_length length popup_pad
 
@@ -17,14 +25,14 @@ zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)"$(<$tmp_dir/list-$$)"}} + $popup_pad[2] ))
-# FIXME: can't get the correct width of CJK characters.
 if (( comp_lines <= 500 )); then
   comp_length=0
   for line in ${(f)"$(<$tmp_dir/list-$$)"}; do
-    length=${#${(S)line//$'\x1b['[0-9]#*m}}
+    length=${(m)#${(S)line//$'\x1b['[0-9]#*m}}
     (( length >= comp_length )) && comp_length=$length
   done
 else
+  # FIXME: can't get the correct width of CJK characters.
   comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/list-$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
@@ -34,11 +42,11 @@ local popup_height popup_y popup_width popup_x
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( comp_lines >= cursor_y ? cursor_y : comp_lines + 4 ))
+  popup_height=$(( comp_lines + 4 >= cursor_y ? cursor_y : comp_lines + 4 ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( comp_lines >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
+  popup_height=$(( comp_lines + 4 >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi
@@ -47,12 +55,12 @@ fi
 popup_width=$(( comp_length + 5 > window_width ? window_width : comp_length + 5 ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
-echo -E "cd '$PWD'; fzf ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
+echo -E "cd '$PWD'; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \
-       -KE -R "source $tmp_dir/fzf-$$"
-  < $tmp_dir/result-$$
+       -KE -R ". $tmp_dir/fzf-$$"
+  echo -E "$(<$tmp_dir/result-$$)"
 } always {
   command rm $tmp_dir/*-$$
 }

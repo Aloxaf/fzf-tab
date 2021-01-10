@@ -44,6 +44,7 @@ binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
 
+[[ $fzf_command != "ftb-tmux-popup" ]] && echoti cud1 >/dev/tty
 $fzf_command \
   --ansi \
   --bind=$binds \
@@ -61,5 +62,6 @@ $fzf_command \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
   $fzf_flags
+[[ $fzf_command != "ftb-tmux-popup" ]] && echoti cuu1 >/dev/tty
 
 command rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null

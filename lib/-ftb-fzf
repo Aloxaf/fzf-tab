@@ -51,7 +51,7 @@ $fzf_command \
   --color=hl:$(( header_lines == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \
-  --expect=$continuous_trigger,$print_query \
+  --expect=$continuous_trigger,$print_query,$accept_line \
   --header-lines=$header_lines \
   --height=${FZF_TMUX_HEIGHT:=$(( lines > LINES / 3 * 2 ? LINES / 3 * 2 : lines ))} \
   --layout=reverse \

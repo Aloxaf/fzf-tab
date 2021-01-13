@@ -197,9 +197,12 @@ fzf-tab-complete() {
     local _ftb_accept=0
     local IN_FZF_TAB=1
     {
+      # hide the cursor until finishing completion, so that users won't see cursor up and down
+      echoti civis >/dev/tty
       zle .fzf-tab-orig-$_ftb_orig_widget
     } always {
       IN_FZF_TAB=0
+      echoti cnorm >/dev/tty
     }
     if (( _ftb_continue )); then
       zle .split-undo

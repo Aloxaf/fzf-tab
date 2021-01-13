@@ -45,10 +45,7 @@ local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
 
 # fzf will cause the current line to refresh, so move the cursor down.
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
-  echoti sc >/dev/tty
-  echoti cud1 >/dev/tty
-fi
+[[ $fzf_command != "ftb-tmux-popup" ]] && echoti cud1 >/dev/tty
 $fzf_command \
   --ansi \
   --bind=$binds \
@@ -66,8 +63,6 @@ $fzf_command \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
   $fzf_flags
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
-  echoti rc >/dev/tty
-fi
+[[ $fzf_command != "ftb-tmux-popup" ]] && echoti cuu1 >/dev/tty
 
 command rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null

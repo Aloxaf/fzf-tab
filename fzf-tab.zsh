@@ -191,26 +191,26 @@ fzf-tab-debug() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _ftb_continue=1
+  local -i _ftb_continue=1 _ftb_accept=0
+  # hide the cursor until finishing completion, so that users won't see cursor up and down
+  echoti civis >/dev/tty
   while (( _ftb_continue )); do
     _ftb_continue=0
-    local _ftb_accept=0
     local IN_FZF_TAB=1
     {
-      # hide the cursor until finishing completion, so that users won't see cursor up and down
-      echoti civis >/dev/tty
       zle .fzf-tab-orig-$_ftb_orig_widget
     } always {
       IN_FZF_TAB=0
-      echoti cnorm >/dev/tty
     }
     if (( _ftb_continue )); then
       zle .split-undo
       zle .reset-prompt
+      zle -R
+      zle fzf-tab-dummy
     fi
-    (( _ftb_accept )) && zle .accept-line || zle -R
-    zle fzf-tab-dummy
   done
+  echoti cnorm >/dev/tty
+  (( _ftb_accept )) && zle .accept-line || zle .redisplay
 }
 
 # this function does nothing, it is used to be wrapped by other plugins like f-sy-h.

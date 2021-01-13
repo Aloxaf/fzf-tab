@@ -208,7 +208,7 @@ fzf-tab-complete() {
       zle .split-undo
       zle .reset-prompt
     fi
-    (( _ftb_accept )) && zle accept-line || zle .redisplay
+    (( _ftb_accept )) && zle .accept-line || zle -R
     zle fzf-tab-dummy
   done
 }

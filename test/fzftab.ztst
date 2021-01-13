@@ -109,7 +109,8 @@
 >line: {: asd}{}
 >WARN:{`file'}
 >WARN:{`file'}
-# FIXME：why two warnings？
+>WARN:{`file'}
+# FIXME：why three warnings？
 
   comptesteval "touch 'abc def'"
   comptest $': ./a\t'

@@ -65,4 +65,4 @@ $fzf_command \
   $fzf_flags
 [[ $fzf_command != "ftb-tmux-popup" ]] && echoti cuu1 >/dev/tty
 
-command rm $tmp_dir/{compcap,groups}.$$ 2>/dev/null
+command rm $tmp_dir/{compcap,groups,ftb_preview_init}.$$ 2>/dev/null

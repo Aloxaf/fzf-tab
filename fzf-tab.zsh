@@ -281,7 +281,7 @@ enable-fzf-tab() {
 
   zstyle ':completion:*' list-grouped false
   bindkey '^I'  fzf-tab-complete
-  bindkey '^F?' fzf-tab-debug
+  bindkey '^X.' fzf-tab-debug
 
   # make sure we can copy them
   autoload +X -Uz _main_complete _approximate

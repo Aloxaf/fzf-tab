@@ -130,8 +130,12 @@
         # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
         builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
 
-        compstate[list]= compstate[insert]='2'
-        [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+        compstate[list]=
+        compstate[insert]=
+        if (( $#choices[1] > 0 )); then
+            compstate[insert]='2'
+            [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+        fi
         return
       fi
       choices[1]=()

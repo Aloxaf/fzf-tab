@@ -7,27 +7,54 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+#### Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+I can make sure:
+- [ ] I am using the latest version of fzf-tab
+- [ ] this is the minimal zshrc which can reproduce this bug
+- [ ] fzf-tab is loaded after `compinit`
+- [ ] fzf-tab is loaded after plugins which will wrap <kbd>Tab</kbd>, like [junegunn/fzf/completion.zsh](https://github.com/junegunn/fzf/blob/master/shell/completion.zsh)
+- [ ] fzf-tab is loaded before zsh-autosuggestions, zsh-syntax-highlighting and fast-syntax-highlighting.
+
+#### Describe the bug
+A clear and concise description of what the bug is.
+
+#### To Reproduce
 Steps to reproduce the behavior:
 1. Type '...'
 2. Press <kbd>Tab</kbd>
 4. See error
 
-**Expected behavior**
+#### Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
+#### Screenshots
 If applicable, add screenshots to help explain your problem.
 
-**Environment (please complete the following information):**
+#### Environment:
  - OS: [e.g. Arch Linux]
  - zsh version: [e.g. 5.8.1]
- - fzf-tab version: [e.g. latest]
 
-**zshrc**
+#### Minimal zshrc
 If applicable, add a minimal zshrc to help us analyze.
 
-**NOTE: make sure you can reproduce the bug with your minimal zshrc.**
+
+#### To Reproduce
+Steps to reproduce the behavior:
+1. Type '...'
+2. Press <kbd>Tab</kbd>
+4. See error
+
+#### Expected behavior
+A clear and concise description of what you expected to happen.
+
+#### Screenshots
+If applicable, add screenshots to help explain your problem.
+
+#### Environment:
+ - OS: [e.g. Arch Linux]
+ - zsh version: [e.g. 5.8.1]
+
+#### Minimal zshrc
+If applicable, add a minimal zshrc to help us analyze.

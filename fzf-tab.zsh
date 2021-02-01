@@ -214,7 +214,8 @@ fzf-tab-complete() {
     fi
   done
   echoti cnorm >/dev/tty
-  (( _ftb_accept )) && zle .accept-line || zle .redisplay
+  zle .redisplay
+  (( _ftb_accept )) && zle .accept-line
 }
 
 # this function does nothing, it is used to be wrapped by other plugins like f-sy-h.

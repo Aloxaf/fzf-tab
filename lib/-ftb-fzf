@@ -44,7 +44,16 @@ binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
 
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
+# detect if we will use tmux popup
+local use_tmux_popup=0
+if [[ $fzf_command == "ftb-tmux-popup" ]]; then
+  use_tmux_popup=1
+elif [[ $fzf_command == "ftb-group-cycle" ]]; then
+  -ftb-zstyle -s ftb-group-cycle-command tmp || tmp=fzf
+  [[ $tmp == "ftb-tmux-popup" ]] && use_tmux_popup=1
+fi
+
+if (( ! use_tmux_popup )); then
   # fzf will cause the current line to refresh, so move the cursor down.
   echoti cud1 >/dev/tty
   # reset cursor before call fzf
@@ -67,7 +76,7 @@ $fzf_command \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
   $fzf_flags
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
+if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty
   echoti cuu1 >/dev/tty
 fi

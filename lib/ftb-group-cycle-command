@@ -13,7 +13,7 @@ if (( header_lines != 0 )); then
 fi
 
 # get total group count
-local -Ua total=(${(f)"$(print -l ${list:$((header_lines + 1))} | grep -a -oP '^\x1b\[[0-9;]*m')"})
+local -Ua total=(${(f)"$(print -l ${list:$header_lines} | grep -a -oP '^\x1b\[[0-9;]*m')"})
 
 # get current group index, start from 2
 local current=2
@@ -24,4 +24,4 @@ fi
 echo $current > $tmp_dir/cycle-current-$pid
 
 # print current group
-print -l ${list:$((header_lines + 1))} | grep -a -F "${total[current]}"
+print -l ${list:$header_lines} | grep -a -F "${total[current]}"

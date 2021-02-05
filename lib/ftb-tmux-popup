@@ -1,4 +1,8 @@
 #!/hint/zsh
+# Show results with tmux popup
+# Example usage:
+#   zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+#   zstyle ':fzf-tab:*' popup-pad 0 0
 emulate -L zsh -o extended_glob
 
 : ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}

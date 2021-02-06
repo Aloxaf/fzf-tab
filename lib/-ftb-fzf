@@ -59,8 +59,9 @@ if (( ! use_tmux_popup )); then
   echoti cnorm >/dev/tty
 fi
 
-setopt localoptions multios
-cat > $tmp_dir/completions.$$ | $fzf_command \
+cat > $tmp_dir/completions.$$
+
+$fzf_command \
   --ansi \
   --bind=$binds \
   --bind="${group_cycle[1]}:reload($reload_command -1),${group_cycle[2]}:reload($reload_command 1)" \

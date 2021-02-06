@@ -20,6 +20,10 @@ fzf_opts=(${${fzf_opts/--height*}/--layout*})
 local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
+if [[ ! -f $tmp_dir/completions.$$ ]]; then
+  cat > $tmp_dir/completions.$$
+fi
+
 local text REPLY comp_lines comp_length length popup_pad
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)

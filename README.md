@@ -76,7 +76,7 @@ git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
 
 Just press <kbd>Tab</kbd> as usual~
 
-You can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results,
+You can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results, <kbd>F1</kbd>/<kbd>F2</kbd> to switch between different groups,
 and <kbd>/</kbd> to trigger continuous completion (useful when completing a deep path).
 
 Available commands:
@@ -92,10 +92,11 @@ Available commands:
 A common configuration is:
 
 ```zsh
-zstyle ":completion:*:git-checkout:*" sort false
+zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:*' switch-group ',' '.'
 ```
 
 For more information, please see [Wiki#Configuration](https://github.com/Aloxaf/fzf-tab/wiki/Configuration).

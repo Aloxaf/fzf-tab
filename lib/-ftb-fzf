@@ -50,9 +50,6 @@ local reload_command="$commands[zsh] $FZF_TAB_HOME/lib/ftb-group-cycle-command $
 local use_tmux_popup=0
 if [[ $fzf_command == "ftb-tmux-popup" ]]; then
   use_tmux_popup=1
-elif [[ $fzf_command == "ftb-group-cycle" ]]; then
-  -ftb-zstyle -s ftb-group-cycle-command tmp || tmp=fzf
-  [[ $tmp == "ftb-tmux-popup" ]] && use_tmux_popup=1
 fi
 
 if (( ! use_tmux_popup )); then

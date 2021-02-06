@@ -1,4 +1,8 @@
 #!/hint/zsh
+# Show results with tmux popup
+# Example usage:
+#   zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+#   zstyle ':fzf-tab:*' popup-pad 0 0
 emulate -L zsh -o extended_glob
 
 : ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
@@ -16,24 +20,25 @@ fzf_opts=(${${fzf_opts/--height*}/--layout*})
 local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
-# write completion list to file
-cat > $tmp_dir/list-$$
+if [[ ! -f $tmp_dir/completions.$$ ]]; then
+  cat > $tmp_dir/completions.$$
+fi
 
 local text REPLY comp_lines comp_length length popup_pad
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 
 # get the size of content, note we should remove all ANSI color code
-comp_lines=$(( ${#${(f)"$(<$tmp_dir/list-$$)"}} + $popup_pad[2] ))
+comp_lines=$(( ${#${(f)"$(<$tmp_dir/completions.$$)"}} + $popup_pad[2] ))
 if (( comp_lines <= 500 )); then
   comp_length=0
-  for line in ${(f)"$(<$tmp_dir/list-$$)"}; do
+  for line in ${(f)"$(<$tmp_dir/completions.$$)"}; do
     length=${(m)#${(S)line//$'\x1b['[0-9]#*m}}
     (( length >= comp_length )) && comp_length=$length
   done
 else
   # FIXME: can't get the correct width of CJK characters.
-  comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/list-$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
+  comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/completions.$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
 
@@ -55,7 +60,7 @@ fi
 popup_width=$(( comp_length + 5 > window_width ? window_width : comp_length + 5 ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
-echo -E "cd ${(qq)PWD}; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/list-$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
+echo -E "cd ${(qq)PWD}; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \

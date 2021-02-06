@@ -1,0 +1,36 @@
+#!/hint/zsh
+emulate -L zsh -o extended_glob
+
+# receive arguments
+local pid=$1 header_lines=$2 tmp_dir=$3 offset=$@[-1]
+
+# read completion list
+local -a list=(${(f)"$(<$tmp_dir/completions.$pid)"})
+
+# get total group count
+if (( $#list > 10000 )); then
+  local -Ua total=(${(f)"$(print -l ${list:$header_lines} | grep -a -oP '^\x1b\[[0-9;]*m')"})
+else
+  local -Ua total=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
+fi
+
+# get current group index, start from 2
+local current=2
+if [[ -f $tmp_dir/current-group.$pid ]]; then
+  current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
+fi
+(( current > $#total )) && current=1
+(( current == 0 )) && current=$#total
+echo $current > $tmp_dir/current-group.$pid
+
+# print headers
+if (( header_lines != 0 )); then
+  print -l ${list[1,header_lines]/${total[current]}/$'\x1b[1m'}
+fi
+
+# print current group
+if (( $#list > 10000 )); then
+  print -l ${list:$header_lines} | grep -a -F "${total[current]}"
+else
+  print -l ${(M)${list:$header_lines}:#${total[current]}*}
+fi

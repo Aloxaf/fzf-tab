@@ -23,12 +23,13 @@ fi
 export word=\$ctxt[word]
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags fzf_preview debug_command tmp
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
 -ftb-zstyle -a fzf-bindings tmp && binds+=,${(j:,:)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
+-ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -43,16 +44,27 @@ binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
+local reload_command="$commands[zsh] $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $tmp_dir"
 
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
+# detect if we will use tmux popup
+local use_tmux_popup=0
+if [[ $fzf_command == "ftb-tmux-popup" ]]; then
+  use_tmux_popup=1
+fi
+
+if (( ! use_tmux_popup )); then
   # fzf will cause the current line to refresh, so move the cursor down.
   echoti cud1 >/dev/tty
   # reset cursor before call fzf
   echoti cnorm >/dev/tty
 fi
+
+cat > $tmp_dir/completions.$$
+
 $fzf_command \
   --ansi \
   --bind=$binds \
+  --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
   --color=hl:$(( header_lines == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \
@@ -66,10 +78,11 @@ $fzf_command \
   --query=$_ftb_query \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
-  $fzf_flags
-if [[ $fzf_command != "ftb-tmux-popup" ]]; then
+  $fzf_flags < $tmp_dir/completions.$$
+
+if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty
   echoti cuu1 >/dev/tty
 fi
 
-command rm $tmp_dir/{compcap,groups,ftb_preview_init}.$$ 2>/dev/null
+command rm $tmp_dir/*.$$ 2>/dev/null

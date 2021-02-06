@@ -5,7 +5,7 @@
 local pid=$1 header_lines=$2 tmp_dir=$3 offset=$@[-1]
 
 # read completion list
-local -a list=(${(f)"$(<$tmp_dir/cycle-list-$pid)"})
+local -a list=(${(f)"$(<$tmp_dir/completions.$pid)"})
 
 # print headers
 if (( header_lines != 0 )); then

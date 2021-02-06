@@ -40,28 +40,19 @@ else
     dsuf='' dpre=''
     if (( $+v[realdir] )); then
       filepath=$v[realdir]${(Q)v[word]}
-      if (( $#list_colors && $+builtins[fzf-tab-colorize] )); then
-        fzf-tab-colorize $filepath 2>/dev/null
-        dpre=$reply[2]$reply[1] dsuf=$reply[2]$reply[3]
-        if [[ $reply[4] ]]; then
-          dsuf+=" -> $reply[4]"
-        fi
-        [[ $dpre ]] && colorful=1
-      else
-        if [[ -d $filepath ]]; then
-          dsuf=/
-        fi
-        # add color and resolve symlink if have list-colors
-        # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
-        if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
-          -ftb-colorize $filepath
-          colorful=1
-        elif [[ -L $filepath ]]; then
-          dsuf=@
-        fi
-        if [[ $options[list_types] == off ]]; then
-          dsuf=''
-        fi
+      if [[ -d $filepath ]]; then
+        dsuf=/
+      fi
+      # add color and resolve symlink if have list-colors
+      # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
+      if (( $#list_colors )) && [[ -a $filepath || -L $filepath ]]; then
+        -ftb-colorize $filepath
+        colorful=1
+      elif [[ -L $filepath ]]; then
+        dsuf=@
+      fi
+      if [[ $options[list_types] == off ]]; then
+        dsuf=''
       fi
     fi
 

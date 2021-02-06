@@ -78,7 +78,7 @@ $fzf_command \
   --query=$_ftb_query \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
-  $fzf_flags
+  $fzf_flags < $tmp_dir/completions.$$
 
 if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty

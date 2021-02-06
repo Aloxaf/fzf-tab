@@ -17,12 +17,12 @@ fi
 
 # get current group index, start from 2
 local current=2
-if [[ -f $tmp_dir/cycle-current.$pid ]]; then
-  current=$(( $(<$tmp_dir/cycle-current.$pid) + offset ))
+if [[ -f $tmp_dir/current-group.$pid ]]; then
+  current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
 fi
 (( current > $#total )) && current=1
 (( current == 0 )) && current=$#total
-echo $current > $tmp_dir/cycle-current.$pid
+echo $current > $tmp_dir/current-group.$pid
 
 # print headers
 if (( header_lines != 0 )); then

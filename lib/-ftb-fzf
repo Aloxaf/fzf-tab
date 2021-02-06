@@ -23,13 +23,13 @@ fi
 export word=\$ctxt[word]
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags fzf_preview debug_command tmp group_cycle
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
 -ftb-zstyle -a fzf-bindings tmp && binds+=,${(j:,:)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
--ftb-zstyle -a group-cycle-trigger group_cycle || group_cycle=(F1 F2)
+-ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -44,7 +44,7 @@ binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
-local reload_command="$commands[zsh] $FZF_TAB_HOME/lib/ftb-group-cycle-command $$ $header_lines $tmp_dir"
+local reload_command="$commands[zsh] $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $tmp_dir"
 
 # detect if we will use tmux popup
 local use_tmux_popup=0
@@ -64,7 +64,7 @@ cat > $tmp_dir/completions.$$
 $fzf_command \
   --ansi \
   --bind=$binds \
-  --bind="${group_cycle[1]}:reload($reload_command -1),${group_cycle[2]}:reload($reload_command 1)" \
+  --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
   --color=hl:$(( header_lines == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \

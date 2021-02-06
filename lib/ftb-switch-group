@@ -1,5 +1,4 @@
 #!/hint/zsh
-# A part of ftb-group-cycle
 emulate -L zsh -o extended_glob
 
 # receive arguments

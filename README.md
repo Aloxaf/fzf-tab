@@ -30,7 +30,7 @@ Replace zsh's default completion selection menu with fzf!
 
 **NOTE: fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting)!!**
 
-## Manual
+### Manual
 
 First, clone this repository.
 
@@ -44,19 +44,19 @@ Then add the following line to your `~/.zshrc`.
 source ~/somewhere/fzf-tab.plugin.zsh
 ```
 
-## Antigen
+### Antigen
 
 ```zsh
 antigen bundle Aloxaf/fzf-tab
 ```
 
-## Zinit
+### Zinit
 
 ```zsh
 zinit light Aloxaf/fzf-tab
 ```
 
-## Oh-My-Zsh
+### Oh-My-Zsh
 
 Clone this repository to your custom directory and then add `fzf-tab` to your plugin list.
 
@@ -64,7 +64,7 @@ Clone this repository to your custom directory and then add `fzf-tab` to your pl
 git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
 ```
 
-## Prezto
+### Prezto
 
 Clone this repository to your contrib directory and then add `fzf-tab` to your module list in `.zpreztorc`.
 
@@ -76,26 +76,36 @@ git clone https://github.com/Aloxaf/fzf-tab $ZPREZTODIR/contrib/fzf-tab
 
 Just press <kbd>Tab</kbd> as usual~
 
-You can use <kbd>Ctrl</kdb>+<kdb>Space</kbd> to select multiple results, <kbd>F1</kbd>/<kbd>F2</kbd> to switch between different groups,
-and <kbd>/</kbd> to trigger continuous completion (useful when completing a deep path).
+Available keybindings:
+
+- <kbd>Ctrl</kdb>+<kdb>Space</kbd>: select multiple results, can be configured by `fzf-bindings` tag
+
+- <kbd>F1</kbd>/<kbd>F2</kbd>: switch between groups, can be configured by `switch-group` tag
+
+- <kbd>/</kbd>: trigger continuous completion (useful when completing a deep path), can be configured by `continuous-trigger` tag
 
 Available commands:
 
-- `disable-fzf-tab`: Disable fzf-tab and fallback to compsys.
+- `disable-fzf-tab`: disable fzf-tab and fallback to compsys
 
-- `enable-fzf-tab`: Enable fzf-tab.
+- `enable-fzf-tab`: enable fzf-tab
 
-- `toggle-fzf-tab`: Use it disable/enable plugin. This is also a zle widget.
+- `toggle-fzf-tab`: toggle the state of fzf-tab. This is also a zle widget.
 
 ## Configure
 
 A common configuration is:
 
 ```zsh
+# disable sort when completing `git checkout`
 zstyle ':completion:*:git-checkout:*' sort false
+# set descriptions format to enable group support
 zstyle ':completion:*:descriptions' format '[%d]'
+# set list-colors to enable filename colorizing
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# preview directory's content with exa when completing cd
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+# switch group using `,` and `.`
 zstyle ':fzf-tab:*' switch-group ',' '.'
 ```
 

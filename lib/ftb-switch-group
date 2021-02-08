@@ -1,11 +1,13 @@
 #!/hint/zsh
 emulate -L zsh -o extended_glob
 
+zmodload zsh/mapfile
+
 # receive arguments
 local pid=$1 header_lines=$2 tmp_dir=$3 offset=$@[-1]
 
 # read completion list
-local -a list=(${(f)"$(<$tmp_dir/completions.$pid)"})
+local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
 
 # get total group count
 if (( $#list > 10000 )); then

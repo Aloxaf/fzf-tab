@@ -5,6 +5,10 @@
 #   zstyle ':fzf-tab:*' popup-pad 0 0
 emulate -L zsh -o extended_glob
 
+# import min
+autoload -Uz zmathfunc
+zmathfunc
+
 : ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
 
 # fallback to fzf if it is not running in tmux
@@ -29,10 +33,10 @@ local text REPLY comp_lines comp_length length popup_pad
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 
 # get the size of content, note we should remove all ANSI color code
-comp_lines=$(( ${#${(f)"$(<$tmp_dir/completions.$$)"}} + $popup_pad[2] ))
+comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))
 if (( comp_lines <= 500 )); then
   comp_length=0
-  for line in ${(f)"$(<$tmp_dir/completions.$$)"}; do
+  for line in ${(f)mapfile[$tmp_dir/completions.$$]}; do
     length=${(m)#${(S)line//$'\x1b['[0-9]#*m}}
     (( length >= comp_length )) && comp_length=$length
   done
@@ -47,17 +51,17 @@ local popup_height popup_y popup_width popup_x
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( comp_lines + 4 >= cursor_y ? cursor_y : comp_lines + 4 ))
+  popup_height=$(( min(comp_lines + 4, cursor_y) ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( comp_lines + 4 >= (window_height - cursor_y) ? window_height - cursor_y : comp_lines + 4 ))
+  popup_height=$(( min(comp_lines + 4, window_height - cursor_y) ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi
 
 # calculate the popup width and x position
-popup_width=$(( comp_length + 5 > window_width ? window_width : comp_length + 5 ))
+popup_width=$(( min(comp_length + 5, window_width) ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
 echo -E "cd ${(qq)PWD}; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$

@@ -4,8 +4,9 @@ local tmp_dir=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER
 [[ -d $tmp_dir ]] || command mkdir $tmp_dir
 
 local ftb_preview_init="
-local -a _ftb_compcap=(\"\${(@f)\"\$(<$tmp_dir/compcap.$$)\"}\")
-local -a _ftb_groups=(\"\${(@f)\"\$(<$tmp_dir/groups.$$)\"}\")
+zmodload zsh/mapfile
+local -a _ftb_compcap=(\"\${(@f)mapfile[$tmp_dir/compcap.$$]}\")
+local -a _ftb_groups=(\"\${(@f)mapfile[$tmp_dir/groups.$$]}\")
 local bs=\$'\2'
 # get descriptoin
 export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}

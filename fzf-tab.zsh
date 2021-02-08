@@ -328,6 +328,7 @@ build-fzf-tab-module() {
 }
 
 zmodload zsh/zutil
+zmodload zsh/mapfile
 zmodload -F zsh/stat b:zstat
 
 0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"

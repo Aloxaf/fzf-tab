@@ -14,7 +14,7 @@ fzf-tab-lscolors::from-mode "$1" "$lstat[3]" $stat[3]
 [[ -z $REPLY ]] && fzf-tab-lscolors::from-name $1
 
 # If this is a symlink
-if [[ $lstat[14] ]]; then
+if [[ -n $lstat[14] ]]; then
   local sym_color=$REPLY
   local rsv_color=$REPLY
   local rsv=$lstat[14]

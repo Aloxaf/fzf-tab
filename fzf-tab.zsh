@@ -45,15 +45,15 @@
   local key expanded __tmp_value=$'<\0>' # placeholder
   for key in $keys; do
     expanded=${(P)key}
-    if [[ $expanded ]]; then
+    if [[ -n $expanded ]]; then
       __tmp_value+=$'\0'$key$'\0'$expanded
     fi
   done
-  if [[ $expl ]]; then
+  if [[ -n $expl ]]; then
     # store group index
     __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
   fi
-  if [[ $isfile ]]; then
+  if [[ -n $isfile ]]; then
     # NOTE: need a extra ${} here or ~ expansion won't work
     __tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
   fi
@@ -146,11 +146,11 @@
       ;;
   esac
 
-  if [[ $choices[1] && $choices[1] == $continuous_trigger ]]; then
+  if [[ -n $choices[1] && $choices[1] == $continuous_trigger ]]; then
     typeset -gi _ftb_continue=1
   fi
 
-  if [[ $choices[1] && $choices[1] == $accept_line ]]; then
+  if [[ -n $choices[1] && $choices[1] == $accept_line ]]; then
     typeset -gi _ftb_accept=1
   fi
   choices[1]=()

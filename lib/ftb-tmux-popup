@@ -3,6 +3,8 @@
 # Example usage:
 #   zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 #   zstyle ':fzf-tab:*' popup-pad 0 0
+# It can also be used as a standalone tool, like:
+#   ls | ftb-tmux-popup
 emulate -L zsh -o extended_glob
 
 # import min
@@ -24,7 +26,9 @@ fzf_opts=(${${fzf_opts/--height*}/--layout*})
 local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
-if [[ ! -f $tmp_dir/completions.$$ ]]; then
+# if not called by fzf-tab
+if (( ! $+IN_FZF_TAB )); then
+  [[ -d $tmp_dir ]] || mkdir -p $tmp_dir
   cat > $tmp_dir/completions.$$
 fi
 
@@ -72,4 +76,5 @@ echo -E "cd ${(qq)PWD}; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions
   echo -E "$(<$tmp_dir/result-$$)"
 } always {
   command rm $tmp_dir/*-$$
+  (( $+IN_FZF_TAB )) || command rm $tmp_dir/completions.$$
 }

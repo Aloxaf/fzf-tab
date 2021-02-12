@@ -25,6 +25,7 @@ export word=\$ctxt[word]
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
 local fzf_command fzf_flags fzf_preview debug_command tmp switch_group
+local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
 -ftb-zstyle -a fzf-bindings tmp && binds+=,${(j:,:)tmp}
@@ -79,7 +80,7 @@ $fzf_command \
   --query=$_ftb_query \
   --tiebreak=begin \
   ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
-  $fzf_flags < $tmp_dir/completions.$$
+  $fzf_flags < $tmp_dir/completions.$$ || ret=$?
 
 if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty
@@ -87,3 +88,4 @@ if (( ! use_tmux_popup )); then
 fi
 
 command rm $tmp_dir/*.$$ 2>/dev/null
+return $ret

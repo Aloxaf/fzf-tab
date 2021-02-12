@@ -96,10 +96,11 @@
   local -a _ftb_compcap
   local -Ua _ftb_groups
   local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0'
+  local ret=0
 
   # must run with user options; don't move `emulate -L zsh` above this line
   (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i
-  COLUMNS=500 _ftb__main_complete "$@"
+  COLUMNS=500 _ftb__main_complete "$@" || ret=$?
   (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -o
 
   emulate -L zsh -o extended_glob
@@ -108,7 +109,7 @@
   -ftb-generate-complist # sets `_ftb_complist`
 
   case $#_ftb_complist in
-    0) return;;
+    0) return 1;;
     # NOTE: won't trigger continuous completion
     1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
     *)
@@ -119,6 +120,7 @@
       -ftb-zstyle -s accept-line accept_line
 
       choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
+      ret=$?
       # choices=(query_string expect_key returned_word)
 
       # insert query string directly
@@ -136,7 +138,7 @@
             compstate[insert]='2'
             [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         fi
-        return
+        return $ret
       fi
       choices[1]=()
 
@@ -171,6 +173,7 @@
   elif (( $#choices > 1 )); then
     compstate[insert]='all'
   fi
+  return $ret
 }
 
 fzf-tab-debug() {
@@ -195,7 +198,7 @@ fzf-tab-debug() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _ftb_continue=1 _ftb_accept=0
+  local -i _ftb_continue=1 _ftb_accept=0 ret=0
   # hide the cursor until finishing completion, so that users won't see cursor up and down
   echoti civis >/dev/tty
   while (( _ftb_continue )); do
@@ -203,6 +206,7 @@ fzf-tab-complete() {
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget
+      ret=$?
     } always {
       IN_FZF_TAB=0
     }
@@ -216,6 +220,7 @@ fzf-tab-complete() {
   echoti cnorm >/dev/tty
   zle .redisplay
   (( _ftb_accept )) && zle .accept-line
+  return $ret
 }
 
 # this function does nothing, it is used to be wrapped by other plugins like f-sy-h.

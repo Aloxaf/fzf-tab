@@ -19,6 +19,8 @@ if (( ! $+TMUX_PANE )); then
   return
 fi
 
+local ret=0
+
 local -a fzf_opts=($@)
 fzf_opts=(${${fzf_opts/--height*}/--layout*})
 
@@ -72,9 +74,10 @@ echo -E "cd ${(qq)PWD}; $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \
-       -KE -R ". $tmp_dir/fzf-$$"
+       -KE -R ". $tmp_dir/fzf-$$" || ret=$?
   echo -E "$(<$tmp_dir/result-$$)"
 } always {
   command rm $tmp_dir/*-$$
   (( $+IN_FZF_TAB )) || command rm $tmp_dir/completions.$$
 }
+return $ret

@@ -61,7 +61,7 @@ zinit light Aloxaf/fzf-tab
 Clone this repository to your custom directory and then add `fzf-tab` to your plugin list.
 
 ```zsh
-git clone https://github.com/Aloxaf/fzf-tab ~ZSH_CUSTOM/plugins/fzf-tab
+git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
 ```
 
 ### Prezto

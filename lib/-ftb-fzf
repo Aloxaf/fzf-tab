@@ -45,7 +45,7 @@ print -r -- ${ftb_preview_init/{f}/\$1} > $tmp_dir/ftb_preview_init.$$
 binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
-local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
+local -i lines=$(( $#_ftb_compcap + 4 + header_lines ))
 local reload_command="$commands[zsh] $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $tmp_dir"
 
 # detect if we will use tmux popup

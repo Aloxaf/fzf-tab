@@ -45,7 +45,7 @@ print -r -- ${ftb_preview_init/{f}/\$1} > $tmp_dir/ftb_preview_init.$$
 binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
-if [[ $(zstyle -L ':completion:*' special-dirs) =~ "true" ]]; then
+if [[ $(zstyle -L ':completion:*' special-dirs) =~ "true" && $FZF_DEFAULT_OPTS =~ "--border" ]]; then
 	local -i lines=$(( $#_ftb_compcap + 4 + header_lines ))
 else
 	local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))

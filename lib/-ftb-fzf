@@ -24,7 +24,7 @@ fi
 export word=\$ctxt[word]
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags fzf_preview debug_command tmp switch_group
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad
 local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
@@ -32,6 +32,7 @@ local ret=0
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
+-ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -45,7 +46,7 @@ print -r -- ${ftb_preview_init/{f}/\$1} > $tmp_dir/ftb_preview_init.$$
 binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
-local -i lines=$(( $#_ftb_compcap + 2 + header_lines ))
+local -i lines=$(( $#_ftb_compcap + fzf_pad + header_lines ))
 local reload_command="$commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $tmp_dir"
 
 # detect if we will use tmux popup

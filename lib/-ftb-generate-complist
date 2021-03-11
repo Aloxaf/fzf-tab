@@ -22,11 +22,12 @@ if (( $+builtins[fzf-tab-candidates-generate] )); then
 else
   local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
   local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
+  (( $#namecolors == 0 && $#modecolors == 0 )) && list_colors=()
 fi
 
 if (( $#_ftb_groups == 1 )); then
   -ftb-zstyle -m single-group prefix || prefix=''
-  -ftb-zstyle -m single-group color || group_colors=($default_color)
+  -ftb-zstyle -m single-group color || group_colors=("$default_color")
 fi
 
 if (( $+builtins[fzf-tab-candidates-generate] )); then

@@ -59,7 +59,7 @@ if (( ! use_tmux_popup )); then
   # fzf will cause the current line to refresh, so move the cursor down.
   echoti cud1 >/dev/tty
   # reset cursor before call fzf
-  echoti cnorm >/dev/tty
+  echoti cnorm >/dev/tty 2>/dev/null
 fi
 
 cat > $tmp_dir/completions.$$
@@ -84,7 +84,7 @@ $fzf_command \
   $fzf_flags < $tmp_dir/completions.$$ || ret=$?
 
 if (( ! use_tmux_popup )); then
-  echoti civis >/dev/tty
+  echoti civis >/dev/tty 2>/dev/null
   echoti cuu1 >/dev/tty
 fi
 

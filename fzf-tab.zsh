@@ -200,7 +200,8 @@ fzf-tab-complete() {
   # this name must be ugly to avoid clashes
   local -i _ftb_continue=1 _ftb_accept=0 ret=0
   # hide the cursor until finishing completion, so that users won't see cursor up and down
-  echoti civis >/dev/tty
+  # NOTE: MacOS Terminal doesn't support civis & cnorm
+  echoti civis >/dev/tty 2>/dev/null
   while (( _ftb_continue )); do
     _ftb_continue=0
     local IN_FZF_TAB=1
@@ -217,7 +218,7 @@ fzf-tab-complete() {
       zle fzf-tab-dummy
     fi
   done
-  echoti cnorm >/dev/tty
+  echoti cnorm >/dev/tty 2>/dev/null
   zle .redisplay
   (( _ftb_accept )) && zle .accept-line
   return $ret

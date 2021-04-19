@@ -58,3 +58,8 @@ If applicable, add screenshots to help explain your problem.
 
 #### Minimal zshrc
 If applicable, add a minimal zshrc to help us analyze.
+
+#### Log
+If applicable, use `C-x .` to trigger completion and provide the log.
+
+If there are only three lines in your log, please make sure your fzf-tab is loaded with the correct order (see the checklist above).

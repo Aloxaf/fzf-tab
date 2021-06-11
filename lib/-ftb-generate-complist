@@ -100,9 +100,13 @@ fi
 typeset -gUa _ftb_complist=("${(@)tcandidates//[0-9]#$bs}")
 
 # hide needless group
-if [[ $show_group == brief && -n ${_ftb_groups[@]} ]]; then
-  local i indexs=({1..$#_ftb_groups})
-  for i in ${indexs:|duplicate_groups}; do
+if (( $#_ftb_groups )); then
+  local i to_hide indexs=({1..$#_ftb_groups})
+  case $show_group in
+    brief) to_hide=(${indexs:|duplicate_groups}) ;;
+    none) to_hide=($indexs) ;;
+  esac
+  for i in $to_hide; do
     # NOTE: _ftb_groups is unique array
     _ftb_groups[i]="__hide__$i"
   done

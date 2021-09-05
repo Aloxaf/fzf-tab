@@ -64,8 +64,15 @@ fi
 
 cat > $tmp_dir/completions.$$
 
+local dd='gdd'
+if (( ${+commands[$dd]} == 0 )) ; then
+  dd='dd'
+fi
+if (( ${+commands[$dd]} == 0 )) ; then
+  dd='true' # nop if dd is not installed
+fi
 
-_ftb_query="${_ftb_query}$(command gdd bs=1G count=1 status=none iflag=nonblock < /dev/tty 2>/dev/null)" || true
+_ftb_query="${_ftb_query}$(command "$dd" bs=1G count=1 status=none iflag=nonblock < /dev/tty 2>/dev/null)" || true
 
 $fzf_command \
   --ansi \

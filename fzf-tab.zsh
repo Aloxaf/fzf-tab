@@ -213,13 +213,11 @@ fzf-tab-complete() {
     }
     if (( _ftb_continue )); then
       zle .split-undo
-      zle .reset-prompt
       zle -R
       zle fzf-tab-dummy
     fi
   done
   echoti cnorm >/dev/tty 2>/dev/null
-  zle .redisplay
   (( _ftb_accept )) && zle .accept-line
   return $ret
 }

@@ -40,7 +40,7 @@ zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))
-if (( comp_lines <= 500 )); then
+if (( comp_lines <= 500 || ! $+commands[gawk] )); then
   comp_length=0
   for line in ${(f)mapfile[$tmp_dir/completions.$$]}; do
     length=${(m)#${(S)line//$'\x1b['[0-9]#*m}}
@@ -48,7 +48,7 @@ if (( comp_lines <= 500 )); then
   done
 else
   # FIXME: can't get the correct width of CJK characters.
-  comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/completions.$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
+  comp_length=$(command sed 's/\x1b\[[0-9;]*m//g' $tmp_dir/completions.$$ | command gawk 'length > max_length { max_length = length; } END { print max_length }')
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
 

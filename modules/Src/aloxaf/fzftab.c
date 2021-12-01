@@ -304,13 +304,9 @@ char* ftb_strcat(char* dst, int n, ...)
     va_list valist;
     va_start(valist, n);
 
-    char* final = dst;
-#ifdef __linux
-    size_t size = malloc_usable_size(dst);
-#elif __APPLE__
-    size_t size = malloc_size(dst);
-#endif
-    size_t max_len = size - 1;
+    char* final = zrealloc(dst, 128);
+    size_t size = 128, max_len = 128 - 1;
+    dst = final;
 
     for (int i = 0, idx = 0; i < n; i++) {
         char* src = va_arg(valist, char*);

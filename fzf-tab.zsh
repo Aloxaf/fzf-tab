@@ -115,7 +115,9 @@
     *)
       -ftb-generate-query      # sets `_ftb_query`
       -ftb-generate-header     # sets `_ftb_headers`
-      -ftb-zstyle -s continuous-trigger continuous_trigger || continuous_trigger=/
+      -ftb-zstyle -s continuous-trigger continuous_trigger || {
+        [[ $OSTYPE == msys ]] && continuous_trigger=// || continuous_trigger=/
+      }
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
       -ftb-zstyle -s accept-line accept_line
 

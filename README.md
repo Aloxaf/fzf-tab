@@ -28,7 +28,7 @@ Replace zsh's default completion selection menu with fzf!
 
 # Install
 
-**NOTE: fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma/fast-syntax-highlighting)!!**
+**NOTE: fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)!!**
 
 ### Manual
 

@@ -21,6 +21,7 @@ export word=\${(Q)ctxt[word]}
 # get real path if it is file
 if (( \$+ctxt[realdir] )); then
   export realpath=\${ctxt[realdir]}\$word
+  export realpath=\${realpath#\${ctxt[IPREFIX]}}
 fi
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle

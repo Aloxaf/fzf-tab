@@ -116,7 +116,7 @@
     0) return 1;;
     1)
       choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}")
-      if (( _ftb_continue )); then
+      if (( _ftb_continue_last )); then
         choices[1]=$continuous_trigger
       fi
       ;;
@@ -157,8 +157,7 @@
 
   if [[ -n $choices[1] && $choices[1] == $continuous_trigger ]]; then
     typeset -gi _ftb_continue=1
-  else
-    typeset -gi _ftb_continue=0
+    typeset -gi _ftb_continue_last=1
   fi
 
   if [[ -n $choices[1] && $choices[1] == $accept_line ]]; then
@@ -207,11 +206,12 @@ fzf-tab-debug() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _ftb_continue=1 _ftb_accept=0 ret=0
+  local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0
   # hide the cursor until finishing completion, so that users won't see cursor up and down
   # NOTE: MacOS Terminal doesn't support civis & cnorm
   echoti civis >/dev/tty 2>/dev/null
   while (( _ftb_continue )); do
+    _ftb_continue=0
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget

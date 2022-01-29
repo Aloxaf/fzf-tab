@@ -108,16 +108,21 @@
   local _ftb_query _ftb_complist=() _ftb_headers=() command opts
   -ftb-generate-complist # sets `_ftb_complist`
 
+  -ftb-zstyle -s continuous-trigger continuous_trigger || {
+    [[ $OSTYPE == msys ]] && continuous_trigger=// || continuous_trigger=/
+  }
+
   case $#_ftb_complist in
     0) return 1;;
-    # NOTE: won't trigger continuous completion
-    1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}");;
+    1)
+      choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}")
+      if (( _ftb_continue_last )); then
+        choices[1]=$continuous_trigger
+      fi
+      ;;
     *)
       -ftb-generate-query      # sets `_ftb_query`
       -ftb-generate-header     # sets `_ftb_headers`
-      -ftb-zstyle -s continuous-trigger continuous_trigger || {
-        [[ $OSTYPE == msys ]] && continuous_trigger=// || continuous_trigger=/
-      }
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
       -ftb-zstyle -s accept-line accept_line
 
@@ -152,6 +157,7 @@
 
   if [[ -n $choices[1] && $choices[1] == $continuous_trigger ]]; then
     typeset -gi _ftb_continue=1
+    typeset -gi _ftb_continue_last=1
   fi
 
   if [[ -n $choices[1] && $choices[1] == $accept_line ]]; then
@@ -200,7 +206,7 @@ fzf-tab-debug() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -i _ftb_continue=1 _ftb_accept=0 ret=0
+  local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0
   # hide the cursor until finishing completion, so that users won't see cursor up and down
   # NOTE: MacOS Terminal doesn't support civis & cnorm
   echoti civis >/dev/tty 2>/dev/null

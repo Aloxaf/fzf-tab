@@ -403,6 +403,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     char **ftb_compcap = getaparam("_ftb_compcap"), **group_colors = getaparam("group_colors"),
          *default_color = getsparam("default_color"), *prefix = getsparam("prefix");
 
+    size_t group_colors_len = arrlen(group_colors);
     size_t ftb_compcap_len = arrlen(ftb_compcap);
 
     char *bs = metafy("\b", 1, META_DUP), *nul = metafy("\0", 1, META_DUP),
@@ -469,7 +470,8 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         // add color to description if they have group index
         if (group) {
             // use strtol ?
-            char* color = group_colors[atoi(group) - 1];
+            int group_index = atoi(group);
+            char* color = group_index >= group_colors_len ? "" : group_colors[group_index - 1];
             // add prefix
             result = ftb_strcat(
                 result, 11, group, bs, color, prefix, dpre, nul, group, bs, desc, nul, dsuf);

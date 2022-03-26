@@ -29,7 +29,7 @@ local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
 
 if [ "$tmp[8]" = 'top' ]; then
-  cursor_y=$((cursor_y + tmp[7] - 1))
+  cursor_y=$((cursor_y + tmp[7]))
 fi
 
 # if not called by fzf-tab

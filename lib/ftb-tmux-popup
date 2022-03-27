@@ -28,7 +28,7 @@ fzf_opts=(${${fzf_opts/--height*}/--layout*})
 local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width} #{status} #{status-position}"))
 local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6] window_top=0
 
-if [ "$tmp[8]" = 'top' ]; then
+if [[ $tmp[8] == 'top' ]]; then
   window_top=$tmp[7]
   cursor_y=$((cursor_y + window_top))
 fi

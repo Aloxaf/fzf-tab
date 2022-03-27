@@ -25,8 +25,13 @@ local -a fzf_opts=($@)
 fzf_opts=(${${fzf_opts/--height*}/--layout*})
 
 # get position of cursor and size of window
-local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width}"))
-local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6]
+local -a tmp=($(command tmux display-message -p "#{pane_top} #{cursor_y} #{pane_left} #{cursor_x} #{window_height} #{window_width} #{status} #{status-position}"))
+local cursor_y=$((tmp[1] + tmp[2])) cursor_x=$((tmp[3] + tmp[4])) window_height=$tmp[5] window_width=$tmp[6] window_top=0
+
+if [[ $tmp[8] == 'top' ]]; then
+  window_top=$tmp[7]
+  cursor_y=$((cursor_y + window_top))
+fi
 
 # if not called by fzf-tab
 if (( ! $+IN_FZF_TAB )); then
@@ -57,11 +62,11 @@ local popup_height popup_y popup_width popup_x
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( min(comp_lines + 4, cursor_y) ))
+  popup_height=$(( min(comp_lines + 4, cursor_y - window_top) ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( min(comp_lines + 4, window_height - cursor_y) ))
+  popup_height=$(( min(comp_lines + 4, window_height - cursor_y + window_top - 1) ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi

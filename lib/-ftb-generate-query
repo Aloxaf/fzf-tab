@@ -1,5 +1,9 @@
 #!/hint/zsh
 
+if zmodload -s zsh/pcre; then
+  setopt localoptions rematch_pcre
+fi
+
 local key qtype tmp query_string
 typeset -g _ftb_query=
 -ftb-zstyle -a query-string query_string || query_string=(prefix input first)

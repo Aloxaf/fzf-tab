@@ -1,6 +1,5 @@
 #include "fzftab.mdh"
 #include "fzftab.pro"
-#include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/stat.h>

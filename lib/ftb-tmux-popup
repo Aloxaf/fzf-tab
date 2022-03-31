@@ -53,7 +53,7 @@ if (( comp_lines <= 500 )); then
   done
 else
   # FIXME: can't get the correct width of CJK characters.
-  comp_length=$(command perl -pe 's/\x1b\[[0-9;]*m//g;s/\x00//g' $tmp_dir/completions.$$ | command awk 'length > max_length { max_length = length; } END { print max_length }')
+  comp_length=$( command perl -ne 's/\x1b\[[0-9;]*m//g;s/\x00//g; $m= length() if $m < length(); END { print $m }' < $tmp_dir/completions.$$ )
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
 

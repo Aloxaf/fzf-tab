@@ -57,16 +57,21 @@ else
 fi
 comp_length=$(( comp_length + $popup_pad[1] ))
 
-local popup_height popup_y popup_width popup_x
+local popup_height popup_y popup_width popup_x adjust_height
+
+# adjust the popup height if the fzf finder info style is not default
+if (( $fzf_opts[(I)--info=*(hidden|inline)*] > 0 )); then
+    adjust_height=-1
+fi
 
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( min(comp_lines + 4, cursor_y - window_top) ))
+  popup_height=$(( min(comp_lines + 4, cursor_y - window_top) + adjust_height ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( min(comp_lines + 4, window_height - cursor_y + window_top - 1) ))
+  popup_height=$(( min(comp_lines + 4, window_height - cursor_y + window_top - 1) + adjust_height ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi

@@ -14,8 +14,14 @@
              i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
              J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
+  # store $curcontext for further usage
+  _ftb_curcontext=${curcontext#:}
+
   # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-  if (( $#_oad != 0 || ! IN_FZF_TAB )); then
+  # or fzf-tab is disabled in the current context
+  if (( $#_oad != 0 || ! IN_FZF_TAB )) \
+    || { -ftb-zstyle -m disabled-on "any" } \
+    || ({ -ftb-zstyle -m disabled-on "files" } && [[ -n $isfile ]]); then
     builtin compadd "$@"
     return
   fi
@@ -30,9 +36,6 @@
   if (( $#__hits == 0 )); then
     return $ret
   fi
-
-  # store $curcontext for furthur usage
-  _ftb_curcontext=${curcontext#:}
 
   # only store the fist `-X`
   expl=$expl[2]

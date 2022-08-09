@@ -341,9 +341,9 @@ build-fzf-tab-module() {
   CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
   make -j$(nproc)
   if (( $? != 0 )); then
-	  echo "The module building has failed. See the output above for details." >&2
+    print -P "%F{red}%BThe module building has failed. See the output above for details.%f%b" >&2
   else
-	  echo "The module has been built sucessfully."
+    print -P "%F{green}%BThe module has been built successfully.%f%b"
   fi
   popd
 }

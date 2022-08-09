@@ -340,7 +340,7 @@ build-fzf-tab-module() {
   pushd $FZF_TAB_HOME/modules
   CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
   make -j$(nproc)
-  if [[ $? -ne 0 ]]; then
+  if (( $? != 0 )); then
 	  echo "The module building has failed. See the output above for details." >&2
   else
 	  echo "The module has been built sucessfully."

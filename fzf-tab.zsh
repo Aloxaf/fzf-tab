@@ -334,12 +334,16 @@ toggle-fzf-tab() {
 
 build-fzf-tab-module() {
   local MACOS
+  local NPROC
   if [[ ${OSTYPE} == darwin* ]]; then
     MACOS=true
+    NPROC=$(sysctl -n hw.logicalcpu)
+  else
+    NPROC=$(nproc)
   fi
   pushd $FZF_TAB_HOME/modules
   CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
-  make -j$(nproc)
+  make -j${NPROC}
   popd
 }
 

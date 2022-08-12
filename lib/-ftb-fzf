@@ -22,7 +22,7 @@ export word=\${(Q)ctxt[word]}
 if (( \$+ctxt[realdir] )); then
   export realpath=\${ctxt[realdir]}\$word
 fi
-export words='${words}'
+$(typeset -p words)
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
 local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad

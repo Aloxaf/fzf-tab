@@ -9,7 +9,7 @@ local -a _ftb_compcap=(\"\${(@f)mapfile[$tmp_dir/compcap.$$]}\")
 local -a _ftb_groups=(\"\${(@f)mapfile[$tmp_dir/groups.$$]}\")
 local bs=\$'\2'
 # get description
-export desc=\${\${\"\$(<'{f}')\"%\$'\0'*}#*\$'\0'}
+export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
 # get group
@@ -91,7 +91,7 @@ $fzf_command \
   --print-query \
   --query=$_ftb_query \
   --tiebreak=begin \
-  ${fzf_preview:+--preview=$ftb_preview_init$fzf_preview} \
+  ${fzf_preview:+--preview=${ftb_preview_init/{f}/'{f}'}$fzf_preview} \
   $fzf_flags < $tmp_dir/completions.$$ || ret=$?
 
 if (( ! use_tmux_popup )); then

@@ -14,8 +14,14 @@
              i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
              J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
+  # store $curcontext for further usage
+  _ftb_curcontext=${curcontext#:}
+
   # just delegate and leave if any of -O, -A or -D are given or fzf-tab is not enabled
-  if (( $#_oad != 0 || ! IN_FZF_TAB )); then
+  # or fzf-tab is disabled in the current context
+  if (( $#_oad != 0 || ! IN_FZF_TAB )) \
+    || { -ftb-zstyle -m disabled-on "any" } \
+    || ({ -ftb-zstyle -m disabled-on "files" } && [[ -n $isfile ]]); then
     builtin compadd "$@"
     return
   fi
@@ -30,9 +36,6 @@
   if (( $#__hits == 0 )); then
     return $ret
   fi
-
-  # store $curcontext for furthur usage
-  _ftb_curcontext=${curcontext#:}
 
   # only store the fist `-X`
   expl=$expl[2]
@@ -334,13 +337,23 @@ toggle-fzf-tab() {
 
 build-fzf-tab-module() {
   local MACOS
+  local NPROC
   if [[ ${OSTYPE} == darwin* ]]; then
     MACOS=true
+    NPROC=$(sysctl -n hw.logicalcpu)
+  else
+    NPROC=$(nproc)
   fi
   pushd $FZF_TAB_HOME/modules
   CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${MACOS:+DL_EXT=bundle}
-  make -j$(nproc)
+  make -j${NPROC}
+  local ret=$?
   popd
+  if (( ${ret} != 0 )); then
+    print -P "%F{red}%BThe module building has failed. See the output above for details.%f%b" >&2
+  else
+    print -P "%F{green}%BThe module has been built successfully.%f%b"
+  fi
 }
 
 zmodload zsh/zutil

@@ -8,7 +8,7 @@ zmodload zsh/mapfile
 local -a _ftb_compcap=(\"\${(@f)mapfile[$tmp_dir/compcap.$$]}\")
 local -a _ftb_groups=(\"\${(@f)mapfile[$tmp_dir/groups.$$]}\")
 local bs=\$'\2'
-# get descriptoin
+# get description
 export desc=\${\${\"\$(<{f})\"%\$'\0'*}#*\$'\0'}
 # get ctxt for current completion
 local -A ctxt=(\"\${(@0)\${_ftb_compcap[(r)\${(b)desc}\$bs*]#*\$bs}}\")
@@ -22,6 +22,7 @@ export word=\${(Q)ctxt[word]}
 if (( \$+ctxt[realdir] )); then
   export realpath=\${ctxt[realdir]}\$word
 fi
+$(typeset -p words)
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
 local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad

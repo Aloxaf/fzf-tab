@@ -113,12 +113,10 @@ int compile_patterns(char* nam, char** list_colors)
         }
 
         // name=color
-        if (!(name_color[i].pat = patcompile(pat, PAT_ZDUP, NULL))) {
-            zwarnnam(nam, "bad pattern: %s", list_colors[i]);
-            return 1;
+        if ((name_color[i].pat = patcompile(pat, PAT_ZDUP, NULL))) {
+            strcpy(name_color[i].color, color + 1);
         }
 
-        strcpy(name_color[i].color, color + 1);
         free(pat);
     }
     return 0;

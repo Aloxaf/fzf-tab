@@ -1,5 +1,9 @@
 #!/hint/zsh
 
+# import math functions
+autoload -Uz zmathfunc
+zmathfunc
+
 local tmp_dir=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER
 [[ -d $tmp_dir ]] || command mkdir $tmp_dir
 
@@ -25,7 +29,7 @@ fi
 $(typeset -p words)
 "
 local binds=tab:down,btab:up,change:top,ctrl-space:toggle
-local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad fzf_min_height
 local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
@@ -34,6 +38,7 @@ local ret=0
 -ftb-zstyle -s fzf-preview fzf_preview
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
+-ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -84,7 +89,7 @@ $fzf_command \
   --delimiter='\x00' \
   --expect=$continuous_trigger,$print_query,$accept_line \
   --header-lines=$header_lines \
-  --height=${FZF_TMUX_HEIGHT:=$(( lines > LINES / 3 * 2 ? LINES / 3 * 2 : lines ))} \
+  --height=${FZF_TMUX_HEIGHT:=$(( min(max(lines, fzf_min_height), LINES / 3 * 2)  ))} \
   --layout=reverse \
   --multi \
   --nth=2,3 \

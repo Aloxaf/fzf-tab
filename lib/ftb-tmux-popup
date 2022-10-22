@@ -43,7 +43,6 @@ local text REPLY comp_lines comp_length length popup_pad popup_min_size
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-min-size popup_min_size || popup_min_size=(0 0)
-echo $popup_min_size > /tmp/aaf
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))

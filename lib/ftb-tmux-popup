@@ -39,9 +39,10 @@ if (( ! $+IN_FZF_TAB )); then
   cat > $tmp_dir/completions.$$
 fi
 
-local text REPLY comp_lines comp_length length popup_pad
+local text REPLY comp_lines comp_length length popup_pad popup_min_size
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
+zstyle -a ":fzf-tab:$_ftb_curcontext" popup-min-size popup_min_size || popup_min_size=(0 0)
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))
@@ -67,17 +68,17 @@ fi
 # calculate the popup height and y position
 if (( cursor_y * 2 > window_height )); then
   # show above the cursor
-  popup_height=$(( min(comp_lines + 4, cursor_y - window_top) + adjust_height ))
+  popup_height=$(( min(max(comp_lines + 4, popup_min_size[2]), cursor_y - window_top) + adjust_height ))
   popup_y=$cursor_y
 else
   # show below the cursor
-  popup_height=$(( min(comp_lines + 4, window_height - cursor_y + window_top - 1) + adjust_height ))
+  popup_height=$(( min(max(comp_lines + 4, popup_min_size[2]), window_height - cursor_y + window_top - 1) + adjust_height ))
   popup_y=$(( cursor_y + popup_height + 1 ))
   fzf_opts+=(--layout=reverse)
 fi
 
 # calculate the popup width and x position
-popup_width=$(( min(comp_length + 5, window_width) ))
+popup_width=$(( min(max(comp_length + 5, popup_min_size[1]), window_width) ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
 echo -E "$commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$

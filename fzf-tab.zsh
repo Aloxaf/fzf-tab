@@ -379,7 +379,9 @@ typeset -ga _ftb_group_colors=(
 () {
   emulate -L zsh -o extended_glob
 
-  fpath+=($FZF_TAB_HOME/lib)
+  if [[ ! "$FPATH" == *${FZF_TAB_HOME}/lib* ]]; then
+    fpath+=($FZF_TAB_HOME/lib)
+  fi
 
   autoload -Uz is-at-least -- $FZF_TAB_HOME/lib/-#ftb*(:t)
 

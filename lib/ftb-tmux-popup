@@ -70,6 +70,7 @@ if (( cursor_y * 2 > window_height )); then
   # show above the cursor
   popup_height=$(( min(max(comp_lines + 4, popup_min_size[2]), cursor_y - window_top) + adjust_height ))
   popup_y=$cursor_y
+  fzf_opts+=(--bind=tab:up,btab:down)
 else
   # show below the cursor
   popup_height=$(( min(max(comp_lines + 4, popup_min_size[2]), window_height - cursor_y + window_top - 1) + adjust_height ))

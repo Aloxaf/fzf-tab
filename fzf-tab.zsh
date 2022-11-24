@@ -8,10 +8,10 @@
 # thanks Valodim/zsh-capture-completion
 -ftb-compadd() {
   # parse all options
-  local -A apre hpre dscrs _oad
+  local -A apre hpre dscrs _oad _mesg
   local -a isfile _opts __ expl
   zparseopts -E -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile \
-             i: S: s: I: x: r: R: W: F: M+: E: q e Q n U C \
+             i: S: s: I: x:=_mesg r: R: W: F: M+: E: q e Q n U C \
              J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
 
   # store $curcontext for further usage
@@ -34,6 +34,9 @@
   builtin compadd -A __hits -D __dscr "$@"
   local ret=$?
   if (( $#__hits == 0 )); then
+    if is-at-least 5.9 && (( $#_mesg != 0 )); then
+      builtin compadd -x $mesg
+    fi
     return $ret
   fi
 
@@ -378,7 +381,7 @@ typeset -ga _ftb_group_colors=(
 
   fpath+=($FZF_TAB_HOME/lib)
 
-  autoload -Uz -- $FZF_TAB_HOME/lib/-#ftb*(:t)
+  autoload -Uz is-at-least -- $FZF_TAB_HOME/lib/-#ftb*(:t)
 
   if (( $+FZF_TAB_COMMAND || $+FZF_TAB_OPTS || $+FZF_TAB_QUERY || $+FZF_TAB_SINGLE_GROUP || $+fzf_tab_preview_init )) \
        || zstyle -m ":fzf-tab:*" command '*' \

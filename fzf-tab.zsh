@@ -379,7 +379,7 @@ typeset -ga _ftb_group_colors=(
 () {
   emulate -L zsh -o extended_glob
 
-  if [[ ! "$FPATH" == *${FZF_TAB_HOME}/lib* ]]; then
+  if (( ! $fpath[(I)$FZF_TAB_HOME/lib] )); then
     fpath+=($FZF_TAB_HOME/lib)
   fi
 

@@ -339,24 +339,7 @@ toggle-fzf-tab() {
 }
 
 build-fzf-tab-module() {
-  local use_bundle
-  local NPROC
-  if [[ ${OSTYPE} == darwin* ]]; then
-    [[ -n ${module_path[1]}/**/*.bundle(#qN) ]] && use_bundle=true
-    NPROC=$(sysctl -n hw.logicalcpu)
-  else
-    NPROC=$(nproc)
-  fi
-  pushd $FZF_TAB_HOME/modules
-  CPPFLAGS=-I/usr/local/include CFLAGS="-g -Wall -O2" LDFLAGS=-L/usr/local/lib ./configure --disable-gdbm --without-tcsetpgrp ${use_bundle:+DL_EXT=bundle}
-  make -j${NPROC}
-  local ret=$?
-  popd
-  if (( ${ret} != 0 )); then
-    print -P "%F{red}%BThe module building has failed. See the output above for details.%f%b" >&2
-  else
-    print -P "%F{green}%BThe module has been built successfully.%f%b"
-  fi
+  -ftb-build-module $@
 }
 
 zmodload zsh/zutil

@@ -84,7 +84,7 @@ SHELL=$ZSH_NAME $fzf_command \
   --ansi \
   --bind=$binds \
   --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
-  --bind 'bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof' \
+  --bind=bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof \
   --color=hl:$(( header_lines == 0 ? 188 : 255 )) \
   --cycle \
   --delimiter='\x00' \

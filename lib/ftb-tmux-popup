@@ -7,9 +7,11 @@
 #   ls | ftb-tmux-popup
 emulate -L zsh -o extended_glob
 
-# import min
-autoload -Uz zmathfunc
-zmathfunc
+# import math functions (only if they're not already defined)
+if [[ -z "$functions[zsh_math_func_min]" ]]; then
+  autoload -Uz zmathfunc
+  zmathfunc
+fi
 
 : ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
 

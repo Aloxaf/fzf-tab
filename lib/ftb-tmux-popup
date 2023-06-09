@@ -8,7 +8,7 @@
 emulate -L zsh -o extended_glob
 
 # import math functions (only if they're not already defined)
-if [[ -z "$functions[zsh_math_func_min]" ]]; then
+if (( ! $+functions[zsh_math_func_min] )); then
   autoload -Uz zmathfunc
   zmathfunc
 fi

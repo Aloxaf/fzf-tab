@@ -6,6 +6,7 @@ fi
 
 local key qtype tmp query_string
 typeset -g _ftb_query=
+typeset -g _ftb_query_prefix=0
 -ftb-zstyle -a query-string query_string || query_string=(prefix input first)
 for qtype in $query_string; do
   if [[ $qtype == prefix ]]; then
@@ -23,6 +24,7 @@ for qtype in $query_string; do
       tmp[$#MATCH/2+1,-1]=""
       prefix[$#MATCH/2+1,-1]=()
     done
+    _ftb_query_prefix=1
   elif [[ $qtype == input ]]; then
     local fv=${_ftb_compcap[1]#*$'\2'}
     local -A v=("${(@0)fv}")
@@ -31,6 +33,7 @@ for qtype in $query_string; do
       tmp=${tmp/%$v[SUFFIX]}
     fi
     tmp=${${tmp#$v[hpre]}#$v[apre]}
+    _ftb_query_prefix=0
   fi
   if (( $query_string[(I)longest] )); then
     (( $#tmp > $#_ftb_query )) && _ftb_query=$tmp

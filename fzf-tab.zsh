@@ -111,7 +111,7 @@
 
   emulate -L zsh -o extended_glob
 
-  local _ftb_query _ftb_complist=() _ftb_headers=() command opts
+  local _ftb_query _ftb_complist=() _ftb_headers=() _ftb_query_prefix command opts
   -ftb-generate-complist # sets `_ftb_complist`
 
   -ftb-zstyle -s continuous-trigger continuous_trigger || {
@@ -127,37 +127,56 @@
       fi
       ;;
     *)
-      -ftb-generate-query      # sets `_ftb_query`
-      -ftb-generate-header     # sets `_ftb_headers`
-      -ftb-zstyle -s print-query print_query || print_query=alt-enter
-      -ftb-zstyle -s accept-line accept_line
+      -ftb-zstyle -s complete-common-prefix complete_common_prefix || complete_common_prefix=true
 
-      choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
-      ret=$?
-      # choices=(query_string expect_key returned_word)
+      -ftb-generate-query      # sets `_ftb_query` and `_ftb_query_prefix`
 
-      # insert query string directly
-      if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
+      if [[ "$complete_common_prefix" == true && $_ftb_query_prefix == 1 && "$PREFIX" != "$_ftb_query" ]]; then
         local -A v=("${(@0)${_ftb_compcap[1]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
-        # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
-        builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+        builtin compadd "${args[@]:--Q}" -Q -- $_ftb_query
 
         compstate[list]=
         compstate[insert]=
-        if (( $#choices[1] > 0 )); then
-            compstate[insert]='2'
-            [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+        if (( $#_ftb_query > 0 )); then
+          compstate[insert]='2'
+          [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         fi
-        return $ret
+        return 0
+      else
+        -ftb-generate-header     # sets `_ftb_headers`
+        -ftb-zstyle -s print-query print_query || print_query=alt-enter
+        -ftb-zstyle -s accept-line accept_line
+
+        choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
+        ret=$?
+        # choices=(query_string expect_key returned_word)
+
+        # insert query string directly
+        if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
+          local -A v=("${(@0)${_ftb_compcap[1]}}")
+          local -a args=("${(@ps:\1:)v[args]}")
+          [[ -z $args[1] ]] && args=()  # don't pass an empty string
+          IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
+          # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
+          builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+
+          compstate[list]=
+          compstate[insert]=
+          if (( $#choices[1] > 0 )); then
+              compstate[insert]='2'
+              [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+          fi
+          return $ret
+        fi
+        choices[1]=()
+
+        choices=("${(@)${(@)choices%$nul*}#*$nul}")
+
+        unset CTXT
       fi
-      choices[1]=()
-
-      choices=("${(@)${(@)choices%$nul*}#*$nul}")
-
-      unset CTXT
       ;;
   esac
 

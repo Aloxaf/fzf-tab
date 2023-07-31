@@ -131,7 +131,8 @@
 
       -ftb-generate-query      # sets `_ftb_query` and `_ftb_query_prefix`
 
-      if [[ "$complete_common_prefix" == true && $_ftb_query_prefix == 1 && "${PREFIX##*/}" != "$_ftb_query" ]]; then
+      local curr_prefix="${PREFIX##*/}"
+      if [[ "$complete_common_prefix" == true && $_ftb_query_prefix == 1 &&  "$curr_prefix" != "$_ftb_query"* ]]; then
         local -A v=("${(@0)${_ftb_compcap[1]}}")
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
@@ -142,7 +143,7 @@
         compstate[insert]=
         if (( $#_ftb_query > 0 )); then
           compstate[insert]='2'
-          [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
+          [[ $RBUFFER == ' '* ]] && compstate[insert]+=' '
         fi
         return 0
       else

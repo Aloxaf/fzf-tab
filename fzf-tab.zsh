@@ -71,13 +71,19 @@
   else
     # dscr - the string to show to users
     # word - the string to be inserted
-    local dscr word i
+    local dscr word i __tmp_alias
+
     for i in {1..$#__hits}; do
       word=$__hits[i] dscr=$__dscr[i]
       if [[ -n $dscr ]]; then
         dscr=${dscr//$'\n'}
       elif [[ -n $word ]]; then
-        dscr=$word
+	__tmp_alias=(${(s/ is an alias for /)$(type $word)})
+	if [[ ${#__tmp_alias} -eq 2 ]]; then
+	  dscr="$__tmp_alias[1]  :=>  $__tmp_alias[2]"
+	else
+          dscr=$word
+	fi
       fi
       _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
     done

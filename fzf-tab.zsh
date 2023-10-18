@@ -71,7 +71,7 @@
   else
     # dscr - the string to show to users
     # word - the string to be inserted
-    local dscr word i __tmp_alias
+    local dscr word i
 
     for i in {1..$#__hits}; do
       word=$__hits[i] dscr=$__dscr[i]

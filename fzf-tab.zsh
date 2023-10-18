@@ -77,13 +77,10 @@
       word=$__hits[i] dscr=$__dscr[i]
       if [[ -n $dscr ]]; then
         dscr=${dscr//$'\n'}
+      elif [[ "$expl" == '[alias]' ]]; then
+        dscr="$(echo $(alias $word) | sed 's/=/  :=>  /')"
       elif [[ -n $word ]]; then
-	__tmp_alias=(${(s/ is an alias for /)$(type $word)})
-	if [[ ${#__tmp_alias} -eq 2 ]]; then
-	  dscr="$__tmp_alias[1]  :=>  $__tmp_alias[2]"
-	else
-          dscr=$word
-	fi
+        dscr=$word
       fi
       _ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
     done

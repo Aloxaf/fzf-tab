@@ -60,13 +60,19 @@
 >C1:{file1}
 >C1:{file2}
 
+  comptesteval "zstyle ':fzf-tab:*' complete-common-prefix false"
   comptest $': d\t'
-0:prefix
+0:prefix (complete-common disabled)
 >line: {: dir1/}{}
 >QUERY:{dir}
 >DESCRIPTION:{file}
 >C1:{dir1/}
 >C1:{dir2/}
+
+  comptesteval "zstyle ':fzf-tab:*' complete-common-prefix true"
+  comptest $': d\t'
+0:prefix (complete-common enabled)
+>line: {: dir}{}
 
   comptesteval '_tst () { compadd d c b a }'
   comptest $'tst \t'
@@ -125,11 +131,31 @@
 0:complete in word(with known bug)
 >line: {: ./abc\ def}{ def}
 
+  comptesteval "zstyle ':fzf-tab:*' complete-common-prefix false"
   comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
   comptest $': ./a/d/h\t'
   comptesteval 'rm -rd abc'
-0:nested directory
+0:nested directory (common prefix disabled)
 >line: {: ./abc/def/h}{}
+>QUERY:{d}
+>DESCRIPTION:{file}
+>C1:{def/}
+>C1:{dfe/}
+
+  comptesteval "zstyle ':fzf-tab:*' complete-common-prefix true"
+  comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
+  comptest $': ./a/d/h\t'
+  comptesteval 'rm -rd abc'
+0:nested directory, 1 tab (common prefix enabled)
+>line: {: ./abc/d}{/h}
+
+  comptesteval "zstyle ':fzf-tab:*' complete-common-prefix true"
+  comptesteval 'mkdir -p abc/def/hij abc/dfe/hij'
+  comptest $': ./a/d/h\t\t'
+  comptesteval 'rm -rd abc'
+0:nested directory, 2 tabs (common prefix enabled)
+>line: {: ./abc/d}{/h}
+>line: {: ./abc/d}{/h}
 >QUERY:{d}
 >DESCRIPTION:{file}
 >C1:{def/}

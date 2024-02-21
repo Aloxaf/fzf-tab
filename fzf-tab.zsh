@@ -137,7 +137,7 @@
         local -a args=("${(@ps:\1:)v[args]}")
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
-        builtin compadd "${${(@)${(@)args:#-f}:#-W}[@]}" -- $_ftb_query
+        builtin compadd "${${(@)args:#-f}[@]}" -- $_ftb_query
 
         compstate[list]=
         compstate[insert]=

@@ -5,6 +5,10 @@
 [[ ! -o 'no_brace_expand' ]] || _ftb_opts+=('no_brace_expand')
 'builtin' 'setopt' 'no_aliases' 'no_sh_glob' 'brace_expand'
 
+# disable global aliases
+typeset _ftb_aliases="$(builtin alias -Lmg '[^+]*')"
+builtin unalias -m '[^+]*'
+
 # thanks Valodim/zsh-capture-completion
 -ftb-compadd() {
   # parse all options
@@ -394,6 +398,10 @@ typeset -ga _ftb_group_colors=(
 
 enable-fzf-tab
 zle -N toggle-fzf-tab
+
+# restore global aliases
+eval "$_ftb_aliases"
+builtin unset _ftb_aliases
 
 # restore options
 (( ${#_ftb_opts} )) && setopt ${_ftb_opts[@]}

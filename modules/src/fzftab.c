@@ -66,6 +66,7 @@ static char mode_color[NUM_COLS][20];
 // TODO: use ZLS_COLORS ?
 int compile_patterns(char* nam, char** list_colors)
 {
+    int i, j;
     // clean old name_color and set pat_cnt = 0
     if (pat_cnt != 0) {
         while (--pat_cnt) {
@@ -74,7 +75,7 @@ int compile_patterns(char* nam, char** list_colors)
         free(name_color);
     }
     // initialize mode_color with default value
-    for (int i = 0; i < NUM_COLS; i++) {
+    for (i = 0; i < NUM_COLS; i++) {
         if (defcols[i]) {
             strcpy(mode_color[i], defcols[i]);
         }
@@ -90,7 +91,7 @@ int compile_patterns(char* nam, char** list_colors)
     }
     name_color = zshcalloc(pat_cnt * sizeof(struct pattern));
 
-    for (int i = 0; i < pat_cnt; i++) {
+    for (i = 0; i < pat_cnt; i++) {
         char* pat = ztrdup(list_colors[i]);
         char* color = strrchr(pat, '=');
         if (color == NULL)
@@ -101,7 +102,7 @@ int compile_patterns(char* nam, char** list_colors)
 
         // mode=color
         bool skip = false;
-        for (int j = 0; j < NUM_COLS; j++) {
+        for (j = 0; j < NUM_COLS; j++) {
             if (strpfx(colnames[j], list_colors[i])) {
                 strcpy(mode_color[j], color + 1);
                 name_color[i].pat = NULL;
@@ -168,7 +169,8 @@ const char* get_color(char* file, const struct stat* sb)
 
 const char* colorize_from_name(char* file)
 {
-    for (int i = 0; i < pat_cnt; i++) {
+    int i;
+    for (i = 0; i < pat_cnt; i++) {
         if (name_color && name_color[i].pat && pattry(name_color[i].pat, file)) {
             return name_color[i].color;
         }
@@ -243,6 +245,8 @@ struct {
 // add a entry              fzf-tab-generate-compcap word desc opts
 static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNUSED(int func))
 {
+    int i;
+
     if (OPT_ISSET(ops, 'o')) {
         // write final result to _ftb_compcap
         setaparam("_ftb_compcap", ftb_compcap.array);
@@ -271,7 +275,7 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
     char *bs = metafy("\2", 1, META_DUP), *nul = metafy("\0word\0", 6, META_DUP);
     size_t dscrs_cnt = arrlen(dscrs);
 
-    for (int i = 0; words[i]; i++) {
+    for (i = 0; words[i]; i++) {
         // TODO: replace '\n'
         char* buffer = zshcalloc(256 * sizeof(char));
         char* dscr = i < dscrs_cnt ? dscrs[i] : words[i];
@@ -298,6 +302,8 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
 // dst will be reallocated if is not big enough
 char* ftb_strcat(char* dst, int n, ...)
 {
+    int i, idx;
+
     va_list valist;
     va_start(valist, n);
 
@@ -305,7 +311,7 @@ char* ftb_strcat(char* dst, int n, ...)
     size_t size = 128, max_len = 128 - 1;
     dst = final;
 
-    for (int i = 0, idx = 0; i < n; i++) {
+    for (i = 0, idx = 0; i < n; i++) {
         char* src = va_arg(valist, char*);
         for (; *src != '\0'; dst++, src++, idx++) {
             if (idx == max_len) {
@@ -326,6 +332,8 @@ char* ftb_strcat(char* dst, int n, ...)
 // accept an
 char** fzf_tab_colorize(char* file)
 {
+    int i;
+
     // TODO: can avoid so many zalloc here?
     file = unmeta(file);
 
@@ -377,7 +385,7 @@ char** fzf_tab_colorize(char* file)
     } else {
         reply[3] = ztrdup("");
     }
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         reply[i] = metafy(reply[i], -1, META_REALLOC);
     }
 
@@ -386,6 +394,8 @@ char** fzf_tab_colorize(char* file)
 
 static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, UNUSED(int func))
 {
+    int i, j;
+
     if (OPT_ISSET(ops, 'i')) {
         // compile list_colors pattern
         if (*args == NULL) {
@@ -413,7 +423,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
     char* first_word = zshcalloc(512 * sizeof(char));
     int same_word = 1;
 
-    for (int i = 0; i < ftb_compcap_len; i++) {
+    for (i = 0; i < ftb_compcap_len; i++) {
         char *word = "", *group = NULL, *realdir = NULL;
         strcpy(dpre, "");
         strcpy(dsuf, "");
@@ -423,7 +433,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         char* desc = compcap[0];
         char** info = sepsplit(compcap[1], nul, 1, 0);
 
-        for (int j = 0; info[j]; j += 2) {
+        for (j = 0; info[j]; j += 2) {
             if (!strcmp(info[j], "word")) {
                 word = info[j + 1];
                 // unquote word

@@ -35,7 +35,7 @@
   local ret=$?
   if (( $#__hits == 0 )); then
     if is-at-least 5.9 && (( $#_mesg != 0 )); then
-      builtin compadd -x $mesg
+      builtin compadd -x $_mesg
     fi
     return $ret
   fi

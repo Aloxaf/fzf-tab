@@ -28,7 +28,7 @@ if (( \$+ctxt[realdir] )); then
 fi
 $(typeset -p words)
 "
-local binds=tab:down,btab:up,change:top,ctrl-space:toggle
+local binds=tab:down,btab:up,change:top,ctrl-space:toggle,bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof
 local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad fzf_min_height
 local ret=0
 

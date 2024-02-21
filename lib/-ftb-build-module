@@ -27,7 +27,7 @@ if [[ ! -f ./configure ]]; then
   ./Util/preconfig
 fi
 if [[ ! -f ./Makefile ]]; then
-  ./configure --disable-gdbm --disable-pcre --without-tcsetpgrp --prefix=/tmp/zsh-sqlite ${bundle:+DL_EXT=bundle}
+  ./configure --disable-gdbm --disable-pcre --without-tcsetpgrp --prefix=/tmp/zsh-fzf-tab-module ${bundle:+DL_EXT=bundle}
 fi
 make -j$nproc
 ret=$?
@@ -37,7 +37,7 @@ if (( $ret != 0 )); then
   return $ret
 fi
 
-# we only need aloxaf/sqlite.so
+# we only need aloxaf/fzftab.so
 mv ./Src/Modules/fzftab.(so|bundle) $FZF_TAB_HOME/modules/Src/aloxaf/
 
 popd -q

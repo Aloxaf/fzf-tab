@@ -88,7 +88,7 @@ builtin unalias -m '[^+]*'
   fi
 
   # tell zsh that the match is successful
-  builtin compadd -U -qS '' -R -ftb-remove-space ''
+  builtin compadd "$@"
 }
 
 # when insert multi results, a whitespace will be added to each result
@@ -131,6 +131,13 @@ builtin unalias -m '[^+]*'
       fi
       ;;
     *)
+
+      if [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
+        compstate[list]=
+        compstate[insert]=unambiguous
+        return 0
+      fi
+
       -ftb-generate-query      # sets `_ftb_query`
       -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s print-query print_query || print_query=alt-enter

@@ -132,7 +132,7 @@ builtin unalias -m '[^+]*'
       ;;
     *)
 
-      if [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
+      if -ftb-zstyle -T insert-unambiguous insert_unambiguous && [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
         compstate[list]=
         compstate[insert]=unambiguous
         return 0
@@ -193,7 +193,7 @@ builtin unalias -m '[^+]*'
   compstate[list]=
   compstate[insert]=
   if (( $#choices == 1 )); then
-    compstate[insert]='2'
+    compstate[insert]='1'
     [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
   elif (( $#choices > 1 )); then
     compstate[insert]='all'

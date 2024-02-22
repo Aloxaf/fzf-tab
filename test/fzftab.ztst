@@ -61,6 +61,11 @@
 >C1:{file2}
 
   comptest $': d\t'
+0:unambiguous prefix
+>line: {: dir}{}
+
+  comptesteval 'zstyle ":completion:*" menu true'
+  comptest $': d\t'
 0:prefix
 >line: {: dir1/}{}
 >QUERY:{dir}

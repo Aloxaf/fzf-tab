@@ -159,7 +159,7 @@ builtin unalias -m '[^+]*'
         compstate[list]=
         compstate[insert]=
         if (( $#choices[1] > 0 )); then
-            compstate[insert]='2'
+            compstate[insert]='1'
             [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         fi
         return $ret

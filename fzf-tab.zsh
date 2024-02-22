@@ -132,7 +132,7 @@ builtin unalias -m '[^+]*'
       ;;
     *)
 
-      if -ftb-zstyle -T insert-unambiguous insert_unambiguous && [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
+      if [[ $compstate[insert] == *"unambiguous" ]] && [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
         compstate[list]=
         compstate[insert]=unambiguous
         return 0

@@ -64,6 +64,15 @@
 0:unambiguous prefix
 >line: {: dir}{}
 
+  comptesteval '_tst() { compadd /home /usr /lib; compstate[insert]=menu }'
+  comptest $'tst \t'
+0:force list
+>line: {tst /home }{}
+>QUERY:{/}
+>C0:{/home}
+>C0:{/lib}
+>C0:{/usr}
+
   comptesteval 'zstyle ":completion:*" menu true'
   comptest $': d\t'
 0:prefix

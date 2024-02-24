@@ -298,8 +298,8 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
 }
 
 // cat n string, return the pointer to the new string
-// `size` is the size of dst
 // dst will be reallocated if is not big enough
+// if dst is NULL, it will be allocated
 char* ftb_strcat(char* dst, int n, ...)
 {
     int i, idx;
@@ -307,12 +307,14 @@ char* ftb_strcat(char* dst, int n, ...)
     va_list valist;
     va_start(valist, n);
 
-    char* final = zrealloc(dst, 128);
+    char* final = dst ? zrealloc(dst, 128) : zalloc(128);
     size_t size = 128, max_len = 128 - 1;
     dst = final;
 
     for (i = 0, idx = 0; i < n; i++) {
         char* src = va_arg(valist, char*);
+        if (src == NULL)
+            continue;
         for (; *src != '\0'; dst++, src++, idx++) {
             if (idx == max_len) {
                 size += size / 2;
@@ -334,7 +336,6 @@ char** fzf_tab_colorize(char* file)
 {
     int i;
 
-    // TODO: can avoid so many zalloc here?
     file = unmeta(file);
 
     struct stat sb;
@@ -348,11 +349,11 @@ char** fzf_tab_colorize(char* file)
     }
     const char* color = get_color(file, &sb);
 
-    char* symlink = "";
+    char* symlink = NULL;
     const char* symcolor = "";
     if ((sb.st_mode & S_IFMT) == S_IFLNK) {
-        symlink = zalloc(PATH_MAX);
-        int end = readlink(file, symlink, PATH_MAX);
+        symlink = zshcalloc(PATH_MAX);
+        size_t end = readlink(file, symlink, PATH_MAX);
         symlink[end] = '\0';
         if (stat(file, &sb) == -1) {
             symcolor = mode_color[COL_OR];
@@ -366,10 +367,8 @@ char** fzf_tab_colorize(char* file)
     char** reply = zshcalloc((4 + 1) * sizeof(char*));
 
     if (strlen(color) != 0) {
-        reply[0] = zalloc(128);
-        reply[1] = zalloc(128);
-        sprintf(reply[0], "%s%s%s", mode_color[COL_LC], color, mode_color[COL_RC]);
-        sprintf(reply[1], "%s%s%s", mode_color[COL_LC], "0", mode_color[COL_RC]);
+        reply[0] = ftb_strcat(NULL, 3, mode_color[COL_LC], color, mode_color[COL_RC]);
+        reply[1] = ftb_strcat(NULL, 3, mode_color[COL_LC], "0", mode_color[COL_RC]);
     } else {
         reply[0] = ztrdup("");
         reply[1] = ztrdup("");
@@ -377,10 +376,9 @@ char** fzf_tab_colorize(char* file)
 
     reply[2] = ztrdup(suffix);
 
-    if (symlink[0] != '\0') {
-        reply[3] = zalloc(PATH_MAX);
-        sprintf(reply[3], "%s%s%s%s%s%s%s", mode_color[COL_LC], symcolor, mode_color[COL_RC],
-            symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
+    if (symlink != NULL) {
+        reply[3] = ftb_strcat(NULL, 6, mode_color[COL_LC], symcolor, mode_color[COL_RC],
+                              symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
         free(symlink);
     } else {
         reply[3] = ztrdup("");
@@ -420,7 +418,7 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
          *filepath = zshcalloc(PATH_MAX * sizeof(char)), *dpre = zshcalloc(128),
          *dsuf = zshcalloc(128);
 
-    char* first_word = zshcalloc(512 * sizeof(char));
+    char* first_word = NULL;
     int same_word = 1;
 
     for (i = 0; i < ftb_compcap_len; i++) {
@@ -448,8 +446,8 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         }
 
         // check if all the words are the same
-        if (i == 0) {
-            first_word = ftb_strcat(first_word, 1, word);
+        if (first_word == NULL) {
+            first_word = ztrdup(word);
         } else if (same_word && strcmp(word, first_word) != 0) {
             same_word = 0;
         }

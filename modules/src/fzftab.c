@@ -9,7 +9,6 @@ const char* get_color(char* file, const struct stat* sb);
 const char* get_suffix(char* file, const struct stat* sb);
 const char* colorize_from_mode(char* file, const struct stat* sb);
 const char* colorize_from_name(char* file);
-char** fzf_tab_colorize(char* file);
 int compile_patterns(char* nam, char** list_colors);
 char* ftb_strcat(char* dst, int n, ...);
 
@@ -156,9 +155,9 @@ const char* get_suffix(char* file, const struct stat* sb)
 
 const char* get_color(char* file, const struct stat* sb)
 {
-    // no list-colors, return empty color
+    // no list-colors, return NULL
     if (pat_cnt == 0) {
-        return "";
+        return NULL;
     }
     const char* ret;
     if ((ret = colorize_from_mode(file, sb)) || (ret = colorize_from_name(file))) {
@@ -331,10 +330,17 @@ char* ftb_strcat(char* dst, int n, ...)
     return final;
 }
 
+struct file_color {
+    char *fc_begin;
+    char *fc_end;
+    char *sc;
+    char *suffix;
+};
+
 // accept an
-char** fzf_tab_colorize(char* file)
+static struct file_color* fzf_tab_colorize(char* file)
 {
-    int i;
+    struct file_color *fc = zalloc(sizeof(struct file_color));
 
     file = unmeta(file);
 
@@ -364,30 +370,30 @@ char** fzf_tab_colorize(char* file)
         }
     }
 
-    char** reply = zshcalloc((4 + 1) * sizeof(char*));
-
-    if (strlen(color) != 0) {
-        reply[0] = ftb_strcat(NULL, 3, mode_color[COL_LC], color, mode_color[COL_RC]);
-        reply[1] = ftb_strcat(NULL, 3, mode_color[COL_LC], "0", mode_color[COL_RC]);
+    if (color != NULL) {
+        fc->fc_begin = ftb_strcat(NULL, 3, mode_color[COL_LC], color, mode_color[COL_RC]);
+        fc->fc_end = ftb_strcat(NULL, 3, mode_color[COL_LC], "0", mode_color[COL_RC]);
     } else {
-        reply[0] = ztrdup("");
-        reply[1] = ztrdup("");
+        fc->fc_begin = ztrdup("");
+        fc->fc_end = ztrdup("");
     }
 
-    reply[2] = ztrdup(suffix);
+    fc->suffix = ztrdup(suffix);
 
     if (symlink != NULL) {
-        reply[3] = ftb_strcat(NULL, 6, mode_color[COL_LC], symcolor, mode_color[COL_RC],
+        fc->sc = ftb_strcat(NULL, 6, mode_color[COL_LC], symcolor, mode_color[COL_RC],
                               symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
         free(symlink);
     } else {
-        reply[3] = ztrdup("");
-    }
-    for (i = 0; i < 4; i++) {
-        reply[i] = metafy(reply[i], -1, META_REALLOC);
+        fc->sc = ztrdup("");
     }
 
-    return reply;
+    fc->fc_begin = metafy(fc->fc_begin, -1, META_REALLOC);
+    fc->fc_end = metafy(fc->fc_end, -1, META_REALLOC);
+    fc->sc = metafy(fc->sc, -1, META_REALLOC);
+    fc->suffix = metafy(fc->suffix, -1, META_REALLOC);
+
+    return fc;
 }
 
 static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, UNUSED(int func))
@@ -455,18 +461,18 @@ static int bin_fzf_tab_candidates_generate(char* nam, char** args, Options ops, 
         // add character and color to describe the type of the files
         if (realdir) {
             filepath = ftb_strcat(filepath, 2, realdir, word);
-            char** reply = fzf_tab_colorize(filepath);
-            if (reply != NULL) {
-                dpre = ftb_strcat(dpre, 2, reply[1], reply[0]);
-                if (reply[3][0] != '\0') {
-                    dsuf = ftb_strcat(dsuf, 4, reply[1], reply[2], " -> ", reply[3]);
+            struct file_color *fc = fzf_tab_colorize(filepath);
+            if (fc != NULL) {
+                dpre = ftb_strcat(dpre, 2, fc->fc_end, fc->fc_begin);
+                if (fc->sc[0] != '\0') {
+                    dsuf = ftb_strcat(dsuf, 4, fc->fc_end, fc->suffix, " -> ", fc->sc);
                 } else {
-                    dsuf = ftb_strcat(dsuf, 2, reply[1], reply[2]);
+                    dsuf = ftb_strcat(dsuf, 2, fc->fc_end, fc->suffix);
                 }
                 if (dpre[0] != '\0') {
                     setiparam("colorful", 1);
                 }
-                freearray(reply);
+                free(fc);
             }
         }
 

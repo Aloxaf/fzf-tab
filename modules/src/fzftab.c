@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 const char* get_color(char* file, const struct stat* sb);
-const char* get_suffix(char* file, const struct stat* sb);
 const char* colorize_from_mode(char* file, const struct stat* sb);
 const char* colorize_from_name(char* file);
 int compile_patterns(char* nam, char** list_colors);
@@ -122,35 +121,22 @@ int compile_patterns(char* nam, char** list_colors)
     return 0;
 }
 
-// TODO: use zsh mod_export function `file_type` ?
-const char* get_suffix(char* file, const struct stat* sb)
+static char get_suffix(char* file, const struct stat* sb)
 {
     struct stat sb2;
     mode_t filemode = sb->st_mode;
 
-    if (S_ISBLK(filemode))
-        return "#";
-    else if (S_ISCHR(filemode))
-        return "%";
-    else if (S_ISDIR(filemode))
-        return "/";
-    else if (S_ISFIFO(filemode))
-        return "|";
-    else if (S_ISLNK(filemode))
+    if (S_ISLNK(filemode))
         if (strpfx(mode_color[COL_LN], "target")) {
             if (stat(file, &sb2) == -1) {
-                return "@";
+                return '@';
             }
             return get_suffix(file, &sb2);
         } else {
-            return "@";
+            return '@';
         }
-    else if (S_ISREG(filemode))
-        return (filemode & S_IXUGO) ? "*" : "";
-    else if (S_ISSOCK(filemode))
-        return "=";
     else
-        return "?";
+        return file_type(filemode);
 }
 
 const char* get_color(char* file, const struct stat* sb)
@@ -276,10 +262,8 @@ static int bin_fzf_tab_compcap_generate(char* nam, char** args, Options ops, UNU
 
     for (i = 0; words[i]; i++) {
         // TODO: replace '\n'
-        char* buffer = zshcalloc(256 * sizeof(char));
         char* dscr = i < dscrs_cnt ? dscrs[i] : words[i];
-
-        buffer = ftb_strcat(buffer, 5, dscr, bs, opts, nul, words[i]);
+        char *buffer = ftb_strcat(NULL, 5, dscr, bs, opts, nul, words[i]);
         ftb_compcap.array[ftb_compcap.len++] = buffer;
 
         if (ftb_compcap.len == ftb_compcap.size) {
@@ -349,9 +333,9 @@ static struct file_color* fzf_tab_colorize(char* file)
         return NULL;
     }
 
-    const char* suffix = "";
+    char suffix[2] = {0};
     if (isset(opt_list_type)) {
-        suffix = get_suffix(file, &sb);
+        suffix[0] = get_suffix(file, &sb);
     }
     const char* color = get_color(file, &sb);
 
@@ -381,7 +365,7 @@ static struct file_color* fzf_tab_colorize(char* file)
     fc->suffix = ztrdup(suffix);
 
     if (symlink != NULL) {
-        fc->sc = ftb_strcat(NULL, 6, mode_color[COL_LC], symcolor, mode_color[COL_RC],
+        fc->sc = ftb_strcat(NULL, 7, mode_color[COL_LC], symcolor, mode_color[COL_RC],
                               symlink, mode_color[COL_LC], "0", mode_color[COL_RC]);
         free(symlink);
     } else {

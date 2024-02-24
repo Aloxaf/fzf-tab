@@ -19,6 +19,7 @@ Replace zsh's default completion selection menu with fzf!
     - [Prezto](#prezto)
 - [Usage](#usage)
     - [Configure](#configure)
+    - [Tmux](#tmux)
     - [Binary module](#binary-module)
 - [Difference from other plugins](#difference-from-other-plugins)
 - [Compatibility with other plugins](#compatibility-with-other-plugins)
@@ -28,9 +29,10 @@ Replace zsh's default completion selection menu with fzf!
 
 # Install
 
-**NOTE: fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)!!**
-
-**NOTE 2: fzf-tab ALSO needs [fzf](https://github.com/junegunn/fzf) installed, otherwise it cannot work!**
+> [!IMPORTANT]
+>
+> 1. make sure [fzf](https://github.com/junegunn/fzf)  is installed
+> 2. fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)
 
 ### Manual
 
@@ -43,6 +45,7 @@ git clone https://github.com/Aloxaf/fzf-tab ~/somewhere
 Then add the following line to your `~/.zshrc`.
 
 ```zsh
+autoload -U compinit; compinit
 source ~/somewhere/fzf-tab.plugin.zsh
 ```
 
@@ -102,6 +105,7 @@ A common configuration is:
 # disable sort when completing `git checkout`
 zstyle ':completion:*:git-checkout:*' sort false
 # set descriptions format to enable group support
+# NOTE: don't use escape sequences here, fzf-tab will ignore them
 zstyle ':completion:*:descriptions' format '[%d]'
 # set list-colors to enable filename colorizing
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
@@ -110,6 +114,22 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 # switch group using `,` and `.`
 zstyle ':fzf-tab:*' switch-group ',' '.'
 ```
+
+## Tmux
+
+If you're using tmux >=-2, we provide a script `ftb-tmux-popup` to make full use of it's "popup" feature.
+
+```zsh
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+```
+
+BTW, you can also use this script outside the fzf-tab.
+
+```zsh
+ls | ftb-tmux-popup
+```
+
+[![asciicast](https://asciinema.org/a/367471.svg)](https://asciinema.org/a/367471)
 
 For more information, please see [Wiki#Configuration](https://github.com/Aloxaf/fzf-tab/wiki/Configuration).
 

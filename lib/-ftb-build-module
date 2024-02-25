@@ -5,28 +5,24 @@ local zsh_version=${1:-${FZF_TAB_ZSH_SRC_VERSION:-$ZSH_VERSION}}
 
 # macos check
 local ret bundle nproc
-if [[ $OSTYPE == darwin* ]]; then
+[[ $OSTYPE == darwin* ]] && {
   [[ -n ${module_path[1]}/**/*.bundle(#qN) ]] && bundle=true
   nproc=$(sysctl -n hw.logicalcpu)
-else
+} || {
   nproc=$(nproc)
-fi
+}
 
 # clone zsh source code if not exists
-if [[ ! -d ./zsh/$zsh_version ]]; then
+[[ -d ./zsh/$zsh_version ]] || {
   git clone --depth=1 --branch zsh-$zsh_version https://github.com/zsh-users/zsh ./zsh/$zsh_version
   ln -s $PWD/src/fzftab.c   ./zsh/$zsh_version/Src/Modules/
   ln -s $PWD/src/fzftab.mdd ./zsh/$zsh_version/Src/Modules/
-fi
+}
 
 # build zsh
 cd -q ./zsh/$zsh_version
-if [[ ! -f ./configure ]]; then
-  ./Util/preconfig
-fi
-if [[ ! -f ./Makefile ]]; then
-  ./configure --disable-gdbm --disable-pcre --without-tcsetpgrp --prefix=/tmp/zsh-fzf-tab-module ${bundle:+DL_EXT=bundle}
-fi
+[[ -f ./configure ]] || ./Util/preconfig
+[[ -f ./Makefile ]] || ./configure --disable-gdbm --disable-pcre --without-tcsetpgrp --prefix=/tmp/zsh-fzf-tab-module ${bundle:+DL_EXT=bundle}
 make -j$nproc
 
 # we only need aloxaf/fzftab.so

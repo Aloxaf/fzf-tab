@@ -1,5 +1,5 @@
 #!/hint/zsh
-emulate -LR zsh -o extended_glob -o err_exit
+emulate -LR zsh -o extended_glob -o err_return
 
 local zsh_version=${1:-${FZF_TAB_ZSH_SRC_VERSION:-$ZSH_VERSION}}
 

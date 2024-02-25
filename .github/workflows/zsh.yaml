@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 1
 
       - name: install dependencies
-        run: apt update && apt-get install -y git build-essential autoconf
+        run: apt update && apt-get install -y git build-essential autoconf libncurses-dev
 
       - name: test completion
         run: cd test && zsh -f runtests.zsh fzftab.ztst

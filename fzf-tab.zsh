@@ -234,12 +234,12 @@ fzf-tab-debug() {
 
 fzf-tab-complete() {
   # this name must be ugly to avoid clashes
-  local -a _ftb_choices _ftb_compcap
-  local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0 _ftb_finish=0
+  local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0
   # hide the cursor until finishing completion, so that users won't see cursor up and down
   # NOTE: MacOS Terminal doesn't support civis & cnorm
   echoti civis >/dev/tty 2>/dev/null
   while (( _ftb_continue )); do
+    local _ftb_choices=() _ftb_compcap=() _ftb_finish=0
     _ftb_continue=0
     local IN_FZF_TAB=1
     {

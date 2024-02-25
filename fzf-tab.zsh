@@ -343,7 +343,16 @@ toggle-fzf-tab() {
 }
 
 build-fzf-tab-module() {
-  -ftb-build-module $@
+  {
+    pushd -q $FZF_TAB_HOME/modules
+    if -ftb-build-module $@; then
+      print -P "%F{green}%BThe module has been built successfully. Please restart zsh to apply it.%f%b"
+    else
+      print -P -u2 "%F{red}%BThe module building has failed. See the output above for details.%f%b"
+    fi
+  } always {
+    popd -q
+  }
 }
 
 zmodload zsh/zutil

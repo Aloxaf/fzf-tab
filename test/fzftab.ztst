@@ -25,7 +25,6 @@
       touch file1 &&
       touch file2
       touch dir1/file1
-      # TODO: remove git from tests
       git init
     }
   else

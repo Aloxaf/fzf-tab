@@ -218,6 +218,18 @@
 >C1:{dir1/}
 >C1:{dir2/}
 
+  comptesteval 'zstyle ":completion:*" menu false'
+  comptesteval "local prefix_1=1 prefix_2=1 prenofix_3=1"
+  comptest $'echo $pre\t'
+  comptesteval 'zstyle ":completion:*" menu true'
+0:parameter completion
+>line: {echo $pre}{}
+>QUERY:{}
+>DESCRIPTION:{parameter}
+>C1:{prefix_1}
+>C1:{prefix_2}
+>C1:{prenofix_3}
+
 %clean
 
   zmodload -ui zsh/zpty

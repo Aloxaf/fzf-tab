@@ -126,7 +126,7 @@ builtin unalias -m '[^+]*'
 
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
-        && [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
+        && [[ "$compstate[unambiguous]" != "$IPREFIX$PREFIX" ]]; then
         compstate[list]=
         compstate[insert]=unambiguous
         _ftb_finish=1

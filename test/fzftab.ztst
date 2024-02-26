@@ -123,6 +123,8 @@
 >line: {: asd}{}
 >WARN:{`file'}
 
+# enclose ' for syntax highlight
+
   comptesteval "touch 'abc def'"
   comptest $': ./a\t'
 0:filename with space
@@ -160,7 +162,6 @@
   comptest $'git add dir1\t'
 0:add empty word
 >line: {git add dir1/}{}
-# FIXME：why two warnings？
 
   comptesteval "zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'"
   comptesteval "touch vim.coc"

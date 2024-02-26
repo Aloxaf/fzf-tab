@@ -213,14 +213,14 @@ fzf-tab-debug() {
     exec {debug_fd}>&2 2>| $tmp
     local -a debug_indent; debug_indent=( '%'{3..20}'(e. .)' )
     local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
-    functions -t -- -ftb-complete
+    functions -t -- -ftb-complete  _fzf-tab-apply fzf-tab-complete
     echo $ZSH_NAME $ZSH_VERSION >&2
-    zle .fzf-tab-orig-$_ftb_orig_widget
+    zle fzf-tab-complete
     if (( debug_fd != -1 )); then
       zle -M "fzf-tab-debug: Trace output left in $tmp"
     fi
   } always {
-    functions -T -- -ftb-complete
+    functions +t -- -ftb-complete _fzf-tab-apply fzf-tab-complete
     (( debug_fd != -1 )) && exec 2>&$debug_fd {debug_fd}>&-
   }
 }

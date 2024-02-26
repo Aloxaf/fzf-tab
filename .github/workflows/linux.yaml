@@ -1,4 +1,4 @@
-name: ci
+name: test on linux
 
 on:
   push:
@@ -10,29 +10,25 @@ on:
 
 jobs:
   test:
-    name: run test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - name: checkout
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
 
-      - name: install zsh (ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install zsh
+      - name: install zsh
+        run: sudo apt-get install -y zsh
 
-      - name: test completion (ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: test completion
         run: cd test && zsh -f runtests.zsh fzftab.ztst
 
       - name: build binary module
         run: zsh -fc 'source ./fzf-tab.zsh && build-fzf-tab-module'
 
-      - name: test binary module (ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: test binary module
         run: cd test && zsh -f runtests.zsh fzftab.ztst
 

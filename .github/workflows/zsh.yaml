@@ -1,0 +1,45 @@
+name: test on different zsh versions
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # TODO: test fzf version?
+        zsh_version:
+          - 5.3.1
+          - 5.4.2
+          - 5.5.1
+          - 5.6.2
+          - 5.7.1
+          - 5.8
+          - 5.9
+    container:
+      image: zshusers/zsh:${{ matrix.zsh_version }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: install dependencies
+        run: apt update && apt-get install -y git build-essential autoconf libncurses-dev
+
+      - name: test completion
+        run: cd test && zsh -f runtests.zsh fzftab.ztst
+
+      - name: build binary module
+        run: zsh -fc 'source ./fzf-tab.zsh && build-fzf-tab-module'
+
+      - name: test binary module
+        run: cd test && zsh -f runtests.zsh fzftab.ztst
+

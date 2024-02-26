@@ -88,14 +88,7 @@ builtin unalias -m '[^+]*'
   fi
 
   # tell zsh that the match is successful
-  builtin compadd -U -qS '' -R -ftb-remove-space ''
-}
-
-# when insert multi results, a whitespace will be added to each result
-# remove left space of our fake result because I can't remove right space
-# FIXME: what if the left char is not whitespace: `echo $widgets[\t`
--ftb-remove-space() {
-  [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
+  builtin compadd "$@"
 }
 
 -ftb-zstyle() {
@@ -103,7 +96,6 @@ builtin unalias -m '[^+]*'
 }
 
 -ftb-complete() {
-  local -a _ftb_compcap
   local -Ua _ftb_groups
   local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0'
   local ret=0
@@ -131,6 +123,16 @@ builtin unalias -m '[^+]*'
       fi
       ;;
     *)
+
+      if (( ! _ftb_continue_last )) \
+        && [[ $compstate[insert] == *"unambiguous" ]] \
+        && [[ "$compstate[unambiguous]" != "$PREFIX" ]]; then
+        compstate[list]=
+        compstate[insert]=unambiguous
+        _ftb_finish=1
+        return 0
+      fi
+
       -ftb-generate-query      # sets `_ftb_query`
       -ftb-generate-header     # sets `_ftb_headers`
       -ftb-zstyle -s print-query print_query || print_query=alt-enter
@@ -152,9 +154,10 @@ builtin unalias -m '[^+]*'
         compstate[list]=
         compstate[insert]=
         if (( $#choices[1] > 0 )); then
-            compstate[insert]='2'
+            compstate[insert]='1'
             [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
         fi
+        _ftb_finish=1
         return $ret
       fi
       choices[1]=()
@@ -175,7 +178,17 @@ builtin unalias -m '[^+]*'
   fi
   choices[1]=()
 
-  for choice in "$choices[@]"; do
+  _ftb_choices=("${(@)choices}")
+
+  compstate[list]=
+  compstate[insert]=
+
+  return $ret
+}
+
+_fzf-tab-apply() {
+  local choice bs=$'\2'
+  for choice in "$_ftb_choices[@]"; do
     local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
     local -a args=("${(@ps:\1:)v[args]}")
     [[ -z $args[1] ]] && args=()  # don't pass an empty string
@@ -184,14 +197,12 @@ builtin unalias -m '[^+]*'
   done
 
   compstate[list]=
-  compstate[insert]=
-  if (( $#choices == 1 )); then
-    compstate[insert]='2'
+  if (( $#_ftb_choices == 1 )); then
+    compstate[insert]='1'
     [[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
-  elif (( $#choices > 1 )); then
+  elif (( $#_ftb_choices > 1 )); then
     compstate[insert]='all'
   fi
-  return $ret
 }
 
 fzf-tab-debug() {
@@ -202,14 +213,14 @@ fzf-tab-debug() {
     exec {debug_fd}>&2 2>| $tmp
     local -a debug_indent; debug_indent=( '%'{3..20}'(e. .)' )
     local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
-    functions -t -- -ftb-complete
+    functions -t -- -ftb-complete  _fzf-tab-apply fzf-tab-complete
     echo $ZSH_NAME $ZSH_VERSION >&2
-    zle .fzf-tab-orig-$_ftb_orig_widget
+    zle fzf-tab-complete
     if (( debug_fd != -1 )); then
       zle -M "fzf-tab-debug: Trace output left in $tmp"
     fi
   } always {
-    functions -T -- -ftb-complete
+    functions +t -- -ftb-complete _fzf-tab-apply fzf-tab-complete
     (( debug_fd != -1 )) && exec 2>&$debug_fd {debug_fd}>&-
   }
 }
@@ -221,11 +232,14 @@ fzf-tab-complete() {
   # NOTE: MacOS Terminal doesn't support civis & cnorm
   echoti civis >/dev/tty 2>/dev/null
   while (( _ftb_continue )); do
+    local _ftb_choices=() _ftb_compcap=() _ftb_finish=0
     _ftb_continue=0
     local IN_FZF_TAB=1
     {
-      zle .fzf-tab-orig-$_ftb_orig_widget
-      ret=$?
+      zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
+      if (( ! ret && ! _ftb_finish )); then
+        zle _fzf-tab-apply || ret=$?
+      fi
     } always {
       IN_FZF_TAB=0
     }
@@ -249,6 +263,9 @@ fzf-tab-dummy() { }
 zle -N fzf-tab-debug
 zle -N fzf-tab-complete
 zle -N fzf-tab-dummy
+# this is registered as a completion widget
+# so that we can have a clean completion list to only insert the results user selected
+zle -C _fzf-tab-apply complete-word _fzf-tab-apply
 
 disable-fzf-tab() {
   emulate -L zsh -o extended_glob
@@ -343,7 +360,17 @@ toggle-fzf-tab() {
 }
 
 build-fzf-tab-module() {
-  -ftb-build-module $@
+  {
+    pushd -q $FZF_TAB_HOME/modules
+    if -ftb-build-module $@; then
+      print -P "%F{green}%BThe module has been built successfully. Please restart zsh to apply it.%f%b"
+    else
+      print -P -u2 "%F{red}%BThe module building has failed. See the output above for details.%f%b"
+      return 1
+    fi
+  } always {
+    popd -q
+  }
 }
 
 zmodload zsh/zutil

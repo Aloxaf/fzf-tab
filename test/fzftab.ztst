@@ -61,6 +61,20 @@
 >C1:{file2}
 
   comptest $': d\t'
+0:unambiguous prefix
+>line: {: dir}{}
+
+  comptesteval '_tst() { compadd /home /usr /lib; compstate[insert]=menu }'
+  comptest $'tst \t'
+0:force list
+>line: {tst /home }{}
+>QUERY:{/}
+>C0:{/home}
+>C0:{/lib}
+>C0:{/usr}
+
+  comptesteval 'zstyle ":completion:*" menu true'
+  comptest $': d\t'
 0:prefix
 >line: {: dir1/}{}
 >QUERY:{dir}
@@ -108,8 +122,8 @@
 0:warnings
 >line: {: asd}{}
 >WARN:{`file'}
->WARN:{`file'}
-# FIXME：why two warnings？
+
+# enclose ' for syntax highlight
 
   comptesteval "touch 'abc def'"
   comptest $': ./a\t'
@@ -148,7 +162,6 @@
   comptest $'git add dir1\t'
 0:add empty word
 >line: {git add dir1/}{}
-# FIXME：why two warnings？
 
   comptesteval "zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'"
   comptesteval "touch vim.coc"

@@ -2,8 +2,12 @@
 
 zmodload zsh/zutil
 
-local -A headers range query
+local -A headers range query expect
 
+# -h: lines of headers
+# -n: selection index, if it is QUERY, query string will be used
+# -q: query string
+# -e: expect key
 zparseopts -E h:=headers n:=range q:=query e:=expect
 
 print -r -- "${query//\"/}"

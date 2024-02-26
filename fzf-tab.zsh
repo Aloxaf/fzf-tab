@@ -91,13 +91,6 @@ builtin unalias -m '[^+]*'
   builtin compadd "$@"
 }
 
-# when insert multi results, a whitespace will be added to each result
-# remove left space of our fake result because I can't remove right space
-# FIXME: what if the left char is not whitespace: `echo $widgets[\t`
--ftb-remove-space() {
-  [[ $LBUFFER[-1] == ' ' ]] && LBUFFER[-1]=''
-}
-
 -ftb-zstyle() {
   zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
 }
@@ -193,7 +186,7 @@ builtin unalias -m '[^+]*'
   return $ret
 }
 
--ftb-complete-apply() {
+_fzf-tab-apply() {
   local choice bs=$'\2'
   for choice in "$_ftb_choices[@]"; do
     local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
@@ -245,7 +238,7 @@ fzf-tab-complete() {
     {
       zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
       if (( ! ret && ! _ftb_finish )); then
-        zle -- -ftb-complete-apply || ret=$?
+        zle _fzf-tab-apply || ret=$?
       fi
     } always {
       IN_FZF_TAB=0
@@ -272,7 +265,7 @@ zle -N fzf-tab-complete
 zle -N fzf-tab-dummy
 # this is registered as a completion widget
 # so that we can have a clean completion list to only insert the results user selected
-zle -C -- -ftb-complete-apply complete-word -ftb-complete-apply
+zle -C _fzf-tab-apply complete-word _fzf-tab-apply
 
 disable-fzf-tab() {
   emulate -L zsh -o extended_glob

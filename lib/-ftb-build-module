@@ -15,9 +15,10 @@ local ret bundle nproc
 # clone zsh source code if not exists
 [[ -d ./zsh/$zsh_version ]] || {
   git clone --depth=1 --branch zsh-$zsh_version https://github.com/zsh-users/zsh ./zsh/$zsh_version
-  ln -s $PWD/src/fzftab.c   ./zsh/$zsh_version/Src/Modules/
-  ln -s $PWD/src/fzftab.mdd ./zsh/$zsh_version/Src/Modules/
 }
+
+ln -sf $PWD/Src/fzftab.c   ./zsh/$zsh_version/Src/Modules/
+ln -sf $PWD/Src/fzftab.mdd ./zsh/$zsh_version/Src/Modules/
 
 # build zsh
 cd -q ./zsh/$zsh_version

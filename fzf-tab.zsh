@@ -256,6 +256,7 @@ fzf-tab-complete() {
     fi
   done
   echoti cnorm >/dev/tty 2>/dev/null
+  zle reset-prompt
   zle .redisplay
   (( _ftb_accept )) && zle .accept-line
   return $ret

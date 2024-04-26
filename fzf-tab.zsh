@@ -102,7 +102,7 @@ builtin unalias -m '[^+]*'
 
   # must run with user options; don't move `emulate -L zsh` above this line
   (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i
-  COLUMNS=500 _ftb__main_complete "$@" || ret=$?
+  _ftb__main_complete "$@" || ret=$?
   (( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -o
 
   emulate -L zsh -o extended_glob

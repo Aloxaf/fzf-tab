@@ -17,6 +17,8 @@ jobs:
         with:
           fetch-depth: 1
 
+      - run: brew install autoconf automake libtool
+
       # FIXME: test on macOS
       #- name: test completion
       #  run: cd test && zsh -f runtests.zsh fzftab.ztst

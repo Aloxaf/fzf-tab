@@ -230,6 +230,14 @@
 >C1:{prefix_2}
 >C1:{prenofix_3}
 
+  comptesteval '_tst() { compadd -J packages -X package openpgp-keys-gentoo-release -MERGING-pnpm-bin }'
+  comptest $'tst \t'
+0:completions starts with dash
+>line: {tst }{}
+>QUERY:{}
+>C1:{package }
+>C1:{openpgp-keys-gentoo-release}
+>C1:{-MERGING-pnpm-bin}
 %clean
 
   zmodload -ui zsh/zpty

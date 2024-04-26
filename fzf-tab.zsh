@@ -16,7 +16,7 @@ builtin unalias -m '[^+]*'
   local -a isfile _opts __ expl
   zparseopts -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile \
              i: S: s: I: x:=_mesg r: R: W: F: M+: E: q e Q n U C \
-             J:=__ V:=__ a=__ l=__ k=__ o=__ 1=__ 2=__
+             J:=__ V:=__ a=__ l=__ k=__ o::=__ 1=__ 2=__
 
   # store $curcontext for further usage
   _ftb_curcontext=${curcontext#:}

@@ -29,7 +29,7 @@ fi
 $(typeset -p words)
 "
 local default_binds=tab:down,btab:up,change:top,ctrl-space:toggle,bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof
-local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad fzf_min_height binds
+local fzf_command fzf_flags fzf_preview fzf_layout debug_command tmp switch_group fzf_pad fzf_min_height binds
 local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
@@ -37,6 +37,7 @@ local ret=0
 -ftb-zstyle -a fzf-bindings tmp && binds+=,${(j:,:)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
+-ftb-zstyle -s fzf-layout fzf_layout || fzf_layout=reverse
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
@@ -91,7 +92,7 @@ SHELL=$ZSH_NAME $fzf_command \
   --expect=$continuous_trigger,$print_query,$accept_line \
   --header-lines=$header_lines \
   --height=${FZF_TMUX_HEIGHT:=$(( min(max(lines, fzf_min_height), LINES / 3 * 2)  ))} \
-  --layout=reverse \
+  --layout=$fzf_layout \
   --multi \
   --nth=2,3 \
   --print-query \

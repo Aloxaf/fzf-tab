@@ -37,7 +37,7 @@ local ret=0
 -ftb-zstyle -a fzf-bindings tmp && binds+=,${(j:,:)tmp}
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
--ftb-zstyle -s fzf-layout fzf_layout || fzf_layout=reverse
+-ftb-zstyle -s fzf-layout fzf_layout || fzf_layout='reverse'
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0

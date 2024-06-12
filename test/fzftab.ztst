@@ -64,6 +64,15 @@
 0:unambiguous prefix
 >line: {: dir}{}
 
+  comptesteval '_tst() { compadd ".#abc" ".#def" ".#hij" }'
+  comptest $'tst ".#"\t'
+0:unambiguous prefix in quote string
+>line: {tst ".#abc }{"}
+>QUERY:{.#}
+>C0:{.#abc}
+>C0:{.#def}
+>C0:{.#hij}
+
   comptesteval '_tst() { compadd /home /usr /lib; compstate[insert]=menu }'
   comptest $'tst \t'
 0:force list

@@ -33,6 +33,7 @@ Replace zsh's default completion selection menu with fzf!
 >
 > 1. make sure [fzf](https://github.com/junegunn/fzf)  is installed
 > 2. fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)
+> 3. Completions should be configured before `compinit`, as stated in the [zsh-completions manual installation guide](https://github.com/zsh-users/zsh-completions#manual-installation).
 
 ### Manual
 

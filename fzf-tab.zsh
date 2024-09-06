@@ -257,7 +257,7 @@ fzf-tab-complete() {
   done
   echoti cnorm >/dev/tty 2>/dev/null
   zle .redisplay
-  (( _ftb_accept )) && zle .accept-line
+  (( _ftb_accept )) && zle accept-line
   return $ret
 }
 

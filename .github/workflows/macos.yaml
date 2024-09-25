@@ -1,4 +1,4 @@
-name: test on macOS
+name: macOS compability
 
 on:
   push:

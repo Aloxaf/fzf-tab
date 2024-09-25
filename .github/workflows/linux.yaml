@@ -1,4 +1,4 @@
-name: test on linux
+name: Linux compability
 
 on:
   push:
@@ -10,18 +10,28 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: ["ubuntu:latest", "archlinux:latest"]
+    container:
+      image: ${{ matrix.os }}
     steps:
       - name: checkout
         uses: actions/checkout@v1
         with:
           fetch-depth: 1
 
-      - name: install zsh
-        run: sudo apt-get install -y zsh
+      - name: install dependencies
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu:latest" ]; then
+            apt-get update
+            apt-get install -y zsh git curl build-essential autoconf libncurses-dev
+          elif [ "${{ matrix.os }}" = "archlinux:latest" ]; then
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm zsh base-devel git
+          fi
 
       - name: test completion
         run: cd test && zsh -f runtests.zsh fzftab.ztst

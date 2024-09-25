@@ -22,6 +22,14 @@ ln -sf $PWD/Src/fzftab.mdd ./zsh/$zsh_version/Src/Modules/
 
 # build zsh
 cd -q ./zsh/$zsh_version
+
+git checkout -- .
+
+[[ $zsh_version != "5.9" ]] || {
+  curl -s https://github.com/zsh-users/zsh/commit/4c89849c98172c951a9def3690e8647dae76308f.patch | git apply --exclude=ChangeLog -
+  curl -s https://github.com/zsh-users/zsh/commit/ab4d62eb975a4c4c51dd35822665050e2ddc6918.patch | git apply --exclude=ChangeLog -
+}
+
 [[ -f ./configure ]] || ./Util/preconfig
 [[ -f ./Makefile ]] || ./configure --disable-gdbm --disable-pcre --without-tcsetpgrp --prefix=/tmp/zsh-fzf-tab-module ${bundle:+DL_EXT=bundle}
 make -j$nproc

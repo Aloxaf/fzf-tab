@@ -1,4 +1,4 @@
-name: test on different zsh versions
+name: Zsh compability
 
 on:
   push:

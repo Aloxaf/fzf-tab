@@ -40,6 +40,7 @@ local ret=0
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
+-ftb-zstyle -b use-fzf-default-opts use_fzf_default_opts || use_fzf_default_opts="no"
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -81,7 +82,12 @@ fi
 
 _ftb_query="${_ftb_query}$(command "$dd" bs=1G count=1 status=none iflag=nonblock < /dev/tty 2>/dev/null)" || true
 
-FZF_DEFAULT_OPTS='' SHELL=$ZSH_NAME $fzf_command \
+local fzf_default_opts=''
+if [[ "$use_fzf_default_opts" == "yes" ]]; then
+  fzf_default_opts=$FZF_DEFAULT_OPTS
+fi
+
+FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
   --ansi \
   --bind=$binds \
   --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \

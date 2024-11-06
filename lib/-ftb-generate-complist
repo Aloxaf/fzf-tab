@@ -9,7 +9,7 @@ local -A word_map=()
 (( $#_ftb_compcap == 0 )) && return
 
 -ftb-zstyle -s show-group show_group || show_group=full
--ftb-zstyle -s default-color default_color || default_color=$'\x1b[37m'
+-ftb-zstyle -s default-color default_color || default_color=''
 -ftb-zstyle -s prefix prefix || {
   zstyle -m ':completion:*:descriptions' format '*' && prefix='·'
 }

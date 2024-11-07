@@ -45,6 +45,10 @@ local text REPLY comp_lines comp_length length popup_pad popup_min_size
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-min-size popup_min_size || popup_min_size=(0 0)
+zstyle -a ":fzf-tab:$_ftb_curcontext" popup-fit-preview popup_fit_preview_enabled || popup_fit_preview_enabled=no
+if [ "$popup_fit_preview_enabled" != "no" ] && zstyle -m ":fzf-tab:$_ftb_curcontext" fzf-preview '*'; then
+  popup_fit_preview=1
+fi
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))
@@ -58,6 +62,11 @@ else
   # FIXME: can't get the correct width of CJK characters.
   comp_length=$( command perl -ne 's/\x1b\[[0-9;]*m//g;s/\x00//g; $m= length() if $m < length(); END { print $m }' < $tmp_dir/completions.$$ )
 fi
+
+if [ -n "$popup_fit_preview" ]; then
+  comp_length=$(( comp_length * 2 ))
+fi
+
 comp_length=$(( comp_length + $popup_pad[1] ))
 
 local popup_height popup_y popup_width popup_x adjust_height

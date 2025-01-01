@@ -84,7 +84,7 @@ else
 fi
 
 # calculate the popup width and x position
-popup_width=$(( min(max(comp_length + 5, popup_min_size[1]), window_width) ))
+popup_width=$(( min(max(comp_length + fzf_tmux_width_factor, popup_min_size[1]), window_width) ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
 echo -E "env FZF_DEFAULT_OPTS='' SHELL=$ZSH_NAME $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$

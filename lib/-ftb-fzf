@@ -41,6 +41,7 @@ local ret=0
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
 -ftb-zstyle -b use-fzf-default-opts use_fzf_default_opts || use_fzf_default_opts="no"
+-ftb-zstyle -s fzf-tmux-width-factor fzf_tmux_width_factor || fzf_tmux_width_factor=5
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
@@ -96,6 +97,7 @@ FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
   --expect=$continuous_trigger,$print_query,$accept_line \
   --header-lines=$header_lines \
   --height=${FZF_TMUX_HEIGHT:=$(( min(max(lines, fzf_min_height), LINES / 3 * 2)  ))} \
+  --width=${FZF_TMUX_WIDTH:-80} \
   --layout=reverse \
   --multi \
   --nth=2,3 \

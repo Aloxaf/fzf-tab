@@ -87,7 +87,7 @@ fi
 popup_width=$(( min(max(comp_length + 5, popup_min_size[1]), window_width) ))
 popup_x=$(( cursor_x + popup_width > window_width ? window_width - popup_width : cursor_x ))
 
-echo -E "env FZF_DEFAULT_OPTS='' SHELL=$ZSH_NAME $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
+echo -E "env FZF_DEFAULT_OPTS=${(qq)FZF_DEFAULT_OPTS} SHELL=$ZSH_NAME $commands[fzf] ${(qq)fzf_opts[@]} < $tmp_dir/completions.$$ > $tmp_dir/result-$$" > $tmp_dir/fzf-$$
 {
   tmux popup -x $popup_x -y $popup_y \
        -w $popup_width -h $popup_height \

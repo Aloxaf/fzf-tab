@@ -25,7 +25,7 @@ builtin unalias -m '[^+]*'
   # or fzf-tab is disabled in the current context
   if (( $#_oad != 0 || ! IN_FZF_TAB )) \
     || { -ftb-zstyle -m disabled-on "any" } \
-    || ({ -ftb-zstyle -m disabled-on "files" } && [[ -n $isfile ]]); then
+    || { -ftb-zstyle -m disabled-on "files" && [[ -n $isfile ]] }; then
     builtin compadd "$@"
     return
   fi

@@ -4,6 +4,11 @@ typeset -ga _ftb_headers=()
 local i tmp group_colors
 local -i mlen=0 len=0
 
+# Keep ${group} value for preview, binds, etc without displaying group headers
+if { -ftb-zstyle -m show-group "quiet" }; then
+  return
+fi
+
 if (( $#_ftb_groups == 1 )) && { ! -ftb-zstyle -m single-group "header" }; then
   return
 fi

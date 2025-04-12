@@ -132,6 +132,12 @@ If you're using tmux >= 3.2, we provide a script `ftb-tmux-popup` to make full u
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 ```
 
+if tmux popup is not populated in proper size you can change it's resize factor for wider window
+```zsh
+# default is 5
+zstyle ':fzf-tab:*' fzf-tmux-width-factor 25
+```
+
 BTW, you can also use this script outside the fzf-tab.
 
 ```zsh

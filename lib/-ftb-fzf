@@ -98,7 +98,7 @@ FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
   --height=${FZF_TMUX_HEIGHT:=$(( min(max(lines, fzf_min_height), LINES / 3 * 2)  ))} \
   --layout=reverse \
   --multi \
-  --nth=2,3 \
+  --nth=2 \
   --print-query \
   --query=$_ftb_query \
   --tiebreak=begin \

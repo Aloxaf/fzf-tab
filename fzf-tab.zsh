@@ -111,7 +111,7 @@ builtin unalias -m '[^+]*'
   -ftb-generate-complist # sets `_ftb_complist`
 
   -ftb-zstyle -s continuous-trigger continuous_trigger || {
-    [[ $OSTYPE == msys ]] && continuous_trigger=// || continuous_trigger=/
+    [[ $OSTYPE == cygwin ]] && continuous_trigger=// || continuous_trigger=/
   }
 
   case $#_ftb_complist in

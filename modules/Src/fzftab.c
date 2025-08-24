@@ -176,6 +176,8 @@ const char* colorize_from_mode(char* file, const struct stat* sb)
                 return mode_color[COL_OR];
             }
             return get_color(file, &sb2);
+        } else {
+          return mode_color[COL_LN];
         }
     }
     case S_IFIFO:

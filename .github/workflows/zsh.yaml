@@ -31,6 +31,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      # https://github.com/actions/runner-images/issues/12627
+      - name: update sources
+        run: |
+          rm /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian buster main contrib non-free'  >> /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian buster-updates main contrib non-free'  >> /etc/apt/sources.list
+          echo 'deb http://archive.debian.org/debian-security buster/updates main contrib non-free'  >> /etc/apt/sources.list
+
       - name: install dependencies
         run: apt update && apt-get install -y git curl build-essential autoconf libncurses-dev
 
@@ -42,4 +50,3 @@ jobs:
 
       - name: test binary module
         run: cd test && zsh -f runtests.zsh fzftab.ztst
-

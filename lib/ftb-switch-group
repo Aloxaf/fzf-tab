@@ -4,7 +4,7 @@ emulate -L zsh -o extended_glob
 zmodload zsh/mapfile
 
 # receive arguments
-local pid=$1 header_lines=$2 tmp_dir=$3 offset=$@[-1]
+local pid=$1 header_lines=$2 active_group_style=$3 tmp_dir=$4 offset=$5
 
 # read completion list
 local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
@@ -16,8 +16,8 @@ else
   local -Ua total=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
 fi
 
-# get current group index, start from 2
-local current=2
+# get current group index, start from 1
+local current=1
 if [[ -f $tmp_dir/current-group.$pid ]]; then
   current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
 fi
@@ -25,9 +25,28 @@ fi
 (( current == 0 )) && current=$#total
 echo $current > $tmp_dir/current-group.$pid
 
+# configure style of active header
+local sgr_on='' sgr_off=''
+case $active_group_style in
+  (bold)          sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;
+  (underline)     sgr_on=$'\x1b[4m';    sgr_off=$'\x1b[24m' ;;
+  (bold,underline) sgr_on=$'\x1b[1;4m'; sgr_off=$'\x1b[22;24m' ;;
+  (none)          sgr_on='';            sgr_off='' ;;
+  (*)             sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;  # fallback
+esac
+
 # print headers
 if (( header_lines != 0 )); then
-  print -l ${list[1,header_lines]/${total[current]}/$'\x1b[1m'}
+  local -i i
+  local line
+  for i in {1..$header_lines}; do
+    line=$list[i]
+    if [[ $line == *${total[current]}* ]]; then
+      # Apply style only to the group label (up to the first ']'), then disable it
+      line=${line/${total[current]}(#b)([^]]##)\]/${total[current]}$sgr_on${match[1]}]$sgr_off}
+    fi
+    print -r -- "$line"
+  done
 fi
 
 # print current group

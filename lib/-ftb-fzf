@@ -29,7 +29,7 @@ fi
 $(typeset -p words)
 "
 local default_binds=tab:down,btab:up,change:top,ctrl-space:toggle,bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof
-local fzf_command fzf_flags fzf_preview debug_command tmp switch_group fzf_pad fzf_min_height binds
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group active_group_style fzf_pad fzf_min_height binds 
 local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
@@ -41,11 +41,75 @@ local ret=0
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
 -ftb-zstyle -b use-fzf-default-opts use_fzf_default_opts || use_fzf_default_opts="no"
+-ftb-zstyle -s active-group-style active_group_style || active_group_style=bold
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
   return
 }
+
+# Anonymous helper block to avoid introducing a new global function.
+#
+# Normalize `active-group-style` into a canonical, deterministic string.
+#
+# Users may specify one or more style tokens separated by ',' or '+', with
+# arbitrary whitespace and any casing, e.g.:
+#   "bold"
+#   "underline"
+#   "underline + bold"
+#   "BOLD,Underline"
+#
+# This block:
+#   - lowercases input
+#   - removes whitespace
+#   - treats '+' as an alias for ','
+#   - splits into tokens
+#   - keeps only supported tokens: bold, underline
+#   - de-duplicates and sorts tokens alphabetically
+#   - joins them into a single comma-separated canonical string
+#
+# Output:
+#   - sets $REPLY to one of:
+#       "bold"
+#       "underline"
+#       "bold,underline"
+#       "none"            (if no valid tokens were provided)
+#
+() {
+  emulate -L zsh -o extended_glob
+
+  local raw=${1:-bold}
+  raw=${(L)raw}
+  raw=${raw//[[:space:]]/}
+  raw=${raw//+/,}
+
+  local -a toks out bad
+  local t
+
+  toks=(${(s:,:)raw})
+
+  for t in $toks; do
+    [[ -z $t ]] && continue
+    case $t in
+      (bold|underline) out+=($t) ;;
+      (*) bad+=($t) ;;
+    esac
+  done
+
+  # Here we can decide the policy for unknown tokens:
+  # - ignore them (current behavior)
+  # - or next commented line: strict fallback to bold:
+  # (( $#bad )) && out=(bold)
+
+  # Canonicalize: sort + join
+  if (( $#out == 0 )); then
+    REPLY=none
+    return 0
+  fi
+  out=(${(ou)out})            # (o)=alphabetical sort; (u)=unique
+  REPLY="${(j:,:)out}"        # "bold,underline"
+} "$active_group_style"
+local normalized_active_group_style=$REPLY   # e.g. "bold" or "bold,underline" or "none"
 
 print -rl -- $_ftb_compcap > $tmp_dir/compcap.$$
 print -rl -- $_ftb_groups  > $tmp_dir/groups.$$
@@ -55,7 +119,7 @@ binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 
 local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + fzf_pad + header_lines ))
-local reload_command="$commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $tmp_dir"
+local reload_command="$commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $normalized_active_group_style $tmp_dir"
 
 # detect if we will use tmux popup
 local use_tmux_popup=0
@@ -70,7 +134,7 @@ if (( ! use_tmux_popup )); then
   echoti cnorm >/dev/tty 2>/dev/null
 fi
 
-cat > $tmp_dir/completions.$$
+cat >| $tmp_dir/completions.$$
 
 local dd='gdd'
 if (( ${+commands[$dd]} == 0 )) ; then
@@ -87,7 +151,9 @@ if [[ "$use_fzf_default_opts" == "yes" ]]; then
   fzf_default_opts=$FZF_DEFAULT_OPTS
 fi
 
-FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME ${(z)fzf_command} \
+local -a initial_command=($commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $normalized_active_group_style $tmp_dir 0)
+
+FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
   --ansi \
   --bind=$binds \
   --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
@@ -103,7 +169,7 @@ FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME ${(z)fzf_command} \
   --query=$_ftb_query \
   --tiebreak=begin \
   ${fzf_preview:+--preview=${ftb_preview_init/{f}/'{f}'}$fzf_preview} \
-  $fzf_flags < $tmp_dir/completions.$$ || ret=$?
+  $fzf_flags < <("${initial_command[@]}") || ret=$?
 
 if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty 2>/dev/null

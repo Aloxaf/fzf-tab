@@ -386,8 +386,6 @@ zmodload -F zsh/stat b:zstat
 0="${${(M)0:#/*}:-$PWD/$0}"
 FZF_TAB_HOME="${0:A:h}"
 
-source "$FZF_TAB_HOME"/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
-
 typeset -ga _ftb_group_colors=(
   $'\x1b[94m' $'\x1b[32m' $'\x1b[33m' $'\x1b[35m' $'\x1b[31m' $'\x1b[38;5;27m' $'\x1b[36m'
   $'\x1b[38;5;100m' $'\x1b[38;5;98m' $'\x1b[91m' $'\x1b[38;5;80m' $'\x1b[92m'
@@ -397,6 +395,10 @@ typeset -ga _ftb_group_colors=(
 # init
 () {
   emulate -L zsh -o extended_glob
+  
+  # Ensure we don't keep a stale value around
+  # and allow the aloxaf/fzftab module to set it when loaded.
+  unset FZF_TAB_MODULE_VERSION 2>/dev/null
 
   if (( ! $fpath[(I)$FZF_TAB_HOME/lib] )); then
     fpath+=($FZF_TAB_HOME/lib)
@@ -413,7 +415,7 @@ typeset -ga _ftb_group_colors=(
 
   if [[ -n $FZF_TAB_HOME/modules/Src/aloxaf/fzftab.(so|bundle)(#qN) ]]; then
     module_path+=("$FZF_TAB_HOME/modules/Src")
-    zmodload aloxaf/fzftab
+    zmodload aloxaf/fzftab # if this fails, we fall back to ls-colors.zsh below
 
     if [[ $FZF_TAB_MODULE_VERSION != "0.2.2" ]]; then
       zmodload -u aloxaf/fzftab
@@ -426,6 +428,9 @@ typeset -ga _ftb_group_colors=(
       fi
     fi
   fi
+
+  # Only needed when the module is not available (or failed to load).
+  [[ $FZF_TAB_MODULE_VERSION = "0.2.2" ]] || source "$FZF_TAB_HOME"/lib/zsh-ls-colors/ls-colors.zsh fzf-tab-lscolors
 }
 
 enable-fzf-tab

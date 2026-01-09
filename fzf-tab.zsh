@@ -53,12 +53,48 @@ builtin unalias -m '[^+]*'
   # store these values in _ftb_compcap
   local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
+  
+  # Shadow PREFIX locally so we can modify it for fzf-tab capture
+  # without permanently affecting the shell state for the final compadd.
+  local PREFIX="$PREFIX"
+  local PREFIX_ORIG="$PREFIX"
+
+  # Sanitize PREFIX locally before capture.
+  # We restrict this to approximate/correct contexts to avoid false positives.
+  # _approximate injects internal glob flags like (#a1) into PREFIX.
+  # Check "14.8.5 Approximate Matching" in Zsh docs (https://zsh.sourceforge.io/Doc/Release/Expansion.html).
+  if [[ $_ftb_curcontext == (*approximate*|*correct*) ]]; then
+    # 1. Strip (#a1) from start
+    PREFIX=${PREFIX/#\(\#a[0-9]##\)/}
+    # 2. Strip (#a1) after leading tilde (e.g. ~(#a1)/foo -> ~/foo)
+    PREFIX=${PREFIX/#\~\(\#a[0-9]##\)/~}
+
+    # If the prefix changed, we know this was a fuzzy match for which we stripped the glob.
+    if [[ $PREFIX_ORIG != $PREFIX ]]; then
+      # The sanitized prefix (e.g. "docn") won't strictly match the result (e.g. "docker"). 
+      # We must force -U (Unmatched) into fzf-tab's capture options so that *later*,
+      # when fzf-tab tries to insert the result, it uses -U to bypass checks.
+      # This aligns with standard Zsh behavior for complex completers (and how _approximate
+      # itself handles the 'original' group) to bypass strict prefix validation.
+      if [[ ${_opts[(I)-U]} -eq 0 ]]; then
+        _opts+=(-U)
+      fi
+    fi
+  fi
+
   for key in $keys; do
+    # (P)key fetches the value of the variable named by $key.
+    # Since we declared 'local PREFIX' above, this fetches the sanitized version of PREFIX.
     expanded=${(P)key}
     if [[ -n $expanded ]]; then
       __tmp_value+=$'\0'$key$'\0'$expanded
     fi
   done
+
+  # Restore original fuzzy prefix so the `builtin compadd` below succeeds.
+  # (Standard compadd needs the fuzzy glob to validate the candidates).
+  PREFIX="$PREFIX_ORIG"
+
   if [[ -n $expl ]]; then
     # store group index
     __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
@@ -123,7 +159,7 @@ builtin unalias -m '[^+]*'
       fi
       ;;
     *)
-      # PATCH FIX: Added check for 'force' in compstate[list].
+      # Check for 'force' in compstate[list]:
       # _approximate sets compstate[list] to "force" when showing corrections.
       # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
       # which falls back to the standard Zsh menu.
@@ -147,7 +183,17 @@ builtin unalias -m '[^+]*'
       ret=$?
       # choices=(query_string expect_key returned_word)
 
-      # insert query string directly
+      # Handle the "print-query" action (e.g., Alt-Enter)
+      # or what the user manually typed in the fzf search bar, for which there is no match
+      # among the available options
+      #
+      # The next block allows the user to insert the raw text typed into the fzf prompt
+      # instead of selecting a generated match from the list.
+      #
+      # Logic:
+      # 1. Restore the original completion context (PREFIX, IPREFIX, etc.) from _ftb_compcap
+      #    so Zsh knows exactly which part of the command line to replace.
+      # 2. Use `builtin compadd` to insert the raw query string ($choices[1]) as the match.
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
         local -A v=("${(@0)${_ftb_compcap[1]}}")
         local -a args=("${(@ps:\1:)v[args]}")

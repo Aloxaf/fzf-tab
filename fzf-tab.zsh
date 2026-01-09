@@ -123,10 +123,15 @@ builtin unalias -m '[^+]*'
       fi
       ;;
     *)
+      # PATCH FIX: Added check for 'force' in compstate[list].
+      # _approximate sets compstate[list] to "force" when showing corrections.
+      # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
+      # which falls back to the standard Zsh menu.
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
-        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]]; then
+        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
+        && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous
         _ftb_finish=1
@@ -342,16 +347,39 @@ enable-fzf-tab() {
   functions[_ftb__main_complete]=$functions[_main_complete]
   function _main_complete() { -ftb-complete "$@" }
 
-  # TODO: This is not a full support, see #47
-  # _approximate will also hook compadd
-  # let it call -ftb-compadd instead of builtin compadd so that fzf-tab can capture result
-  # make sure _approximate has been loaded.
+  # -----------------------------------------------------------------------
+  # DYNAMIC PATCH FOR _approximate
+  # -----------------------------------------------------------------------
+  
+  # 1. Save original for disable-fzf-tab
   functions[_ftb__approximate]=$functions[_approximate]
+
+  # 2. Force load _approximate so we can see its source
+  autoload +X -Uz _approximate
+
+  # 3. Create the inner patched function
+  #    We read the source code of _approximate and replace 'builtin compadd'
+  #    with '-ftb-compadd'. The [[:space:]]## handles potential tabs/spaces.
+  functions[_ftb_approximate_inner]="${functions[_approximate]//builtin[[:space:]]##compadd/-ftb-compadd}"
+
+  # 4. Define the wrapper
   function _approximate() {
-    # if not called by fzf-tab, don't do anything with compadd
-    (( ! IN_FZF_TAB )) || unfunction compadd
-    _ftb__approximate
-    (( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
+    # Force IN_FZF_TAB=1 to ensure -ftb-compadd does not bail out 
+    local IN_FZF_TAB=1
+
+    # Temporarily remove fzf-tab's global hook.
+    # This ensures that `if (( ! $+functions[compadd] ))` inside _approximate 
+    # evaluates to TRUE, forcing it to define its local wrapper.
+    unfunction compadd
+
+    {
+        # Call the patched source (which contains the local wrapper definition
+        # but calls -ftb-compadd instead of builtin)
+        _ftb_approximate_inner "$@"
+    } always {
+        # Restore fzf-tab's global hook. 
+        functions[compadd]=$functions[-ftb-compadd]
+    }
   }
 }
 

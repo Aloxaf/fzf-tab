@@ -63,7 +63,7 @@ comp_length=$(( comp_length + $popup_pad[1] ))
 local popup_height popup_y popup_width popup_x adjust_height
 
 # adjust the popup height if the fzf finder info style is not default
-if (( $fzf_opts[(I)--info=*(hidden|inline)*] > 0 )); then
+if (( $fzf_opts[(I)--info=*(hidden|inline)*] > 0 && $fzf_opts[(I)--style=*(minimal|full)*] > 0 )); then
     adjust_height=-1
 fi
 

@@ -14,6 +14,7 @@ Replace zsh's default completion selection menu with fzf!
 - [Install](#install)
     - [Manual](#manual)
     - [Antigen](#antigen)
+    - [Fig](#fig)
     - [Zinit](#zinit)
     - [Oh-My-Zsh](#oh-my-zsh)
     - [Prezto](#prezto)
@@ -55,6 +56,14 @@ source ~/somewhere/fzf-tab.plugin.zsh
 ```zsh
 antigen bundle Aloxaf/fzf-tab
 ```
+
+### Fig
+
+[Fig](https://fig.io) adds apps, shortcuts, and autocomplete to your existing terminal.
+
+Install `fzf-tab` in just one click.
+
+<a href="https://fig.io/plugins/other/fzf-tab" target="_blank"><img src="https://fig.io/badges/install-with-fig.svg" /></a>
 
 ### Zinit
 

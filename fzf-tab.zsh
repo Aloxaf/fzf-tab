@@ -396,8 +396,11 @@ typeset -ga _ftb_group_colors=(
 () {
   emulate -L zsh -o extended_glob
   
-  # Ensure we don't keep a stale value around
-  # and allow the aloxaf/fzftab module to set it when loaded.
+  # Re-source should fully reinitialize; unload the module so boot_ runs again.
+  if zmodload -e aloxaf/fzftab; then
+    zmodload -u aloxaf/fzftab &>/dev/null
+  fi
+  # Ensure we don't keep a stale value around and allow the module to set it.
   unset FZF_TAB_MODULE_VERSION 2>/dev/null
 
   if (( ! $fpath[(I)$FZF_TAB_HOME/lib] )); then

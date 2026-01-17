@@ -240,7 +240,13 @@ builtin unalias -m '[^+]*'
 _fzf-tab-apply() {
   local choice bs=$'\2'
   for choice in "$_ftb_choices[@]"; do
-    local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
+    local match=${_ftb_compcap[(r)${(b)choice}$bs*]}
+    if [[ -z $match ]]; then
+      local qchoice=${(q)choice}
+      match=${_ftb_compcap[(r)${(b)qchoice}$bs*]}
+    fi
+    [[ -z $match ]] && continue
+    local -A v=("${(@0)${match#*$bs}}")
     local -a args=("${(@ps:\1:)v[args]}")
     [[ -z $args[1] ]] && args=()  # don't pass an empty string
     IPREFIX=${v[IPREFIX]-} PREFIX=${v[PREFIX]-} SUFFIX=${v[SUFFIX]-} ISUFFIX=${v[ISUFFIX]-}
@@ -293,7 +299,11 @@ fzf-tab-complete() {
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
-      if (( ! ret && ! _ftb_finish )); then
+      # The original completion widget (expand-or-complete or its wrappers)
+      # can return non-zero for ambiguous/list-only completions; apply choices
+      # when present. Also run apply on successful no-choice runs to clear list state
+      # inside the completion context (avoids duplicate warnings).
+      if (( ! _ftb_finish )) && { (( $#_ftb_choices )) || (( ! ret )); }; then
         zle _fzf-tab-apply || ret=$?
       fi
     } always {

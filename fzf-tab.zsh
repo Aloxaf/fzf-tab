@@ -51,7 +51,7 @@ builtin unalias -m '[^+]*'
   [[ -n $expl ]] && _ftb_groups+=$expl
 
   # store these values in _ftb_compcap
-  local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
+  local -a _ftb_compcap_keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
   
   # Shadow PREFIX locally so we can modify it for fzf-tab capture
@@ -82,7 +82,7 @@ builtin unalias -m '[^+]*'
     fi
   fi
 
-  for key in $keys; do
+  for key in $_ftb_compcap_keys; do
     # (P)key fetches the value of the variable named by $key.
     # Since we declared 'local PREFIX' above, this fetches the sanitized version of PREFIX.
     expanded=${(P)key}

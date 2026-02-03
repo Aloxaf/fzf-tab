@@ -51,9 +51,9 @@ builtin unalias -m '[^+]*'
   [[ -n $expl ]] && _ftb_groups+=$expl
 
   # store these values in _ftb_compcap
-  local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
+  local -a _ftb_compcap_keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
-  for key in $keys; do
+  for key in $_ftb_compcap_keys; do
     expanded=${(P)key}
     if [[ -n $expanded ]]; then
       __tmp_value+=$'\0'$key$'\0'$expanded

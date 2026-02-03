@@ -53,12 +53,48 @@ builtin unalias -m '[^+]*'
   # store these values in _ftb_compcap
   local -a _ftb_compcap_keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
   local key expanded __tmp_value=$'<\0>' # placeholder
+  
+  # Shadow PREFIX locally so we can modify it for fzf-tab capture
+  # without permanently affecting the shell state for the final compadd.
+  local PREFIX="$PREFIX"
+  local PREFIX_ORIG="$PREFIX"
+
+  # Sanitize PREFIX locally before capture.
+  # We restrict this to approximate/correct contexts to avoid false positives.
+  # _approximate injects internal glob flags like (#a1) into PREFIX.
+  # Check "14.8.5 Approximate Matching" in Zsh docs (https://zsh.sourceforge.io/Doc/Release/Expansion.html).
+  if [[ $_ftb_curcontext == (*approximate*|*correct*) ]]; then
+    # 1. Strip (#a1) from start
+    PREFIX=${PREFIX/#\(\#a[0-9]##\)/}
+    # 2. Strip (#a1) after leading tilde (e.g. ~(#a1)/foo -> ~/foo)
+    PREFIX=${PREFIX/#\~\(\#a[0-9]##\)/~}
+
+    # If the prefix changed, we know this was a fuzzy match for which we stripped the glob.
+    if [[ $PREFIX_ORIG != $PREFIX ]]; then
+      # The sanitized prefix (e.g. "docn") won't strictly match the result (e.g. "docker"). 
+      # We must force -U (Unmatched) into fzf-tab's capture options so that *later*,
+      # when fzf-tab tries to insert the result, it uses -U to bypass checks.
+      # This aligns with standard Zsh behavior for complex completers (and how _approximate
+      # itself handles the 'original' group) to bypass strict prefix validation.
+      if [[ ${_opts[(I)-U]} -eq 0 ]]; then
+        _opts+=(-U)
+      fi
+    fi
+  fi
+
   for key in $_ftb_compcap_keys; do
+    # (P)key fetches the value of the variable named by $key.
+    # Since we declared 'local PREFIX' above, this fetches the sanitized version of PREFIX.
     expanded=${(P)key}
     if [[ -n $expanded ]]; then
       __tmp_value+=$'\0'$key$'\0'$expanded
     fi
   done
+
+  # Restore original fuzzy prefix so the `builtin compadd` below succeeds.
+  # (Standard compadd needs the fuzzy glob to validate the candidates).
+  PREFIX="$PREFIX_ORIG"
+
   if [[ -n $expl ]]; then
     # store group index
     __tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
@@ -123,10 +159,15 @@ builtin unalias -m '[^+]*'
       fi
       ;;
     *)
+      # Check for 'force' in compstate[list]:
+      # _approximate sets compstate[list] to "force" when showing corrections.
+      # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
+      # which falls back to the standard Zsh menu.
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
-        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]]; then
+        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
+        && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous
         _ftb_finish=1
@@ -142,7 +183,17 @@ builtin unalias -m '[^+]*'
       ret=$?
       # choices=(query_string expect_key returned_word)
 
-      # insert query string directly
+      # Handle the "print-query" action (e.g., Alt-Enter)
+      # or what the user manually typed in the fzf search bar, for which there is no match
+      # among the available options
+      #
+      # The next block allows the user to insert the raw text typed into the fzf prompt
+      # instead of selecting a generated match from the list.
+      #
+      # Logic:
+      # 1. Restore the original completion context (PREFIX, IPREFIX, etc.) from _ftb_compcap
+      #    so Zsh knows exactly which part of the command line to replace.
+      # 2. Use `builtin compadd` to insert the raw query string ($choices[1]) as the match.
       if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]] ; then
         local -A v=("${(@0)${_ftb_compcap[1]}}")
         local -a args=("${(@ps:\1:)v[args]}")
@@ -189,7 +240,13 @@ builtin unalias -m '[^+]*'
 _fzf-tab-apply() {
   local choice bs=$'\2'
   for choice in "$_ftb_choices[@]"; do
-    local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
+    local match=${_ftb_compcap[(r)${(b)choice}$bs*]}
+    if [[ -z $match ]]; then
+      local qchoice=${(q)choice}
+      match=${_ftb_compcap[(r)${(b)qchoice}$bs*]}
+    fi
+    [[ -z $match ]] && continue
+    local -A v=("${(@0)${match#*$bs}}")
     local -a args=("${(@ps:\1:)v[args]}")
     [[ -z $args[1] ]] && args=()  # don't pass an empty string
     IPREFIX=${v[IPREFIX]-} PREFIX=${v[PREFIX]-} SUFFIX=${v[SUFFIX]-} ISUFFIX=${v[ISUFFIX]-}
@@ -242,7 +299,11 @@ fzf-tab-complete() {
     local IN_FZF_TAB=1
     {
       zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
-      if (( ! ret && ! _ftb_finish )); then
+      # The original completion widget (expand-or-complete or its wrappers)
+      # can return non-zero for ambiguous/list-only completions; apply choices
+      # when present. Also run apply on successful no-choice runs to clear list state
+      # inside the completion context (avoids duplicate warnings).
+      if (( ! _ftb_finish )) && { (( $#_ftb_choices )) || (( ! ret )); }; then
         zle _fzf-tab-apply || ret=$?
       fi
     } always {
@@ -342,16 +403,39 @@ enable-fzf-tab() {
   functions[_ftb__main_complete]=$functions[_main_complete]
   function _main_complete() { -ftb-complete "$@" }
 
-  # TODO: This is not a full support, see #47
-  # _approximate will also hook compadd
-  # let it call -ftb-compadd instead of builtin compadd so that fzf-tab can capture result
-  # make sure _approximate has been loaded.
+  # -----------------------------------------------------------------------
+  # DYNAMIC PATCH FOR _approximate
+  # -----------------------------------------------------------------------
+  
+  # 1. Save original for disable-fzf-tab
   functions[_ftb__approximate]=$functions[_approximate]
+
+  # 2. Force load _approximate so we can see its source
+  autoload +X -Uz _approximate
+
+  # 3. Create the inner patched function
+  #    We read the source code of _approximate and replace 'builtin compadd'
+  #    with '-ftb-compadd'. The [[:space:]]## handles potential tabs/spaces.
+  functions[_ftb_approximate_inner]="${functions[_approximate]//builtin[[:space:]]##compadd/-ftb-compadd}"
+
+  # 4. Define the wrapper
   function _approximate() {
-    # if not called by fzf-tab, don't do anything with compadd
-    (( ! IN_FZF_TAB )) || unfunction compadd
-    _ftb__approximate
-    (( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
+    # Force IN_FZF_TAB=1 to ensure -ftb-compadd does not bail out 
+    local IN_FZF_TAB=1
+
+    # Temporarily remove fzf-tab's global hook.
+    # This ensures that `if (( ! $+functions[compadd] ))` inside _approximate 
+    # evaluates to TRUE, forcing it to define its local wrapper.
+    unfunction compadd
+
+    {
+        # Call the patched source (which contains the local wrapper definition
+        # but calls -ftb-compadd instead of builtin)
+        _ftb_approximate_inner "$@"
+    } always {
+        # Restore fzf-tab's global hook. 
+        functions[compadd]=$functions[-ftb-compadd]
+    }
   }
 }
 

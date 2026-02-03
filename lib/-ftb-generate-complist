@@ -83,7 +83,6 @@ fi
 (( same_word )) && tcandidates[2,-1]=()
 
 # sort and remove sort group or other index
-local LC_ALL=C
 zstyle -T ":completion:$_ftb_curcontext" sort
 if (( $? != 1 )); then
   local LC_ALL=C

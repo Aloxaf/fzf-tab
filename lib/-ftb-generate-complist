@@ -86,6 +86,7 @@ fi
 local LC_ALL=C
 zstyle -T ":completion:$_ftb_curcontext" sort
 if (( $? != 1 )); then
+  local LC_ALL=C
   if (( colorful )); then
     # if enable list_colors, we should skip the first field
     if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then

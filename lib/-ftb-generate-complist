@@ -19,6 +19,8 @@ zstyle -a ":completion:$_ftb_curcontext" list-colors list_colors
 # init colorize
 if (( $+builtins[fzf-tab-candidates-generate] )); then
   fzf-tab-candidates-generate -i list_colors
+  # Use external sort for module candidates to keep ordering stable.
+  colorful=1
 else
   local -A namecolors=(${(@s:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
   local -A modecolors=(${(@Ms:=:)${(@s.:.)list_colors}:#[[:alpha:]][[:alpha:]]=*})
@@ -83,11 +85,12 @@ fi
 # sort and remove sort group or other index
 zstyle -T ":completion:$_ftb_curcontext" sort
 if (( $? != 1 )); then
+  local LC_ALL=C
   if (( colorful )); then
     # if enable list_colors, we should skip the first field
     if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
       # this is faster but doesn't work if `find` is from busybox
-      tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
+      tcandidates=(${(f)"$(LC_ALL=C command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
     else
       # slower but portable
       tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})

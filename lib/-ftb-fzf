@@ -129,7 +129,7 @@ if (( ! use_tmux_popup )); then
   echoti cnorm >/dev/tty 2>/dev/null
 fi
 
-cat >| $tmp_dir/completions.$$
+command cat > $tmp_dir/completions.$$
 
 local dd='gdd'
 if (( ${+commands[$dd]} == 0 )) ; then

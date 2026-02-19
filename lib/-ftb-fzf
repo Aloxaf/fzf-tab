@@ -90,7 +90,7 @@ fi
 
 local -a initial_command=(${(z)reload_command} 0)
 
-FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
+FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME ${(z)fzf_command} \
   --ansi \
   --bind=$binds \
   --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \

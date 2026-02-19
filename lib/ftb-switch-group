@@ -53,7 +53,7 @@ if (( $#group_sgr_prefixes > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
   (( current > $#group_sgr_prefixes )) && current=1
   (( current <= 0 )) && current=$#group_sgr_prefixes
 fi
-echo $current > $tmp_dir/current-group.$pid
+print -r -- $current > $tmp_dir/current-group.$pid
 
 # configure style of active header
 local sgr_on='' sgr_off=''

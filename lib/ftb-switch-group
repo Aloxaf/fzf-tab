@@ -10,22 +10,20 @@ local pid=$1 header_lines=$2 active_group_style=$3 tmp_dir=$4 offset=$5
 local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
 
 local grep_cmd=''
-() {
+if (( $#list > 10000 )); then
   local v
-  if (( $#list > 10000 )); then
-    # Prefer GNU grep: grep first (Linux), then ggrep (macOS/Homebrew)
-    # Use $commands[...] so we get the resolved executable path (not an alias/function).
-    if (( ${+commands[grep]} )); then
-      v=$("$commands[grep]" --version 2>/dev/null)
-      [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[grep]
-    fi
-
-    if [[ -z $grep_cmd && ${+commands[ggrep]} -eq 1 ]]; then
-      v=$("$commands[ggrep]" --version 2>/dev/null)
-      [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[ggrep]
-    fi
+  # Prefer GNU grep: grep first (Linux), then ggrep (macOS/Homebrew)
+  # Use $commands[...] so we get the resolved executable path (not an alias/function).
+  if (( ${+commands[grep]} )); then
+    v=$("$commands[grep]" --version 2>/dev/null)
+    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[grep]
   fi
-}
+
+  if [[ -z $grep_cmd && ${+commands[ggrep]} -eq 1 ]]; then
+    v=$("$commands[ggrep]" --version 2>/dev/null)
+    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[ggrep]
+  fi
+fi
 
 # --- group marker detection (fzf-tab groups) ---------------------------------
 # When groups exist, fzf-tab prefixes each entry with a group SGR like $'\e[94m'.

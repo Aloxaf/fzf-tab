@@ -36,75 +36,17 @@ local ret=0
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
 -ftb-zstyle -b use-fzf-default-opts use_fzf_default_opts || use_fzf_default_opts="no"
--ftb-zstyle -s active-group-style active_group_style || active_group_style=bold
+-ftb-zstyle -a active-group-style active_group_style || active_group_style=(bold)
 
 -ftb-zstyle -a debug-command debug_command && {
   ${(eX)debug_command} $fzf_flags
   return
 }
 
-# Anonymous helper block to avoid introducing a new global function.
-#
-# Normalize `active-group-style` into a canonical, deterministic string.
-#
-# Users may specify one or more style tokens separated by ',' or '+', with
-# arbitrary whitespace and any casing, e.g.:
-#   "bold"
-#   "underline"
-#   "underline + bold"
-#   "BOLD,Underline"
-#
-# This block:
-#   - lowercases input
-#   - removes whitespace
-#   - treats '+' as an alias for ','
-#   - splits into tokens
-#   - keeps only supported tokens: bold, underline
-#   - de-duplicates and sorts tokens alphabetically
-#   - joins them into a single comma-separated canonical string
-#
-# Output:
-#   - sets $REPLY to one of:
-#       "bold"
-#       "underline"
-#       "bold,underline"
-#       "none"            (if no valid tokens were provided)
-#
-() {
-  emulate -L zsh -o extended_glob
-
-  local raw=${1:-bold}
-  raw=${(L)raw}
-  raw=${raw//[[:space:]]/}
-  raw=${raw//+/,}
-
-  local -a toks out bad
-  local t
-
-  toks=(${(s:,:)raw})
-
-  for t in $toks; do
-    [[ -z $t ]] && continue
-    case $t in
-      (bold|underline) out+=($t) ;;
-      (*) bad+=($t) ;;
-    esac
-  done
-
-  # Here we can decide the policy for unknown tokens:
-  # - ignore them (current behavior)
-  # - or next commented line: strict fallback to bold:
-  # (( $#bad )) && out=(bold)
-
-  # Canonicalize: sort + join
-  if (( $#out == 0 )); then
-    REPLY=none
-    return 0
-  fi
-  out=(${(ou)out})            # (o)=alphabetical sort; (u)=unique
-  REPLY="${(j:,:)out}"        # "bold,underline"
-} "$active_group_style"
-local normalized_active_group_style=$REPLY   # e.g. "bold" or "bold,underline" or "none"
+local -a _active_style_lower=(${(L)active_group_style})
+local -a _active_style_valid=(${(M)_active_style_lower:#(bold|underline|none)})
+local -a _active_style_sorted=(${(ou)_active_style_valid})
+local normalized_active_group_style=${${(j:,:)_active_style_sorted}:-none}
 
 print -rl -- $_ftb_compcap > $tmp_dir/compcap.$$
 print -rl -- $_ftb_groups  > $tmp_dir/groups.$$

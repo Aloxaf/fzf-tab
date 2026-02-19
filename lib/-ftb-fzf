@@ -106,7 +106,7 @@ FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME ${(z)fzf_command} \
   --query=$_ftb_query \
   --tiebreak=begin \
   ${fzf_preview:+--preview=${ftb_preview_init}$fzf_preview} \
-  $fzf_flags < <("${initial_command[@]}") || ret=$?
+  $fzf_flags < <($initial_command) || ret=$?
 
 if (( ! use_tmux_popup )); then
   echoti civis >/dev/tty 2>/dev/null

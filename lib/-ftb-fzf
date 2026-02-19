@@ -88,7 +88,7 @@ if [[ "$use_fzf_default_opts" == "yes" ]]; then
   fzf_default_opts=$FZF_DEFAULT_OPTS
 fi
 
-local -a initial_command=($commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $normalized_active_group_style $tmp_dir 0)
+local -a initial_command=(${(z)reload_command} 0)
 
 FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME $fzf_command \
   --ansi \

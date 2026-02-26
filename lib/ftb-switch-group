@@ -4,35 +4,86 @@ emulate -L zsh -o extended_glob
 zmodload zsh/mapfile
 
 # receive arguments
-local pid=$1 header_lines=$2 tmp_dir=$3 offset=$@[-1]
+local pid=$1 header_lines=$2 active_group_style=$3 tmp_dir=$4 offset=$5
 
 # read completion list
 local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
 
-# get total group count
+local grep_cmd=''
 if (( $#list > 10000 )); then
-  local -Ua total=(${(f)"$(print -l ${list:$header_lines} | grep -a -oP '^\x1b\[[0-9;]*m')"})
-else
-  local -Ua total=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
+  local v
+  # Prefer GNU grep: grep first (Linux), then ggrep (macOS/Homebrew)
+  # Use $commands[...] so we get the resolved executable path (not an alias/function).
+  if (( ${+commands[grep]} )); then
+    v=$("$commands[grep]" --version 2>/dev/null)
+    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[grep]
+  fi
+
+  if [[ -z $grep_cmd && ${+commands[ggrep]} -eq 1 ]]; then
+    v=$("$commands[ggrep]" --version 2>/dev/null)
+    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[ggrep]
+  fi
 fi
 
-# get current group index, start from 2
-local current=2
-if [[ -f $tmp_dir/current-group.$pid ]]; then
-  current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
+# --- group marker detection (fzf-tab groups) ---------------------------------
+# When groups exist, fzf-tab prefixes each entry with a group SGR like $'\e[94m'.
+# When no groups exist (often file lists), entries may start with $'\e[0m'
+# (reset for LS_COLORS). Treat that as "no groups".
+
+local -Ua group_sgr_prefixes
+if [[ -n $grep_cmd ]]; then
+  group_sgr_prefixes=(
+    ${(f)"$(
+      print -l -- ${list:$header_lines} | "$grep_cmd" -a -oP $'^\x1b\\[[0-9;]*m'
+    )"}
+  )
+else
+  group_sgr_prefixes=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
 fi
-(( current > $#total )) && current=1
-(( current == 0 )) && current=$#total
-echo $current > $tmp_dir/current-group.$pid
+
+# if the only marker is reset, there are no real groups
+if (( $#group_sgr_prefixes == 1 )) && [[ $group_sgr_prefixes[1] == $'\e[0m' ]]; then
+  group_sgr_prefixes=()
+fi
+
+# --- current group index (persist across reloads) ----------------------------
+local current=1
+if (( $#group_sgr_prefixes > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
+  current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
+  (( current > $#group_sgr_prefixes )) && current=1
+  (( current <= 0 )) && current=$#group_sgr_prefixes
+fi
+print -r -- $current > $tmp_dir/current-group.$pid
+
+# configure style of active header
+local sgr_on='' sgr_off=''
+case $active_group_style in
+  (bold)          sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;
+  (underline)     sgr_on=$'\x1b[4m';    sgr_off=$'\x1b[24m' ;;
+  (bold,underline) sgr_on=$'\x1b[1;4m'; sgr_off=$'\x1b[22;24m' ;;
+  (none)          sgr_on='';            sgr_off='' ;;
+  (*)             sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;  # fallback
+esac
+
+# The ANSI SGR code that marks every line in the currently selected group.
+local current_prefix=${group_sgr_prefixes[current]}
 
 # print headers
 if (( header_lines != 0 )); then
-  print -l ${list[1,header_lines]/${total[current]}/$'\x1b[1m'}
+  local -i i
+  local line
+  for i in {1..$header_lines}; do
+    line=$list[i]
+    if [[ $line == *$current_prefix* ]]; then
+      # Apply style only to the group label (up to the first ']'), then disable it
+      line=${line/$current_prefix(#b)([^]]##)\]/$current_prefix$sgr_on${match[1]}]$sgr_off}
+    fi
+    print -r $line
+  done
 fi
 
-# print current group
-if (( $#list > 10000 )); then
-  print -l ${list:$header_lines} | grep -a -F "${total[current]}"
+if [[ -n $grep_cmd ]]; then
+  print -rl -- ${list:$header_lines} | "$grep_cmd" -a -F -- "${group_sgr_prefixes[current]}"
 else
-  print -l ${(M)${list:$header_lines}:#${total[current]}*}
+  print -rl -- ${(M)${list:$header_lines}:#${group_sgr_prefixes[current]}*}
 fi

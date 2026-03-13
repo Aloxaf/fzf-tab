@@ -420,21 +420,24 @@ enable-fzf-tab() {
 
   # 4. Define the wrapper
   function _approximate() {
-    # Force IN_FZF_TAB=1 to ensure -ftb-compadd does not bail out 
-    local IN_FZF_TAB=1
-
     # Temporarily remove fzf-tab's global hook.
-    # This ensures that `if (( ! $+functions[compadd] ))` inside _approximate 
+    # This ensures that `if (( ! $+functions[compadd] ))` inside _approximate
     # evaluates to TRUE, forcing it to define its local wrapper.
     unfunction compadd
 
     {
-        # Call the patched source (which contains the local wrapper definition
-        # but calls -ftb-compadd instead of builtin)
+      if (( IN_FZF_TAB )); then
+        # fzf-tab is active: call the patched version where
+        # builtin compadd → -ftb-compadd, so fzf-tab can capture corrections.
         _ftb_approximate_inner "$@"
+      else
+        # Normal completion (fzf-tab not triggered): use the original
+        # _approximate so that curcontext and zstyle rules are fully preserved.
+        _ftb__approximate "$@"
+      fi
     } always {
-        # Restore fzf-tab's global hook. 
-        functions[compadd]=$functions[-ftb-compadd]
+      # Restore fzf-tab's global hook.
+      functions[compadd]=$functions[-ftb-compadd]
     }
   }
 }

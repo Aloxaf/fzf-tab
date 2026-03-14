@@ -420,9 +420,27 @@ enable-fzf-tab() {
 
   # 4. Define the wrapper
   function _approximate() {
-    # Temporarily remove fzf-tab's global hook.
-    # This ensures that `if (( ! $+functions[compadd] ))` inside _approximate
-    # evaluates to TRUE, forcing it to define its local wrapper.
+    # Temporarily remove fzf-tab's global compadd hook so that _approximate
+    # can function correctly. Here is why this is needed:
+    #
+    # _approximate contains a safeguard: `if (( ! $+functions[compadd] ))`.
+    # In normal zsh usage, compadd is a builtin with no user-defined function
+    # shadowing it, so this check is always true and _approximate proceeds to
+    # define its own local compadd wrapper — one that injects the fuzzy glob
+    # flag (#a1) into PREFIX before calling builtin compadd. This is the core
+    # mechanism that makes approximate matching work.
+    #
+    # The safeguard is meant to skip this step if the user has already defined
+    # a compadd function. fzf-tab is precisely such a case: it redefines compadd
+    # globally as -ftb-compadd. This causes the check to be false, preventing
+    # _approximate from defining its local wrapper and breaking approximate
+    # matching entirely.
+    #
+    # The cleanest solution is to temporarily unfunction compadd before calling
+    # _approximate, making the safeguard evaluate to true again. The hook is
+    # then restored in the always block below. Note that _approximate itself
+    # uses the same mechanics internally: it tracks whether it defined the local
+    # compadd wrapper and removes it in its own always block when done.
     unfunction compadd
 
     {

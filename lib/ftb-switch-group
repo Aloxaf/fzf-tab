@@ -9,34 +9,15 @@ local pid=$1 header_lines=$2 active_group_style=$3 tmp_dir=$4 offset=$5
 # read completion list
 local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
 
-local grep_cmd=''
-if (( $#list > 10000 )); then
-  local v
-  # Prefer GNU grep: grep first (Linux), then ggrep (macOS/Homebrew)
-  # Use $commands[...] so we get the resolved executable path (not an alias/function).
-  if (( ${+commands[grep]} )); then
-    v=$("$commands[grep]" --version 2>/dev/null)
-    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[grep]
-  fi
-
-  if [[ -z $grep_cmd && ${+commands[ggrep]} -eq 1 ]]; then
-    v=$("$commands[ggrep]" --version 2>/dev/null)
-    [[ $v == *'(GNU grep)'* ]] && grep_cmd=$commands[ggrep]
-  fi
-fi
+local grep_cmd=${commands[grep]:-$commands[ggrep]}
 
 # --- group marker detection (fzf-tab groups) ---------------------------------
 # When groups exist, fzf-tab prefixes each entry with a group SGR like $'\e[94m'.
 # When no groups exist (often file lists), entries may start with $'\e[0m'
 # (reset for LS_COLORS). Treat that as "no groups".
-
 local -Ua group_sgr_prefixes
-if [[ -n $grep_cmd ]]; then
-  group_sgr_prefixes=(
-    ${(f)"$(
-      print -l -- ${list:$header_lines} | "$grep_cmd" -a -oP $'^\x1b\\[[0-9;]*m'
-    )"}
-  )
+if (( $#list > 10000 )) && [[ -n $grep_cmd ]]; then
+  group_sgr_prefixes=(${(f)"$(print -l -- ${list:$header_lines} | $grep_cmd -a -oP $'^\x1b\\[[0-9;]*m')"})
 else
   group_sgr_prefixes=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
 fi
@@ -46,14 +27,15 @@ if (( $#group_sgr_prefixes == 1 )) && [[ $group_sgr_prefixes[1] == $'\e[0m' ]]; 
   group_sgr_prefixes=()
 fi
 
-# --- current group index (persist across reloads) ----------------------------
-local current=1
+# calculate and persist current group index
+# the index starts from 2, because switching from "all" to "group 1" looks weird
+local current=2
 if (( $#group_sgr_prefixes > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
   current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
-  (( current > $#group_sgr_prefixes )) && current=1
-  (( current <= 0 )) && current=$#group_sgr_prefixes
 fi
-print -r -- $current > $tmp_dir/current-group.$pid
+(( current > $#group_sgr_prefixes )) && current=1
+(( current <= 0 )) && current=$#group_sgr_prefixes
+echo $current > $tmp_dir/current-group.$pid
 
 # configure style of active header
 local sgr_on='' sgr_off=''
@@ -70,20 +52,16 @@ local current_prefix=${group_sgr_prefixes[current]}
 
 # print headers
 if (( header_lines != 0 )); then
-  local -i i
-  local line
-  for i in {1..$header_lines}; do
-    line=$list[i]
-    if [[ $line == *$current_prefix* ]]; then
-      # Apply style only to the group label (up to the first ']'), then disable it
-      line=${line/$current_prefix(#b)([^]]##)\]/$current_prefix$sgr_on${match[1]}]$sgr_off}
-    fi
-    print -r $line
-  done
+  if (( current > 1 )); then
+    print -l ${list[1,current-1]}
+  fi
+  # Apply style only to the group label (excluding trailing spaces), then disable it
+  print -l ${${${list[current]/${group_sgr_prefixes[current]}/$sgr_on}}/(#b)( ##$'\x1b[00m')/$sgr_off$match[1]}
+  print -l ${list[current+1,header_lines]}
 fi
 
-if [[ -n $grep_cmd ]]; then
-  print -rl -- ${list:$header_lines} | "$grep_cmd" -a -F -- "${group_sgr_prefixes[current]}"
+if (( $#list > 10000 )) && [[ -n $grep_cmd ]]; then
+  print -l -- ${list:$header_lines} | $grep_cmd -a -F -- "${group_sgr_prefixes[current]}"
 else
-  print -rl -- ${(M)${list:$header_lines}:#${group_sgr_prefixes[current]}*}
+  print -l -- ${(M)${list:$header_lines}:#${group_sgr_prefixes[current]}*}
 fi

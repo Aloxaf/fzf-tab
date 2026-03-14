@@ -34,7 +34,7 @@ if (( $#group_sgr_prefixes > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
   current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
 fi
 (( current > $#group_sgr_prefixes )) && current=1
-(( current <= 0 )) && current=$#group_sgr_prefixes
+(( current == 0 )) && current=$#group_sgr_prefixes
 echo $current > $tmp_dir/current-group.$pid
 
 # configure style of active header
@@ -52,12 +52,8 @@ local current_prefix=${group_sgr_prefixes[current]}
 
 # print headers
 if (( header_lines != 0 )); then
-  if (( current > 1 )); then
-    print -l ${list[1,current-1]}
-  fi
   # Apply style only to the group label (excluding trailing spaces), then disable it
-  print -l ${${${list[current]/${group_sgr_prefixes[current]}/$sgr_on}}/(#b)( ##$'\x1b[00m')/$sgr_off$match[1]}
-  print -l ${list[current+1,header_lines]}
+  print -l ${${list[1,header_lines]/(#b)($group_sgr_prefixes[current]*)( ##$'\x1b[00m')/$match[1]$sgr_off$match[2]}/${group_sgr_prefixes[current]}/$sgr_on}
 fi
 
 if (( $#list > 10000 )) && [[ -n $grep_cmd ]]; then

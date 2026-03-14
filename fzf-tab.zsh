@@ -349,7 +349,7 @@ disable-fzf-tab() {
   unfunction compadd 2>/dev/null
 
   functions[_main_complete]=$functions[_ftb__main_complete]
-  functions[_approximate]=$functions[_ftb__approximate]
+  functions[_approximate]=$functions[_ftb_approximate_orig]
 
   # Don't remove .fzf-tab-orig-$_ftb_orig_widget as we won't be able to reliably
   # create it if enable-fzf-tab is called again.
@@ -408,15 +408,15 @@ enable-fzf-tab() {
   # -----------------------------------------------------------------------
   
   # 1. Save original for disable-fzf-tab
-  functions[_ftb__approximate]=$functions[_approximate]
+  functions[_ftb_approximate_orig]=$functions[_approximate]
 
   # 2. Force load _approximate so we can see its source
   autoload +X -Uz _approximate
 
-  # 3. Create the inner patched function
+  # 3. Create the patched function
   #    We read the source code of _approximate and replace 'builtin compadd'
   #    with '-ftb-compadd'. The [[:space:]]## handles potential tabs/spaces.
-  functions[_ftb_approximate_inner]="${functions[_approximate]//builtin[[:space:]]##compadd/-ftb-compadd}"
+  functions[_ftb_approximate_patched]="${functions[_approximate]//builtin[[:space:]]##compadd/-ftb-compadd}"
 
   # 4. Define the wrapper
   function _approximate() {
@@ -429,11 +429,11 @@ enable-fzf-tab() {
       if (( IN_FZF_TAB )); then
         # fzf-tab is active: call the patched version where
         # builtin compadd → -ftb-compadd, so fzf-tab can capture corrections.
-        _ftb_approximate_inner "$@"
+        _ftb_approximate_patched "$@"
       else
         # Normal completion (fzf-tab not triggered): use the original
         # _approximate so that curcontext and zstyle rules are fully preserved.
-        _ftb__approximate "$@"
+        _ftb_approximate_orig "$@"
       fi
     } always {
       # Restore fzf-tab's global hook.

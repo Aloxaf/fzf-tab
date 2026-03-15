@@ -1,26 +1,26 @@
 # fzf-tab
 
-[![CI](https://github.com/Aloxaf/fzf-tab/workflows/ci/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions?query=workflow%3Aci)
-[![GitHub license](https://img.shields.io/github/license/Aloxaf/fzf-tab)](https://github.com/Aloxaf/fzf-tab/blob/master/LICENSE)
+[![Zsh compability](https://github.com/Aloxaf/fzf-tab/actions/workflows/zsh.yaml/badge.svg)](https://github.com/Aloxaf/fzf-tab/actions/workflows/zsh.yaml)
 
 Replace zsh's default completion selection menu with fzf!
 
 [![asciicast](https://asciinema.org/a/293849.svg)](https://asciinema.org/a/293849)
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+
 **Table of Contents**
 
 - [fzf-tab](#fzf-tab)
 - [Install](#install)
-    - [Manual](#manual)
-    - [Antigen](#antigen)
-    - [Zinit](#zinit)
-    - [Oh-My-Zsh](#oh-my-zsh)
-    - [Prezto](#prezto)
+  - [Manual](#manual)
+  - [Antigen](#antigen)
+  - [Zinit](#zinit)
+  - [Oh-My-Zsh](#oh-my-zsh)
+  - [Prezto](#prezto)
 - [Usage](#usage)
-    - [Configure](#configure)
-    - [Tmux](#tmux)
-    - [Binary module](#binary-module)
+  - [Configure](#configure)
+  - [Tmux](#tmux)
+  - [Binary module](#binary-module)
 - [Difference from other plugins](#difference-from-other-plugins)
 - [Compatibility with other plugins](#compatibility-with-other-plugins)
 - [Related projects](#related-projects)
@@ -31,7 +31,7 @@ Replace zsh's default completion selection menu with fzf!
 
 > [!IMPORTANT]
 >
-> 1. make sure [fzf](https://github.com/junegunn/fzf)  is installed
+> 1. make sure [fzf](https://github.com/junegunn/fzf) is installed
 > 2. fzf-tab needs to be loaded after `compinit`, but before plugins which will wrap widgets, such as [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) or [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)
 > 3. Completions should be configured before `compinit`, as stated in the [zsh-completions manual installation guide](https://github.com/zsh-users/zsh-completions#manual-installation).
 

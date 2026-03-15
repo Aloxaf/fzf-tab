@@ -2,6 +2,7 @@
 
 %prep
   unset -m LC_\*
+  export LC_ALL=C
   ZSH_TEST_LANG=
   langs=(en_{US,GB}.{UTF-,utf}8 en.UTF-8
          $(locale -a 2>/dev/null | egrep 'utf8|UTF-8'))

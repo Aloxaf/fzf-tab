@@ -28,7 +28,8 @@ if [[ -n $lstat[14] ]]; then
     rsv_color=$REPLY
   fi
   dpre=$'\033[0m\033['$sym_color'm'
-  dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv
+  dsuf+=$'\033[0m -> \033['$rsv_color'm'$rsv$'\033[0m'
 else
   dpre=$'\033[0m\033['$REPLY'm'
+  dsuf=$'\033[0m'$dsuf
 fi

@@ -75,6 +75,9 @@ command cat > $tmp_dir/completions.$$
 
 local dd='gdd'
 if (( ${+commands[$dd]} == 0 )) ; then
+  dd='gnudd'
+fi
+if (( ${+commands[$dd]} == 0 )) ; then
   dd='dd'
 fi
 if (( ${+commands[$dd]} == 0 )) ; then

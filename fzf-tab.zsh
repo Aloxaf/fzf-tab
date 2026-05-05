@@ -131,6 +131,20 @@ builtin unalias -m '[^+]*'
   zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
 }
 
+-ftb-unambiguous-is-contiguous() {
+  emulate -L zsh -o extended_glob
+  local unambiguous="${1##*/}" entry word bs=$'\2'
+  local -A capture
+  shift
+
+  [[ -n $unambiguous ]] || return 1
+  for entry in "$@"; do
+    capture=("${(@0)${entry#*$bs}}")
+    word="${capture[word]-${entry%%$bs*}}"
+    [[ $word == *$unambiguous* ]] || return 1
+  done
+}
+
 -ftb-complete() {
   local -Ua _ftb_groups
   local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0'
@@ -168,10 +182,12 @@ builtin unalias -m '[^+]*'
         && [[ -n $compstate[unambiguous] ]] \
         && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
         && [[ $compstate[list] != *"force"* ]]; then
-        compstate[list]=
-        compstate[insert]=unambiguous
-        _ftb_finish=1
-        return 0
+        if -ftb-unambiguous-is-contiguous "$compstate[unambiguous]" "${_ftb_compcap[@]}"; then
+          compstate[list]=
+          compstate[insert]=unambiguous
+          _ftb_finish=1
+          return 0
+        fi
       fi
 
       -ftb-generate-query      # sets `_ftb_query`

@@ -180,6 +180,17 @@
 0:matcher-list
 >line: {: vim.coc }{}
 
+  comptesteval "zstyle ':completion:*' menu no; zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'"
+  comptesteval "mkdir -p somedir/project_alpha_1234_final somedir/project_al_pha_benchmark_1234"
+  comptest $': somedir/_1234\t'
+  comptesteval "rm -r somedir; zstyle ':completion:*' menu true; zstyle -d ':completion:*' matcher-list"
+0:matcher-list subsequence unambiguous falls through
+>line: {: somedir/project_al_pha_benchmark_1234/}{}
+>QUERY:{project_al}
+>DESCRIPTION:{file}
+>C1:{project_al_pha_benchmark_1234/}
+>C1:{project_alpha_1234_final/}
+
   comptesteval $'cd dir1'
   comptest $': ../d\t'
   comptesteval $'cd ..'
@@ -251,4 +262,3 @@
 %clean
 
   zmodload -ui zsh/zpty
-

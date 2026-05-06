@@ -4,7 +4,10 @@ local -a _ftb_groups=("${(@f)mapfile[__FTB_GROUPS__]}")
 local bs=$'\2'
 
 # get description
-export desc=${${"$(<'{f}')"%$'\0'*}#*$'\0'}
+# NOTE: keep {f} unquoted here so -ftb-fzf can rewrite it to $1 for {_FTB_INIT_}.
+# Quoting it (e.g. '{f}') would turn rewritten '$1' into a literal string.
+local _ftb_cur_file={f}
+export desc=${${"$(<$_ftb_cur_file)"%$'\0'*}#*$'\0'}
 # get ctxt for current completion
 local -A ctxt=("${(@0)${_ftb_compcap[(r)${(b)desc}$bs*]#*$bs}}")
 # get group

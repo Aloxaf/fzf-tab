@@ -509,7 +509,11 @@ typeset -ga _ftb_group_colors=(
   fi
 
   if (( ! $fpath[(I)$FZF_TAB_HOME/lib] )); then
-    fpath+=($FZF_TAB_HOME/lib)
+    # Prepend so autoloaded helpers (-ftb-*) always come from this plugin copy.
+    # Appending can pick stale helpers from another fpath entry when multiple
+    # fzf-tab copies exist (e.g. plugin manager leftovers), causing mismatched
+    # runtime behavior.
+    fpath=($FZF_TAB_HOME/lib $fpath)
   fi
 
   autoload -Uz is-at-least -- $FZF_TAB_HOME/lib/-#ftb*(:t)

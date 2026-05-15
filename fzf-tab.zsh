@@ -116,6 +116,8 @@ builtin unalias -m '[^+]*'
       word=$__hits[i] dscr=$__dscr[i]
       if [[ -n $dscr ]]; then
         dscr=${dscr//$'\n'}
+      elif [[ "$expl" == '[alias]' ]]; then 
+        dscr="$(echo $(alias $word) | sed 's/=/  :=>  /')"
       elif [[ -n $word ]]; then
         dscr=$word
       fi

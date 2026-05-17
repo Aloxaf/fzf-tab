@@ -41,10 +41,11 @@ if (( ! $+IN_FZF_TAB )); then
   cat > $tmp_dir/completions.$$
 fi
 
-local text REPLY comp_lines comp_length length popup_pad popup_min_size
+local text REPLY comp_lines comp_length length popup_pad popup_min_size smart_tab_bindings
 
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-pad popup_pad || popup_pad=(0 0)
 zstyle -a ":fzf-tab:$_ftb_curcontext" popup-min-size popup_min_size || popup_min_size=(0 0)
+zstyle -a ":fzf-tab:$_ftb_curcontext" popup-smart-tab-bindings smart_tab_bindings || smart_tab_bindings=(tab:up btab:down)
 
 # get the size of content, note we should remove all ANSI color code
 comp_lines=$(( ${#${(f)mapfile[$tmp_dir/completions.$$]}} + $popup_pad[2] ))
@@ -73,7 +74,7 @@ if (( cursor_y * 2 > window_height )); then
   popup_height=$(( min(max(comp_lines + 4, popup_min_size[2]), cursor_y - window_top) + adjust_height ))
   popup_y=$cursor_y
   if zstyle -T ":fzf-tab:$_ftb_curcontext" popup-smart-tab; then
-    fzf_opts+=(--bind=tab:up,btab:down)
+    fzf_opts+=(--bind=${(j:,:)smart_tab_bindings})
   fi
   fzf_opts+=(--layout=default)
 else

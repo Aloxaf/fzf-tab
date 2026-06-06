@@ -50,7 +50,7 @@ local normalized_active_group_style=${${(j:,:)_active_style_sorted}:-none}
 
 print -rl -- $_ftb_compcap > $tmp_dir/compcap.$$
 print -rl -- $_ftb_groups  > $tmp_dir/groups.$$
-print -r -- ${ftb_preview_init/{f}/\$1} > $tmp_dir/ftb_preview_init.$$
+print -r -- ${ftb_preview_init//\{f\}/\$1} > $tmp_dir/ftb_preview_init.$$
 
 binds=${binds//{_FTB_INIT_}/. $tmp_dir/ftb_preview_init.$$ {f} $'\n'}
 

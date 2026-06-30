@@ -36,14 +36,37 @@ fi
 echo $current > $tmp_dir/current-group.$pid
 
 # configure style of active header
-local sgr_on='' sgr_off=''
-case $active_group_style in
-  (bold)          sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;
-  (underline)     sgr_on=$'\x1b[4m';    sgr_off=$'\x1b[24m' ;;
-  (bold,underline) sgr_on=$'\x1b[1;4m'; sgr_off=$'\x1b[22;24m' ;;
-  (none)          sgr_on='';            sgr_off='' ;;
-  (*)             sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;  # fallback
-esac
+local sgr_on='' sgr_off='' style
+local -a active_style_tokens sgr_on_codes sgr_off_codes
+active_style_tokens=(${(s:,:)active_group_style})
+
+if (( ${active_style_tokens[(I)none]} )); then
+  active_style_tokens=(none)
+fi
+
+for style in $active_style_tokens; do
+  case $style in
+    (bold)
+      sgr_on_codes+=(1)
+      sgr_off_codes+=(22)
+      ;;
+    (underline)
+      sgr_on_codes+=(4)
+      sgr_off_codes+=(24)
+      ;;
+    (reverse)
+      sgr_on_codes+=(7)
+      sgr_off_codes+=(27)
+      ;;
+    (none)
+      ;;
+  esac
+done
+
+if (( $#sgr_on_codes )); then
+  sgr_on=$'\x1b['${(j:;:)sgr_on_codes}$'m'
+  sgr_off=$'\x1b['${(j:;:)sgr_off_codes}$'m'
+fi
 
 # The ANSI SGR code that marks every line in the currently selected group.
 local current_prefix=$group_sgr_prefixes[current]

@@ -114,6 +114,8 @@ builtin unalias -m '[^+]*'
     local dscr word i
     for i in {1..$#__hits}; do
       word=$__hits[i] dscr=$__dscr[i]
+      # Strip carapace double-backslash quoting when original compadd used -Q
+      (( ${_opts[(I)-Q]} )) && word=${word//\\\\/\\}
       if [[ -n $dscr ]]; then
         dscr=${dscr//$'\n'}
       elif [[ -n $word ]]; then

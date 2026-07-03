@@ -206,7 +206,11 @@ builtin unalias -m '[^+]*'
         [[ -z $args[1] ]] && args=()  # don't pass an empty string
         IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
         # NOTE: should I use `-U` here?, ../f\tabcd -> ../abcd
-        builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
+        if (( ${args[(I)-Q]} )); then
+          builtin compadd -Q -- $choices[1]
+        else
+          builtin compadd -- $choices[1]
+        fi
 
         compstate[list]=
         compstate[insert]=
@@ -256,7 +260,11 @@ _fzf-tab-apply() {
     local -a args=("${(@ps:\1:)v[args]}")
     [[ -z $args[1] ]] && args=()  # don't pass an empty string
     IPREFIX=${v[IPREFIX]-} PREFIX=${v[PREFIX]-} SUFFIX=${v[SUFFIX]-} ISUFFIX=${v[ISUFFIX]-}
-    builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
+    if (( ${args[(I)-Q]} )); then
+      builtin compadd -Q -- "$v[word]"
+    else
+      builtin compadd -- "$v[word]"
+    fi
   done
 
   compstate[list]=

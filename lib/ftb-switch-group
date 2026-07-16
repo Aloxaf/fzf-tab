@@ -8,31 +8,30 @@ local pid=$1 header_lines=$2 active_group_style=$3 tmp_dir=$4 offset=$5
 
 # read completion list
 local -a list=(${(f)mapfile[$tmp_dir/completions.$pid]})
+local -a groups=(${(f)mapfile[$tmp_dir/groups.$pid]})
+local bs=$'\b'
 
-# --- group marker detection (fzf-tab groups) ---------------------------------
-# When groups exist, fzf-tab prefixes each entry with a group SGR like $'\e[94m'.
-# When no groups exist (often file lists), entries may start with $'\e[0m'
-# (reset for LS_COLORS). Treat that as "no groups".
-local -Ua group_sgr_prefixes
+# Each grouped entry starts with its numeric group id and a backspace. This
+# field is hidden by fzf, but remains stable when group colors are identical.
+local -Ua group_ids
 if (( $#list > 10000 && $+commands[grep] )); then
-  group_sgr_prefixes=(${(f)"$(print -l -- ${list:$header_lines} | command grep -a -o $'^\x1b\\[[0-9;]*m')"})
+  group_ids=(${(f)"$(print -l -- ${list:$header_lines} | command grep -a -o $'^[0-9][0-9]*\b')"})
+  group_ids=("${(@)group_ids%$bs}")
 else
-  group_sgr_prefixes=(${(M)${list:$header_lines}#$'\x1b['[0-9;]#*m})
-fi
-
-# if the only marker is reset, there are no real groups
-if (( $#group_sgr_prefixes == 1 )) && [[ $group_sgr_prefixes[1] == $'\e[0m' ]]; then
-  group_sgr_prefixes=()
+  local item
+  for item in "${(@)list:$header_lines}"; do
+    [[ $item == (#b)(<->)$bs* ]] && group_ids+=$match[1]
+  done
 fi
 
 # calculate and persist current group index
 # the index starts from 2, because switching from "all" to "group 1" looks weird
 local current=2
-if (( $#group_sgr_prefixes > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
+if (( $#group_ids > 0 )) && [[ -f $tmp_dir/current-group.$pid ]]; then
   current=$(( $(<$tmp_dir/current-group.$pid) + offset ))
 fi
-(( current > $#group_sgr_prefixes )) && current=1
-(( current == 0 )) && current=$#group_sgr_prefixes
+(( current > $#group_ids )) && current=1
+(( current == 0 )) && current=$#group_ids
 echo $current > $tmp_dir/current-group.$pid
 
 # configure style of active header
@@ -45,17 +44,27 @@ case $active_group_style in
   (*)             sgr_on=$'\x1b[1m';    sgr_off=$'\x1b[22m' ;;  # fallback
 esac
 
-# The ANSI SGR code that marks every line in the currently selected group.
-local current_prefix=$group_sgr_prefixes[current]
+# The hidden marker on every line in the selected group, and its label.
+local current_marker='' current_group=''
+if (( $#group_ids )); then
+  current_marker=$group_ids[current]$bs
+  current_group=$groups[$group_ids[current]]
+fi
 
 # print headers
 if (( header_lines != 0 )); then
-  # Apply style only to the group label (excluding trailing spaces), then disable it
-  print -l ${${(S)list[1,header_lines]/(#b)($current_prefix*)($'\x1b[00m')/${match[1]/%(#b)( #)/$sgr_off$match}$match[2]}/$current_prefix/$current_prefix$sgr_on}
+  # Apply style only to the exact group label, excluding its padding.
+  local header
+  for header in "${(@)list[1,header_lines]}"; do
+    if [[ -n $current_group && $current_group != __hide__* ]]; then
+      header=${header/(#b)($'\x1b['[0-9;]#m)(${(b)current_group})( #)($'\x1b[00m')/$match[1]$sgr_on$match[2]$sgr_off$match[3]$match[4]}
+    fi
+    print -r -- $header
+  done
 fi
 
 if (( $#list > 10000 && $+commands[grep] )); then
-  print -l -- ${list:$header_lines} | command grep -a -F -- "${group_sgr_prefixes[current]}"
+  print -l -- ${list:$header_lines} | command grep -a -- "^$current_marker"
 else
-  print -l -- ${(M)${list:$header_lines}:#${group_sgr_prefixes[current]}*}
+  print -l -- ${(M)${list:$header_lines}:#${current_marker}*}
 fi

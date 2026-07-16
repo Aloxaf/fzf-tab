@@ -248,7 +248,69 @@
 >C1:{package }
 >C1:{openpgp-keys-gentoo-release}
 >C1:{-MERGING-pnpm-bin}
+
+  () {
+    emulate -L zsh -o extended_glob
+    local bs=$'\b'
+    local _ftb_curcontext=identical-colors
+    local -Ua _ftb_groups=('group one' 'group two')
+    local -a _ftb_compcap=(
+      $'alpha\2<\x00>\x00group\x001\x00word\x00alpha'
+      $'beta\2<\x00>\x00group\x002\x00word\x00beta'
+    )
+    local -a _ftb_group_colors=($'\e[0m')
+    -ftb-zstyle() {
+      zstyle $1 ":fzf-tab:$_ftb_curcontext" ${@:2}
+    }
+    zstyle ':fzf-tab:identical-colors' group-colors $'\e[0m' $'\e[0m'
+    . $ZTST_srcdir/../lib/-ftb-generate-complist
+    zstyle -d ':fzf-tab:identical-colors' group-colors
+    local -a first_fields=("${(@0)_ftb_complist[1]}")
+    local -a second_fields=("${(@0)_ftb_complist[2]}")
+    [[ $first_fields[1] == 1${bs}* && $first_fields[2] == alpha ]] &&
+      [[ $second_fields[1] == 2${bs}* && $second_fields[2] == beta ]]
+  }
+0:completion list retains hidden group identity with identical colors
+
+  () {
+    emulate -L zsh
+    local tmp_dir=$ZTST_tmp/identical-group-colors
+    local pid=$$
+    local bs=$'\b'
+    mkdir -p $tmp_dir
+    print -rl -- \
+      $'\e[0mgroup one  \e[00m\e[0mgroup two\e[00m' \
+      1${bs}$'\e[0m·alpha\0alpha\0' \
+      2${bs}$'\e[0m·beta\0beta\0' \
+      > $tmp_dir/completions.$pid
+    print -rl -- 'group one' 'group two' > $tmp_dir/groups.$pid
+    local -a switched=("${(@f)$(
+      $commands[zsh] -f $ZTST_srcdir/../lib/ftb-switch-group $pid 1 bold $tmp_dir 0
+    )}")
+    (( $#switched == 2 )) &&
+      [[ $switched[1] == $'\e[0mgroup one  \e[00m\e[0m\e[1mgroup two\e[22m\e[00m' ]] &&
+      [[ $switched[2] == 2${bs}$'\e[0m·beta\0beta\0' ]]
+  }
+0:group switching uses hidden identity when colors are identical
+
+  () {
+    emulate -L zsh
+    local tmp_dir=$ZTST_tmp/ungrouped-reset-colors
+    local pid=$$
+    mkdir -p $tmp_dir
+    print -rl -- \
+      $'\e[0m·alpha\0alpha\0' \
+      $'\e[0m·beta\0beta\0' \
+      > $tmp_dir/completions.$pid
+    : > $tmp_dir/groups.$pid
+    local -a switched=("${(@f)$(
+      $commands[zsh] -f $ZTST_srcdir/../lib/ftb-switch-group $pid 0 none $tmp_dir 0
+    )}")
+    (( $#switched == 2 )) &&
+      [[ $switched[1] == $'\e[0m·alpha\0alpha\0' ]] &&
+      [[ $switched[2] == $'\e[0m·beta\0beta\0' ]]
+  }
+0:group switching preserves an ungrouped reset-colored list
 %clean
 
   zmodload -ui zsh/zpty
-

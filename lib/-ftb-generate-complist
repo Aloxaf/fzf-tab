@@ -82,7 +82,9 @@ fi
 
 (( same_word )) && tcandidates[2,-1]=()
 
-# sort and remove sort group or other index
+# sort and remove the duplicate group index before the displayed description.
+# Keep the leading index so group reloads do not have to use presentation colors
+# as group identity. The first field is hidden by fzf's --nth setting.
 zstyle -T ":completion:$_ftb_curcontext" sort
 if (( $? != 1 )); then
   if (( colorful )); then
@@ -99,7 +101,15 @@ if (( $? != 1 )); then
     tcandidates=("${(@o)tcandidates}")
   fi
 fi
-typeset -gUa _ftb_complist=("${(@)tcandidates//[0-9]#$bs}")
+local candidate group_id
+local -a indexed_candidates
+for candidate in "${(@)tcandidates}"; do
+  group_id=${candidate%%$bs*}
+  candidate=${candidate//[0-9]#$bs}
+  [[ $group_id == <-> ]] && candidate=$group_id$bs$candidate
+  indexed_candidates+=$candidate
+done
+typeset -gUa _ftb_complist=("${(@)indexed_candidates}")
 
 # hide needless group
 if (( $#_ftb_groups )); then

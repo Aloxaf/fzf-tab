@@ -1,0 +1,108 @@
+# Tests for ftb-tmux-popup's FZF_DEFAULT_OPTS --tmux/--popup stripping.
+
+%prep
+  # Inline form of the FZF_DEFAULT_OPTS --tmux/--popup strip used in
+  # lib/ftb-tmux-popup: ${array:#pattern} filters the array as a whole and
+  # drops matching elements (no '' placeholder left behind).
+  ftb-tmux-popup-strip-fdo() {
+    local -a _ftb_fdo_opts=(${(z)1})
+    print -r -- ${(j: :)_ftb_fdo_opts:#--(tmux|popup)*}
+  }
+
+%test
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux')"
+0:bare --tmux stripped
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux=center,50%')"
+0:--tmux=center,50% stripped
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--popup')"
+0:bare --popup stripped
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--popup=bottom,30%')"
+0:--popup=bottom,30% stripped
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--height=40% --tmux --color=fg:1')"
+0:mixed --tmux stripped, others kept
+>--height=40% --color=fg:1
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux center,50% --color=fg:1')"
+0:bare --tmux does not eat next arg
+>center,50% --color=fg:1
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '')"
+0:empty input
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--select-1 --bind enter:accept')"
+0:no tmux/popup untouched
+>--select-1 --bind enter:accept
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--color=fg:1 --popup=center,50% --layout=reverse')"
+0:--popup= stripped among others
+>--color=fg:1 --layout=reverse
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--height 40% --tmux')"
+0:--height separate-arg kept, --tmux stripped
+>--height 40%
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux --popup --height=40%')"
+0:both --tmux and --popup stripped
+>--height=40%
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux=center,50% --popup=bottom,30%')"
+0:both =value forms stripped
+>
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux --color=fg:1 --popup')"
+0:tmux and popup at ends, middle kept
+>--color=fg:1
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--height=40% --layout=reverse --tmux=center,50%')"
+0:height/layout kept, tmux= stripped
+>--height=40% --layout=reverse
+
+  print -r -- "$(ftb-tmux-popup-strip-fdo '--tmux --tmux=center,50% --popup --popup=bottom,30%')"
+0:all four forms stripped
+>
+
+  local -a _r=(${(z)$(ftb-tmux-popup-strip-fdo '--tmux')})
+  print -r -- $#_r
+0:stripped result has zero elements (no '' placeholder)
+>0
+
+  local -a _r=(${(z)$(ftb-tmux-popup-strip-fdo '--tmux=center,50% --popup=bottom,30%')})
+  print -r -- $#_r
+0:all-stripped result has zero elements (no '' placeholder)
+>0
+
+  local -a _r=(${(z)$(ftb-tmux-popup-strip-fdo '--height=40% --color=fg:1')})
+  print -r -- ${(q)_r}
+0:kept args round-trip through %q unchanged
+>--height=40% --color=fg:1
+
+  local -a _r=(${(z)$(ftb-tmux-popup-strip-fdo '--color=fg:1 --popup=center,50% --layout=reverse')})
+  print -r -- ${(q)_r}
+0:kept args with =value round-trip through %q unchanged
+>--color=fg:1 --layout=reverse
+
+  local -a _r=(${(z)$(ftb-tmux-popup-strip-fdo '--height 40% --tmux')})
+  print -r -- ${(q)_r}
+0:separate-arg kept value round-trips through %q
+>--height 40%
+
+  local _r_str=$(ftb-tmux-popup-strip-fdo "--tmux --'has  space' --color=fg:1")
+  local -a _r=(${(z)_r_str})
+  print -r -- $#_r
+  print -r -- ${(q)_r}
+0:quoted arg with double space stays one element, %q round-trips (no '' placeholder)
+>2
+>--\'has\ \ space\' --color=fg:1
+
+%clean
+  unfunction ftb-tmux-popup-strip-fdo 2>/dev/null

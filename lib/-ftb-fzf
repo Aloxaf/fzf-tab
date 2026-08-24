@@ -24,7 +24,8 @@ ftb_preview_init=${ftb_preview_init//__FTB_WORDS_DUMP__/$(typeset -p words)}
 ftb_preview_init+=$'\n'
 
 local default_binds=tab:down,btab:up,change:top,ctrl-space:toggle,bspace:backward-delete-char/eof,ctrl-h:backward-delete-char/eof
-local fzf_command fzf_flags fzf_preview debug_command tmp switch_group active_group_style fzf_pad fzf_min_height binds
+local fzf_command fzf_flags fzf_preview debug_command tmp switch_group cancel_group cancel_group_or_exit
+local active_group_style fzf_pad fzf_min_height binds
 local ret=0
 
 -ftb-zstyle -s fzf-command fzf_command || fzf_command=fzf
@@ -33,6 +34,8 @@ local ret=0
 -ftb-zstyle -a fzf-flags fzf_flags
 -ftb-zstyle -s fzf-preview fzf_preview
 -ftb-zstyle -a switch-group switch_group || switch_group=(F1 F2)
+-ftb-zstyle -s cancel-group cancel_group
+-ftb-zstyle -s cancel-group-or-exit cancel_group_or_exit
 -ftb-zstyle -s fzf-pad fzf_pad || fzf_pad=2
 -ftb-zstyle -s fzf-min-height fzf_min_height || fzf_min_height=0
 -ftb-zstyle -b use-fzf-default-opts use_fzf_default_opts || use_fzf_default_opts="no"
@@ -58,6 +61,13 @@ local -i header_lines=$#_ftb_headers
 local -i lines=$(( $#_ftb_compcap + fzf_pad + header_lines ))
 local reload_command="$commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $header_lines $normalized_active_group_style $tmp_dir"
 
+# switch group bindings
+binds+=",${switch_group[1]}:reload($reload_command switch -1),${switch_group[2]}:reload($reload_command switch 1)"
+
+# cancel group bindings
+[[ -n $cancel_group ]] && binds+=",$cancel_group:transform($reload_command reset ignore)"
+[[ -n $cancel_group_or_exit ]] && binds+=",$cancel_group_or_exit:transform($reload_command reset abort)"
+
 # detect if we will use tmux popup
 local use_tmux_popup=0
 if [[ $fzf_command == "ftb-tmux-popup" ]]; then
@@ -81,7 +91,6 @@ fi
 FZF_DEFAULT_OPTS=$fzf_default_opts SHELL=$ZSH_NAME ${(z)fzf_command} \
   --ansi \
   --bind=$binds \
-  --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
   --cycle \
   --delimiter='\x00' \
   --expect=$continuous_trigger,$print_query,$accept_line \

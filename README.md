@@ -123,6 +123,10 @@ zstyle ':fzf-tab:*' fzf-flags --color=fg:1,fg+:2 --bind=tab:accept
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
 # switch group using `<` and `>`
 zstyle ':fzf-tab:*' switch-group '<' '>'
+# cancel the active group with `esc`; exit fzf if no group is active (fzf 0.45+)
+zstyle ':fzf-tab:*' cancel-group-or-exit esc
+# alternatively, cancel the active group with `ctrl-g`; do nothing if no group is active (fzf 0.45+)
+# zstyle ':fzf-tab:*' cancel-group ctrl-g
 ```
 
 ## Tmux

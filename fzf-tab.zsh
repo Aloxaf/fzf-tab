@@ -39,7 +39,7 @@ builtin unalias -m '[^+]*'
   local ret=$?
   if (( $#__hits == 0 )); then
     if is-at-least 5.9 && (( $#_mesg != 0 )); then
-      builtin compadd -x $_mesg
+      builtin compadd -x "$_mesg[2]"
     fi
     return $ret
   fi

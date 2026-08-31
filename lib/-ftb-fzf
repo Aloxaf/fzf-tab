@@ -65,8 +65,8 @@ local reload_command="$commands[zsh] -f $FZF_TAB_HOME/lib/ftb-switch-group $$ $h
 binds+=",${switch_group[1]}:reload($reload_command switch -1),${switch_group[2]}:reload($reload_command switch 1)"
 
 # cancel group bindings
-[[ -n $cancel_group ]] && binds+=",$cancel_group:transform($reload_command reset ignore)"
-[[ -n $cancel_group_or_exit ]] && binds+=",$cancel_group_or_exit:transform($reload_command reset abort)"
+[[ -n $cancel_group ]] && binds+=",${cancel_group}:transform($reload_command reset ignore)"
+[[ -n $cancel_group_or_exit ]] && binds+=",${cancel_group_or_exit}:transform($reload_command reset abort)"
 
 # detect if we will use tmux popup
 local use_tmux_popup=0

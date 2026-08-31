@@ -248,7 +248,37 @@
 >C1:{package }
 >C1:{openpgp-keys-gentoo-release}
 >C1:{-MERGING-pnpm-bin}
+
+  group_tmp=$ZTST_tmp/group-reset
+  mkdir $group_tmp
+  print -r -- 2 > $group_tmp/current-group.42
+  reset_action=$(zsh -f $ZTST_srcdir/../lib/ftb-switch-group 42 0 none $group_tmp reset ignore)
+  [[ $reset_action == reload\(*completions.42\) ]] && print reset
+  [[ ! -e $group_tmp/current-group.42 ]] && print cleared
+  reset_action=$(zsh -f $ZTST_srcdir/../lib/ftb-switch-group 42 0 none $group_tmp reset ignore)
+  print -r -- $reset_action
+  reset_action=$(zsh -f $ZTST_srcdir/../lib/ftb-switch-group 42 0 none $group_tmp reset abort)
+  print -r -- $reset_action
+0:group cancel resets an active group and supports inactive actions
+>reset
+>cleared
+>ignore
+>abort
+
+  switch_tmp=$ZTST_tmp/group-switch
+  mkdir $switch_tmp
+  print -rl -- $'\e[31mgroup-one' $'\e[32mgroup-two' > $switch_tmp/completions.42
+  switch_result=$(zsh -f $ZTST_srcdir/../lib/ftb-switch-group 42 0 none $switch_tmp switch 1)
+  [[ $switch_result == $'\e[32mgroup-two' ]] && print group-two
+  print -r -- $(<$switch_tmp/current-group.42)
+  switch_result=$(zsh -f $ZTST_srcdir/../lib/ftb-switch-group 42 0 none $switch_tmp switch -1)
+  [[ $switch_result == $'\e[31mgroup-one' ]] && print group-one
+  print -r -- $(<$switch_tmp/current-group.42)
+0:switch action selects and persists group index
+>group-two
+>2
+>group-one
+>1
 %clean
 
   zmodload -ui zsh/zpty
-

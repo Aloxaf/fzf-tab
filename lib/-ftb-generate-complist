@@ -87,11 +87,21 @@ zstyle -T ":completion:$_ftb_curcontext" sort
 if (( $? != 1 )); then
   if (( colorful )); then
     # if enable list_colors, we should skip the first field
-    if [[ ${commands[sort]:A:t} != (|busybox*) ]]; then
-      # this is faster but doesn't work if `find` is from busybox
+    # `sort -u` resolves equality via the host locale collation, and under
+    # e.g. en_US.UTF-8 BSD sort (macOS) treats strings that differ only by a
+    # Han character as equal, dropping valid candidates. Only GNU sort is
+    # safe here, so detect it once and fall back to the byte-wise zsh sort.
+    if (( ! $+_ftb_gnu_sort )); then
+      _ftb_gnu_sort=0
+      (( $+commands[sort] )) &&
+        LC_ALL=C command sort --version 2>/dev/null | command grep -q GNU &&
+        _ftb_gnu_sort=1
+    fi
+    if (( _ftb_gnu_sort )); then
+      # this is faster but doesn't work if `sort` is not GNU-compatible
       tcandidates=(${(f)"$(command sort -u -t '\0' -k 2 <<< ${(pj:\n:)tcandidates})"})
     else
-      # slower but portable
+      # slower but portable; byte-wise sort keeps CJK-only-distinct candidates
       tcandidates=(${(@o)${(@)tcandidates:/(#b)([^$'\0']#)$'\0'(*)/$match[2]$'\0'$match[1]}})
       tcandidates=(${(@)tcandidates/(#b)(*)$'\0'([^$'\0']#)/$match[2]$'\0'$match[1]})
     fi

@@ -21,7 +21,7 @@ ln -sf $PWD/Src/fzftab.c   ./zsh/$zsh_version/Src/Modules/
 ln -sf $PWD/Src/fzftab.mdd ./zsh/$zsh_version/Src/Modules/
 
 # build zsh
-cd -q ./zsh/$zsh_version
+builtin cd -q ./zsh/$zsh_version
 
 git checkout -- .
 

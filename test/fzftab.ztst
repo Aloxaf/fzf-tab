@@ -248,7 +248,37 @@
 >C1:{package }
 >C1:{openpgp-keys-gentoo-release}
 >C1:{-MERGING-pnpm-bin}
+
+  comptesteval 'mkdir -p dir3/a dir3/b; touch dir3/x dir3/y; _tst3() { _files; local -a c d; c=(dir3/a/mod.nix dir3/b/mod.nix); d=("relpath      dir3/a/mod.nix" "relpath      dir3/b/mod.nix"); compadd -J ext-group -x "external" -d d -a c }; compdef _tst3 tst3'
+  comptesteval "zstyle ':completion:*' menu select; zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'"
+  comptest $'tst3 dir3/\t'
+0:external bare-word candidates must not make the unambiguous fast path truncate the typed word
+>line: {tst3 dir3/}{}
+>QUERY:{}
+>DESCRIPTION:{file}
+>C1:{a/}
+>C1:{b/}
+>C1:{x}
+>C1:{y}
+>C0:{relpath      dir3/a/mod.nix}
+>C0:{relpath      dir3/b/mod.nix}
+
+  comptest $'tst3 "dir3/\t'
+0:quoted variant: external bare-word candidates must not delete the path after the quote
+>line: {tst3 "dir3/}{}
+>QUERY:{}
+>DESCRIPTION:{file}
+>C1:{a/}
+>C1:{b/}
+>C1:{x}
+>C1:{y}
+>C0:{relpath      dir3/a/mod.nix}
+>C0:{relpath      dir3/b/mod.nix}
+
+  comptesteval "zstyle -d ':completion:*' matcher-list menu group-name; zstyle -d ':completion:*:descriptions' format"
+  comptesteval 'rm -rf dir3; compdef -d tst3'
+0:cleanup dir3 fixture and zstyles
+
 %clean
 
   zmodload -ui zsh/zpty
-

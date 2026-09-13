@@ -518,7 +518,7 @@ typeset -ga _ftb_group_colors=(
     fpath+=($FZF_TAB_HOME/lib)
   fi
 
-  autoload -Uz is-at-least -- $FZF_TAB_HOME/lib/-#ftb*(:t)
+  autoload -Uz -- is-at-least $FZF_TAB_HOME/lib/-#ftb*(:t)
 
   if (( $+FZF_TAB_COMMAND || $+FZF_TAB_OPTS || $+FZF_TAB_QUERY || $+FZF_TAB_SINGLE_GROUP || $+fzf_tab_preview_init )) \
        || zstyle -m ":fzf-tab:*" command '*' \

@@ -51,6 +51,13 @@
 
 %test
 
+  # Regression for #593: run in a fresh zsh so we are not looking at the zpty parent.
+  # autoload -- must come before operands, else a stub named "--" is registered;
+  # dash-prefixed lib helpers still need that "--" so they are not parsed as options.
+  zsh -f -c "emulate -L zsh; source $ZTST_srcdir/../fzf-tab.zsh; print -r -- \${+functions[--]} \${+functions[-ftb-complete]}"
+0:no spurious -- stub; dash-prefixed helpers still autoloaded
+>0 1
+
   comptest $': \t'
 0:directories and files
 >line: {: dir1/}{}

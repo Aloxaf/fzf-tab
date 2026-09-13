@@ -169,10 +169,28 @@ builtin unalias -m '[^+]*'
       # _approximate sets compstate[list] to "force" when showing corrections.
       # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
       # which falls back to the standard Zsh menu.
+      #
+      # Guard: skip the fast path when the unambiguous string is a proper
+      # prefix of the current word (the word is already more specific than
+      # the common prefix). Honoring "insert unambiguous" in that case would
+      # DELETE already-typed characters -- e.g. the trailing slash of
+      # "dir/" when an external candidate group feeds bare full-path
+      # candidate words and the common prefix gets cut at a path-segment
+      # boundary; zsh would then rewrite "dir/" into "dir" with no menu.
+      # An empty word never matches a non-empty unambiguous prefix, so it
+      # passes this check naturally (normal extension insertion preserved).
+      # The leading compstate[quote] matters: inside quotes the quote char
+      # is carried by compstate[quote], not by IPREFIX, so an unquoted LHS
+      # would never match and quoted words would lose the guard entirely
+      # (trailing compstate[quote] of the word form is irrelevant to the
+      # prefix test and is omitted).
+      # (NOTE: comments cannot be embedded inside the "\\" continuation
+      # chain below -- zsh fails to parse it.)
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
         && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
+        && [[ "$compstate[quote]$IPREFIX$PREFIX" != "$compstate[unambiguous]"* ]] \
         && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous

@@ -169,7 +169,21 @@ builtin unalias -m '[^+]*'
       # _approximate sets compstate[list] to "force" when showing corrections.
       # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
       # which falls back to the standard Zsh menu.
+      local -i case_twin=0
+      if [[ $compstate[insert] == *"unambiguous" ]] && [[ -n $compstate[unambiguous] ]]; then
+        local common_word=${(L)compstate[unambiguous]}
+        local candidate_key candidate_data
+        for candidate_key candidate_data in "${(@ps:\2:)_ftb_compcap}"; do
+          local -A candidate=("${(@0)candidate_data}")
+          if [[ ${(L)candidate[word]} == "$common_word" && ${candidate[word]} != "$compstate[unambiguous]" ]]; then
+            case_twin=1
+            break
+          fi
+        done
+      fi
+
       if (( ! _ftb_continue_last )) \
+        && (( ! case_twin )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
         && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \

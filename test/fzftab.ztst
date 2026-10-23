@@ -180,6 +180,16 @@
 0:matcher-list
 >line: {: vim.coc }{}
 
+  comptesteval "zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'"
+  comptesteval 'touch xaaa Xaaa'
+  comptest $': x\t'
+  comptesteval 'rm xaaa Xaaa; zstyle -d ":completion:*" matcher-list'
+0:case-insensitive ambiguous matches
+>line: {: Xaaa }{}
+>QUERY:{x}
+>C0:{Xaaa}
+>C0:{xaaa}
+
   comptesteval $'cd dir1'
   comptest $': ../d\t'
   comptesteval $'cd ..'

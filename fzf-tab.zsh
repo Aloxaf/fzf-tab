@@ -169,10 +169,79 @@ builtin unalias -m '[^+]*'
       # _approximate sets compstate[list] to "force" when showing corrections.
       # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
       # which falls back to the standard Zsh menu.
+      #
+      # Guard: skip the fast path when the unambiguous string is a proper
+      # prefix of the current word (the word is already more specific than
+      # the common prefix). Honoring "insert unambiguous" in that case would
+      # DELETE already-typed characters -- e.g. the trailing slash of
+      # "dir/" when an external candidate group feeds bare full-path
+      # candidate words and the common prefix gets cut at a path-segment
+      # boundary; zsh would then rewrite "dir/" into "dir" with no menu.
+      # An empty word never matches a non-empty unambiguous prefix, so it
+      # passes this check naturally (normal extension insertion preserved).
+      # The leading compstate[quote] matters: inside quotes the quote char
+      # is carried by compstate[quote], not by IPREFIX, so an unquoted LHS
+      # would never match and quoted words would lose the guard entirely
+      # (trailing compstate[quote] of the word form is irrelevant to the
+      # prefix test and is omitted).
+      # (NOTE: comments cannot be embedded inside the "\\" continuation
+      # chain below -- zsh fails to parse it.)
+      #
+      # Second guard: the unambiguous string must be a prefix of at least
+      # one candidate's full insertion form. Zsh computes
+      # compstate[unambiguous] over matcher alignments; with substring
+      # matchers (l:|=* r:|=*) and candidates aligning the word at
+      # inconsistent offsets (one candidate ending with the word, another
+      # containing it mid-string), the computation fabricates a string with
+      # a duplicated leading char of the word ("forgejo-actions" ->
+      # "fforgejo-actions"; the char varies with alignment/order). Such a
+      # string prefixes NO candidate -- no menu selection could ever reach
+      # it -- so inserting it corrupts the word with characters the user
+      # never typed. Route it to the interactive fzf list instead.
+      # The comparison uses each entry's full insertion form (leading
+      # compstate[quote] + IPREFIX + hpre (compadd -p path prefix) + word),
+      # NOT the bare word segment: compstate[unambiguous] lives in the full
+      # command-line word space (carrying the quote and the path prefix),
+      # so comparing against bare words would block the legitimate fast
+      # path for path-prefixed file completion and for quoted words.
+      # The reconstruction concatenates kv segments in entry order (hpre
+      # precedes IPREFIX there), which diverges from zsh's true insertion
+      # space (IPREFIX first) only when both are non-empty -- a corner
+      # where the mismatch is always over-blocking (falls back to fzf),
+      # never permissive. apre (-P) and -i are deliberately omitted:
+      # shortening the reconstruction form only makes the prefix test
+      # harder to pass, i.e. also safely over-blocking.
+      # (Computed as a flag because a loop cannot be inlined into the
+      # continuation chain; the outer conditions gate the candidate scan
+      # to fast-path-relevant cases only.)
+      local _ftb_amb_is_cand=0 _ftb_amb_e _ftb_amb_w _ftb_amb_full _ftb_amb_i
+      local -a _ftb_amb_kv
+      if (( ! _ftb_continue_last )) \
+        && [[ $compstate[insert] == *"unambiguous" ]] \
+        && [[ -n $compstate[unambiguous] ]]; then
+        for _ftb_amb_e in "${_ftb_compcap[@]}"; do
+          # entry = dscr \2 <NUL-sentinel pair> kv-pairs... word-pair;
+          # after (0)-split the word segment is the last pair (guarded
+          # against malformed entries), keys sit at odd indices from 3
+          _ftb_amb_kv=("${(@0)_ftb_amb_e}")
+          [[ ${_ftb_amb_kv[-2]} == word ]] || continue
+          _ftb_amb_w=${_ftb_amb_kv[-1]}
+          _ftb_amb_full=$compstate[quote]
+          for (( _ftb_amb_i = 3; _ftb_amb_i <= $(( $#_ftb_amb_kv - 3 )); _ftb_amb_i += 2 )); do
+            case ${_ftb_amb_kv[_ftb_amb_i]} in
+              (IPREFIX|hpre) _ftb_amb_full+=${_ftb_amb_kv[_ftb_amb_i+1]} ;;
+            esac
+          done
+          _ftb_amb_full+=$_ftb_amb_w
+          [[ "$_ftb_amb_full" == "$compstate[unambiguous]"* ]] && { _ftb_amb_is_cand=1; break }
+        done
+      fi
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
         && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
+        && [[ "$compstate[quote]$IPREFIX$PREFIX" != "$compstate[unambiguous]"* ]] \
+        && (( _ftb_amb_is_cand )) \
         && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous

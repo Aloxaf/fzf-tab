@@ -172,7 +172,7 @@ builtin unalias -m '[^+]*'
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
-        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]] \
+        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$SUFFIX$ISUFFIX$compstate[quote]" ]] \
         && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous

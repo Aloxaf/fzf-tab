@@ -74,6 +74,14 @@
 >C0:{.#def}
 >C0:{.#hij}
 
+  comptesteval '_tst() { compadd abc1x abc2x }'
+  comptest $'tst abcx\C-b\t'
+0:unambiguous prefix with suffix after cursor
+>line: {tst abc1x }{}
+>QUERY:{abc}
+>C0:{abc1x}
+>C0:{abc2x}
+
   comptesteval '_tst() { compadd /home /usr /lib; compstate[insert]=menu }'
   comptest $'tst \t'
 0:force list

@@ -169,10 +169,11 @@ builtin unalias -m '[^+]*'
       # _approximate sets compstate[list] to "force" when showing corrections.
       # If we don't check for this, fzf-tab sees an "unambiguous" prefix and exits early,
       # which falls back to the standard Zsh menu.
+      # A quoted word may not have its closing quote yet, so compare with and without it.
       if (( ! _ftb_continue_last )) \
         && [[ $compstate[insert] == *"unambiguous" ]] \
         && [[ -n $compstate[unambiguous] ]] \
-        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$SUFFIX$ISUFFIX$compstate[quote]" ]] \
+        && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$SUFFIX$ISUFFIX"(|"$compstate[quote]") ]] \
         && [[ $compstate[list] != *"force"* ]]; then
         compstate[list]=
         compstate[insert]=unambiguous

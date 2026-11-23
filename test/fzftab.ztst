@@ -82,6 +82,22 @@
 >C0:{abc1x}
 >C0:{abc2x}
 
+  comptesteval '_tst() { compadd "foo bar1" "foo bar2" }'
+  comptest $'tst "foo bar\t'
+0:unambiguous prefix in unclosed quote string
+>line: {tst "foo bar1" }{}
+>QUERY:{foo bar}
+>C0:{foo bar1}
+>C0:{foo bar2}
+
+  comptesteval '_tst() { compadd "foo bar1x" "foo bar2x" }'
+  comptest $'tst "foo barx\C-b\t'
+0:unambiguous prefix in unclosed quote string with suffix after cursor
+>line: {tst "foo bar1x" }{}
+>QUERY:{foo bar}
+>C0:{foo bar1x}
+>C0:{foo bar2x}
+
   comptesteval '_tst() { compadd /home /usr /lib; compstate[insert]=menu }'
   comptest $'tst \t'
 0:force list
